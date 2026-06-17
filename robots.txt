@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://microatlas.example/sitemap.xml
+Sitemap: https://rshacks9.github.io/microatlas-research/sitemap.xml

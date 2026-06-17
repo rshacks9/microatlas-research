@@ -1,355 +1,5 @@
 [
   {
-    "slug": "ai-receptionists-dental-practices",
-    "title": "AI Receptionists for Dental Practices",
-    "query": "AI receptionist dental practice market 2026 virtual receptionist dentistry",
-    "search_results": [
-      {
-        "url": "https://dentina.ai/",
-        "title": "Dentina \u2014 AI Dental Receptionist Built by a Dentist",
-        "description": "The AI receptionist for dental offices, built by a dentist. Answers calls and books into your PMS 24/7. 1000+ practices. 30-day free trial.",
-        "category": null
-      },
-      {
-        "url": "https://www.getweave.com/virtual-receptionist-dental-office/",
-        "title": "Dental Office Virtual Receptionist: A Smarter Front Desk for Practices",
-        "description": "Virtual receptionist dental office solutions that help practices answer more calls, reduce staff strain, and deliver a better patient experience.",
-        "category": null
-      },
-      {
-        "url": "https://mconsent.net/blog/ai-dental-receptionist-dental-practices/",
-        "title": "Top 5 AI Dental Receptionist for Dental Practices (2026) - mConsent",
-        "description": "mConsent's Zaha AI is a fully functional virtual dental receptionist that does more than simply answer the phone. With the ability to handle 24/ ...",
-        "category": null
-      }
-    ],
-    "category": "Healthcare AI",
-    "subtitle": "Voice AI, booking automation, and front-desk margin pressure in independent dentistry.",
-    "audience": "DSO executives, dental SaaS founders, practice buyers, revenue-cycle operators, and search investors.",
-    "keywords": [
-      "AI dental receptionist",
-      "dental virtual receptionist",
-      "missed call automation dentist",
-      "dental phone answering service",
-      "dental patient scheduling software",
-      "dental call center AI",
-      "dental practice automation"
-    ],
-    "buyers": [
-      "independent dental owners",
-      "regional DSOs",
-      "dental practice managers",
-      "dental software platforms"
-    ],
-    "segments": [
-      "after-hours scheduling",
-      "insurance intake triage",
-      "recall/reactivation calls",
-      "new-patient conversion",
-      "multilingual phone coverage"
-    ],
-    "demand_signals": [
-      "high intent around missed calls and patient scheduling",
-      "labor scarcity at front desks",
-      "DSO pressure to standardize conversion",
-      "consumer expectation for instant booking",
-      "rising comfort with voice agents"
-    ],
-    "value_pools": [
-      "lead capture lift",
-      "front-desk labor leverage",
-      "same-day emergency fill rate",
-      "recall campaign automation",
-      "call QA analytics"
-    ],
-    "pricing_models": [
-      "$299-$999 per location per month",
-      "usage-based minutes plus base SaaS",
-      "conversion-guarantee pilots",
-      "DSO enterprise seat bundles",
-      "setup fee for call-flow design"
-    ],
-    "vendor_archetypes": [
-      "voice AI platform",
-      "dental PMS integrator",
-      "outsourced call center upgrading to AI",
-      "patient communication suite",
-      "agency-managed automation wrapper"
-    ],
-    "channels": [
-      "dental conferences",
-      "PMS marketplaces",
-      "DSO RevOps referrals",
-      "SEO for emergency dentist calls",
-      "practice acquisition consultants"
-    ],
-    "risks": [
-      "HIPAA handling gaps",
-      "PMS integration brittleness",
-      "bad handoff during emergencies",
-      "patient trust loss from poor voice quality",
-      "unclear ROI attribution"
-    ],
-    "metrics": [
-      "missed-call recovery rate",
-      "new-patient booked calls",
-      "cost per scheduled appointment",
-      "recall conversion",
-      "agent containment rate"
-    ],
-    "data_assets": [
-      "call recordings",
-      "PMS appointment status",
-      "insurance intake fields",
-      "campaign disposition logs"
-    ],
-    "compliance": [
-      "HIPAA BAAs",
-      "call recording consent",
-      "TCPA controls",
-      "access logs and PHI minimization"
-    ],
-    "report_id": "MA-D48D52",
-    "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/ai-receptionists-dental-practices/ai-receptionists-dental-practices-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/ai-receptionists-dental-practices/ai-receptionists-dental-practices-report.md",
-    "verified_pdf_pages": 120
-  },
-  {
-    "slug": "glp1-remote-patient-monitoring",
-    "title": "GLP-1 Remote Patient Monitoring for Weight-Loss Clinics",
-    "query": "GLP-1 remote patient monitoring weight loss clinic market 2026",
-    "search_results": [
-      {
-        "url": "https://hlth.com/insights/articles/glp-1-drugs-digital-health-and-obesity-trends-in-2026-2026-04-17",
-        "title": "GLP-1 Drugs, Digital Health & Obesity Trends in 2026 - HLTH",
-        "description": "Overweight and obesity are driving a booming digital health market through telehealth, wearables, and new pharma-to-consumer models. / Remote ...",
-        "category": null
-      },
-      {
-        "url": "https://lightit.io/glp-1-healthtech-market-playbook",
-        "title": "GLP-1 Business Report for Healthtech strategy | Light-it",
-        "description": "A strategic GLP-1 playbook covering market size, regulation, competitors, consumer behavior, product trends, funding, and GTM strategy in healthtech.",
-        "category": null
-      },
-      {
-        "url": "https://alaskabeacon.com/2026/06/02/telehealth-booms-as-demand-for-glp-1s-surges-and-questions-mount-about-safety-oversight/",
-        "title": "Telehealth booms as demand for GLP-1s surges and questions ...",
-        "description": "Many telehealth companies have emerged in recent years offering easy access to GLP-1 weight loss drugs as demand has exploded.",
-        "category": null
-      }
-    ],
-    "category": "Healthcare Operations",
-    "subtitle": "Remote monitoring, adherence, side-effect triage, and retention infrastructure for GLP-1 care models.",
-    "audience": "weight-loss clinics, telehealth platforms, RPM vendors, obesity medicine groups, payers, and specialty investors.",
-    "keywords": [
-      "GLP-1 monitoring",
-      "remote patient monitoring weight loss",
-      "semaglutide clinic software",
-      "GLP-1 side effect tracking",
-      "obesity medicine RPM",
-      "tirzepatide patient engagement",
-      "medical weight loss platform"
-    ],
-    "buyers": [
-      "medical weight-loss clinics",
-      "telehealth obesity platforms",
-      "specialty pharmacies",
-      "payers and benefits teams"
-    ],
-    "segments": [
-      "adherence monitoring",
-      "side-effect triage",
-      "nutrition coaching",
-      "lab and vitals tracking",
-      "medication access workflows"
-    ],
-    "demand_signals": [
-      "explosive consumer GLP-1 demand",
-      "payer scrutiny on persistence and outcomes",
-      "need for scalable clinical follow-up",
-      "shortage and compounding volatility",
-      "clinics seeking retention beyond prescription fulfillment"
-    ],
-    "value_pools": [
-      "monthly care program retention",
-      "clinical staff leverage",
-      "payer outcome evidence",
-      "pharmacy coordination",
-      "coach-assisted behavior change"
-    ],
-    "pricing_models": [
-      "$15-$60 PMPM platform fee",
-      "bundled clinic SaaS plus coaching",
-      "RPM billing enablement share",
-      "enterprise telehealth contract",
-      "pharmacy hub services"
-    ],
-    "vendor_archetypes": [
-      "RPM platform",
-      "obesity clinic OS",
-      "virtual care platform",
-      "specialty pharmacy hub",
-      "AI symptom triage layer"
-    ],
-    "channels": [
-      "obesity medicine conferences",
-      "telehealth partnerships",
-      "clinic owner communities",
-      "benefits broker channels",
-      "specialty pharmacy partnerships"
-    ],
-    "risks": [
-      "medical-device claim overreach",
-      "adverse event escalation failure",
-      "coverage and shortage volatility",
-      "privacy risk around weight data",
-      "poor adherence despite software"
-    ],
-    "metrics": [
-      "persistence at 3/6/12 months",
-      "adverse event response time",
-      "weight-loss outcome bands",
-      "coach caseload ratio",
-      "PMPM gross margin"
-    ],
-    "data_assets": [
-      "weight logs",
-      "medication schedule",
-      "side-effect surveys",
-      "labs and vitals",
-      "pharmacy fill status"
-    ],
-    "compliance": [
-      "HIPAA and consent",
-      "clinical escalation protocol",
-      "FDA/software claims discipline",
-      "state telehealth rules"
-    ],
-    "report_id": "MA-51448A",
-    "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/glp1-remote-patient-monitoring/glp1-remote-patient-monitoring-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/glp1-remote-patient-monitoring/glp1-remote-patient-monitoring-report.md",
-    "verified_pdf_pages": 120
-  },
-  {
-    "slug": "nemt-dispatch-medicaid",
-    "title": "NEMT Dispatch Software for Medicaid Transportation Brokers",
-    "query": "non emergency medical transportation dispatch software Medicaid market 2026",
-    "search_results": [
-      {
-        "url": "https://elitemedfinancials.com/nemt-industry-statistics/",
-        "title": "NEMT Industry Statistics 2026: $17B Market Size & Growth",
-        "description": "Complete NEMT industry statistics for 2026. Market size $10-17B, 9.7% CAGR growth, top providers & Medicaid data. Free report with 200+ ...",
-        "category": null
-      },
-      {
-        "url": "https://nemtplatform.com/blogs/how-to-start-an-nemt-business-in-2026-the-complete-step-by-step-guide-for-new-operators",
-        "title": "How to Start an NEMT Business in 2026: The Complete Step-by ...",
-        "description": "NEMT dispatch software: as low as $50/month with NEMT typically range from $18\u2013$45 per one-way ambulatory trip and $35\u2013$80+ for WAV trips. $12. ...",
-        "category": null
-      },
-      {
-        "url": "https://caretap.net/blog/top-nemt-software-picks/",
-        "title": "Top 10 NEMT Software Picks for 2026 - Caretap",
-        "description": "1. Caretap NEMT Software \u00b7 Scheduling and Dispatching : It pulls schedules straight from payers and matches them with drivers automatically.",
-        "category": null
-      }
-    ],
-    "category": "Healthcare Logistics",
-    "subtitle": "Dispatch, broker workflows, compliance, and margin control in Medicaid non-emergency medical transportation.",
-    "audience": "NEMT operators, Medicaid brokers, transportation software vendors, healthcare logistics investors, and benefit managers.",
-    "keywords": [
-      "NEMT dispatch software",
-      "Medicaid transportation broker",
-      "non emergency medical transportation software",
-      "NEMT routing",
-      "NEMT billing software",
-      "medical transportation dispatch",
-      "NEMT compliance"
-    ],
-    "buyers": [
-      "NEMT fleet owners",
-      "Medicaid transportation brokers",
-      "managed care plans",
-      "regional dispatch centers"
-    ],
-    "segments": [
-      "trip assignment",
-      "eligibility and authorization",
-      "driver compliance",
-      "routing and batching",
-      "billing reconciliation"
-    ],
-    "demand_signals": [
-      "Medicaid transportation complexity",
-      "no-show and late-trip penalties",
-      "labor and vehicle utilization pressure",
-      "payer demand for audit trails",
-      "fragmented small-operator market"
-    ],
-    "value_pools": [
-      "route density",
-      "claim denial reduction",
-      "broker service levels",
-      "driver credentialing",
-      "member experience"
-    ],
-    "pricing_models": [
-      "per-vehicle SaaS",
-      "per-trip transaction fee",
-      "broker enterprise license",
-      "claims clearing add-on",
-      "driver app freemium"
-    ],
-    "vendor_archetypes": [
-      "dispatch SaaS",
-      "broker operating platform",
-      "fleet telematics layer",
-      "claims and billing module",
-      "marketplace aggregator"
-    ],
-    "channels": [
-      "state Medicaid RFP ecosystems",
-      "NEMT associations",
-      "fleet owner Facebook groups",
-      "MCO vendor procurement",
-      "claims consultants"
-    ],
-    "risks": [
-      "state-by-state rules",
-      "broker concentration",
-      "low-margin operators",
-      "driver churn",
-      "false ETA or trip attestation exposure"
-    ],
-    "metrics": [
-      "on-time pickup",
-      "trip completion rate",
-      "cost per loaded mile",
-      "claim denial rate",
-      "vehicle utilization"
-    ],
-    "data_assets": [
-      "trip manifests",
-      "GPS pings",
-      "driver credentials",
-      "claims status",
-      "member eligibility"
-    ],
-    "compliance": [
-      "Medicaid audit logs",
-      "HIPAA minimum necessary",
-      "driver credential evidence",
-      "state transportation rules"
-    ],
-    "report_id": "MA-724F21",
-    "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/nemt-dispatch-medicaid/nemt-dispatch-medicaid-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/nemt-dispatch-medicaid/nemt-dispatch-medicaid-report.md",
-    "verified_pdf_pages": 120
-  },
-  {
     "slug": "ev-load-management-multifamily",
     "title": "EV Charger Load Management for Multifamily Properties",
     "query": "EV charging load management multifamily apartment market 2026",
@@ -462,8 +112,6 @@
     ],
     "report_id": "MA-35334A",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/ev-load-management-multifamily/ev-load-management-multifamily-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/ev-load-management-multifamily/ev-load-management-multifamily-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -579,8 +227,6 @@
     ],
     "report_id": "MA-4D70AB",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/balcony-solar-storage/balcony-solar-storage-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/balcony-solar-storage/balcony-solar-storage-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -696,8 +342,6 @@
     ],
     "report_id": "MA-CFA1AB",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/heat-pump-water-heaters-multifamily/heat-pump-water-heaters-multifamily-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/heat-pump-water-heaters-multifamily/heat-pump-water-heaters-multifamily-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -813,242 +457,6 @@
     ],
     "report_id": "MA-5F89F0",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/ap-automation-construction/ap-automation-construction-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/ap-automation-construction/ap-automation-construction-report.md",
-    "verified_pdf_pages": 120
-  },
-  {
-    "slug": "cold-chain-glp1-pharmacy",
-    "title": "Cold-Chain Micro-Logistics for GLP-1 and Specialty Pharmacies",
-    "query": "GLP-1 cold chain logistics specialty pharmacy market 2026",
-    "search_results": [
-      {
-        "url": "https://www.shipmercury.com/blog/shipping-glp-1-drugs-cold-chain-requirements",
-        "title": "Shipping GLP-1 Drugs: Cold Chain Requirements | Mercury",
-        "description": "GLP-1 drugs require strict 2\u20138\u00b0C control with zero tolerance for freezing, making cold chain execution highly sensitive.",
-        "category": null
-      },
-      {
-        "url": "https://www.nordiccoldchain.com/navigating-the-glp-1-cold-chain-revolution-tips-for-modern-pharmacies-in-2025/",
-        "title": "Navigating the GLP-1 Cold Chain Revolution: Tips for Modern ...",
-        "description": "Learn how Nordic Cold Chain Solutions helps pharmacies ship GLP-1 medications safely, maintaining 2\u20138\u00b0C control with validated, ...",
-        "category": null
-      },
-      {
-        "url": "https://thermosafe.com/resources/cold-chain-exchange/thermal-packaging-pharmacies-and-patient-access-building-safer-supply-chains-for-specialty-drugs/",
-        "title": "Thermal Packaging, Pharmacies, and Patient Access - ThermoSafe",
-        "description": "Discover how DTP trends and GLP-1 drugs are changing pharmacy packaging\u2014shorter shipments, lighter materials, and new supply chain needs.",
-        "category": null
-      }
-    ],
-    "category": "Healthcare Logistics",
-    "subtitle": "Temperature-controlled micro-fulfillment for specialty drugs, GLP-1 demand, and direct-to-patient pharmacy.",
-    "audience": "specialty pharmacies, 3PLs, telehealth platforms, benefits teams, pharma service providers, and logistics investors.",
-    "keywords": [
-      "GLP-1 cold chain logistics",
-      "specialty pharmacy cold chain",
-      "temperature controlled pharmacy delivery",
-      "direct to patient cold chain",
-      "semaglutide shipping",
-      "pharmacy micro fulfillment",
-      "cold chain last mile healthcare"
-    ],
-    "buyers": [
-      "specialty pharmacies",
-      "telehealth platforms",
-      "pharma hub service providers",
-      "healthcare 3PLs"
-    ],
-    "segments": [
-      "packout optimization",
-      "temperature monitoring",
-      "same-day local delivery",
-      "reverse logistics",
-      "benefit verification coordination"
-    ],
-    "demand_signals": [
-      "GLP-1 volume growth",
-      "specialty drug mix shift",
-      "consumer expectation for home delivery",
-      "temperature excursion cost",
-      "telehealth pharmacy verticalization"
-    ],
-    "value_pools": [
-      "packaging cost reduction",
-      "temperature assurance",
-      "delivery reliability",
-      "pharmacy margin retention",
-      "data/reporting services"
-    ],
-    "pricing_models": [
-      "per-shipment fee",
-      "packout plus monitoring fee",
-      "regional micro-fulfillment contract",
-      "SLA premium",
-      "software telemetry subscription"
-    ],
-    "vendor_archetypes": [
-      "healthcare 3PL",
-      "cold-chain packaging OEM",
-      "last-mile courier network",
-      "specialty pharmacy hub",
-      "IoT temperature visibility platform"
-    ],
-    "channels": [
-      "specialty pharmacy associations",
-      "telehealth BD",
-      "pharma service RFPs",
-      "benefits consultant networks",
-      "cold-chain logistics events"
-    ],
-    "risks": [
-      "excursions and liability",
-      "regulatory pharmacy constraints",
-      "volume volatility from coverage changes",
-      "margin compression",
-      "chain-of-custody gaps"
-    ],
-    "metrics": [
-      "excursion rate",
-      "on-time delivery",
-      "cost per shipment",
-      "redelivery rate",
-      "pharmacy NPS"
-    ],
-    "data_assets": [
-      "temperature logs",
-      "delivery scans",
-      "pharmacy fill status",
-      "packout BOM",
-      "patient communication logs"
-    ],
-    "compliance": [
-      "DSCSA alignment",
-      "HIPAA minimum necessary",
-      "state pharmacy rules",
-      "chain-of-custody records"
-    ],
-    "report_id": "MA-A0008E",
-    "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/cold-chain-glp1-pharmacy/cold-chain-glp1-pharmacy-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/cold-chain-glp1-pharmacy/cold-chain-glp1-pharmacy-report.md",
-    "verified_pdf_pages": 120
-  },
-  {
-    "slug": "clinical-note-ai-compliance",
-    "title": "Compliance Automation for AI-Generated Clinical Notes",
-    "query": "AI clinical documentation compliance automation market 2026",
-    "search_results": [
-      {
-        "url": "https://censinet.com/perspectives/healthcare-predictions-ai-regulatory-compliance",
-        "title": "The Year AI Becomes Mission-Critical for Regulatory Compliance",
-        "description": "By 2026, AI will play a central role in helping healthcare organizations manage regulations, protect patient data, and address mounting cybersecurity risks.",
-        "category": null
-      },
-      {
-        "url": "https://www.combinehealth.ai/blog/clinical-documentation-improvement-software-vendors",
-        "title": "Top 10 Clinical Documentation Improvement Software Vendors for ...",
-        "description": "Lower denial and audit risk: By ensuring documentation aligns with coding guidelines and payer requirements, AI tools help reduce compliance ...",
-        "category": null
-      },
-      {
-        "url": "https://www.soapnoteai.com/soap-note-guides-and-example/healthcare-ai-trends-2026/",
-        "title": "Healthcare AI Trends 2026: What Providers Need to Know",
-        "description": "Digital health technology market estimated to reach over $300 billion in 2026. Major Investment Areas: AI-powered clinical decision support; Ambient ...",
-        "category": null
-      }
-    ],
-    "category": "Healthcare AI",
-    "subtitle": "Governance, auditability, coding risk, and quality control for ambient documentation and AI-generated notes.",
-    "audience": "health systems, specialty groups, ambient AI vendors, compliance teams, malpractice insurers, and healthcare investors.",
-    "keywords": [
-      "AI clinical notes compliance",
-      "ambient scribe compliance",
-      "clinical documentation AI audit",
-      "AI medical scribe governance",
-      "healthcare AI compliance automation",
-      "clinical note quality review",
-      "AI coding risk"
-    ],
-    "buyers": [
-      "health-system compliance officers",
-      "clinical documentation leaders",
-      "medical groups",
-      "ambient AI vendors"
-    ],
-    "segments": [
-      "note QA sampling",
-      "coding and billing risk",
-      "consent and disclosure tracking",
-      "model output audit",
-      "policy workflow automation"
-    ],
-    "demand_signals": [
-      "ambient AI adoption",
-      "billing scrutiny",
-      "state AI governance movement",
-      "clinician trust concerns",
-      "need for defensible audit trails"
-    ],
-    "value_pools": [
-      "risk reduction",
-      "coding accuracy",
-      "clinician adoption assurance",
-      "vendor governance",
-      "malpractice documentation quality"
-    ],
-    "pricing_models": [
-      "enterprise compliance SaaS",
-      "per-provider audit seat",
-      "per-note QA fee",
-      "vendor add-on module",
-      "risk assessment project"
-    ],
-    "vendor_archetypes": [
-      "ambient scribe vendor",
-      "healthcare GRC platform",
-      "coding audit company",
-      "AI observability layer",
-      "clinical QA managed service"
-    ],
-    "channels": [
-      "healthcare compliance conferences",
-      "CIO/CMIO networks",
-      "malpractice carriers",
-      "EHR marketplaces",
-      "vendor partner programs"
-    ],
-    "risks": [
-      "unclear regulation",
-      "over-alerting clinicians",
-      "PHI/model data leakage",
-      "false confidence in automated review",
-      "workflow friction"
-    ],
-    "metrics": [
-      "note defect rate",
-      "coding variance",
-      "audit coverage",
-      "provider acceptance",
-      "policy exception rate"
-    ],
-    "data_assets": [
-      "clinical notes",
-      "audio/transcripts",
-      "coding outcomes",
-      "QA reviewer decisions",
-      "consent records"
-    ],
-    "compliance": [
-      "HIPAA",
-      "BAA/vendor risk review",
-      "coding/billing documentation rules",
-      "state AI disclosure requirements"
-    ],
-    "report_id": "MA-F76EC5",
-    "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/clinical-note-ai-compliance/clinical-note-ai-compliance-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/clinical-note-ai-compliance/clinical-note-ai-compliance-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1164,125 +572,6 @@
     ],
     "report_id": "MA-79FF01",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/bedbug-heat-short-term-rentals/bedbug-heat-short-term-rentals-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/bedbug-heat-short-term-rentals/bedbug-heat-short-term-rentals-report.md",
-    "verified_pdf_pages": 120
-  },
-  {
-    "slug": "pet-dental-care-insurance",
-    "title": "Pet Dental Care, Insurance Riders, and At-Home Oral Health",
-    "query": "pet dental care insurance at home oral health market 2026",
-    "search_results": [
-      {
-        "url": "https://www.aspcapetinsurance.com/research-and-compare/pet-insurance-basics/pet-insurance-for-dental-care/",
-        "title": "Pet Insurance For Dental Care | ASPCA\u00ae Pet Health Insurance",
-        "description": "Complete Coverage SM can help cover the cost of your pet's dental treatments, procedures, diagnostics, and medications related to dental illnesses.",
-        "category": null
-      },
-      {
-        "url": "https://www.futuremarketinsights.com/reports/pet-dental-health-market",
-        "title": "Pet Dental Health Market Size, Trends & Forecast 2026\u2013 2036",
-        "description": "The pet dental health market is projected to grow from USD 4.5 billion in 2026 to USD 10.8 billion by 2036, at a CAGR of 9.1%.",
-        "category": null
-      },
-      {
-        "url": "https://www.nerdwallet.com/insurance/pet/pet-dental-insurance",
-        "title": "5 Best Companies for Pet Dental Insurance - NerdWallet",
-        "description": "Pet dental insurance can cover new illnesses and injuries that affect your pet's teeth. See our expert picks for the best pet insurance that covers dental ...",
-        "category": null
-      }
-    ],
-    "category": "Pet Health",
-    "subtitle": "Insurance riders, dental treats, tele-triage, and the economics of pet oral health.",
-    "audience": "pet insurers, DTC pet brands, veterinary groups, retailers, CPG investors, and animal-health startups.",
-    "keywords": [
-      "pet dental insurance",
-      "dog dental care",
-      "cat dental cleaning cost",
-      "at home pet oral care",
-      "dog dental chews",
-      "veterinary dental market",
-      "pet oral health products"
-    ],
-    "buyers": [
-      "pet parents",
-      "pet insurers",
-      "veterinary groups",
-      "DTC pet health brands"
-    ],
-    "segments": [
-      "insurance add-ons",
-      "dental chews and supplements",
-      "at-home brushing systems",
-      "vet dental procedure financing",
-      "tele-triage and reminders"
-    ],
-    "demand_signals": [
-      "pet humanization",
-      "high dental procedure sticker shock",
-      "search around cleaning cost",
-      "retail shelf expansion",
-      "insurance rider education gap"
-    ],
-    "value_pools": [
-      "premium riders",
-      "consumable repeat purchase",
-      "vet procedure financing",
-      "subscription boxes",
-      "diagnostic/triage apps"
-    ],
-    "pricing_models": [
-      "$9-$29 monthly rider",
-      "DTC subscription consumables",
-      "retail wholesale margin",
-      "procedure financing APR/take-rate",
-      "vet group wellness plan"
-    ],
-    "vendor_archetypes": [
-      "pet insurer",
-      "CPG oral care brand",
-      "veterinary group",
-      "financing provider",
-      "telehealth/reminder app"
-    ],
-    "channels": [
-      "Chewy/Amazon search",
-      "vet recommendations",
-      "pet insurance SEO",
-      "TikTok pet creators",
-      "retail endcaps"
-    ],
-    "risks": [
-      "claim exclusions frustration",
-      "clinical efficacy doubts",
-      "vet endorsement barriers",
-      "CAC inflation",
-      "regulatory claims around health benefits"
-    ],
-    "metrics": [
-      "repeat purchase rate",
-      "claim attachment",
-      "procedure conversion",
-      "retail velocity",
-      "CAC/LTV"
-    ],
-    "data_assets": [
-      "purchase cadence",
-      "claims data",
-      "vet visit reminders",
-      "pet age/breed",
-      "review text"
-    ],
-    "compliance": [
-      "insurance product rules",
-      "labeling/claims discipline",
-      "veterinary medical board boundaries",
-      "consumer data privacy"
-    ],
-    "report_id": "MA-02BE31",
-    "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/pet-dental-care-insurance/pet-dental-care-insurance-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/pet-dental-care-insurance/pet-dental-care-insurance-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1398,8 +687,6 @@
     ],
     "report_id": "MA-E7F955",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/backyard-office-pods/backyard-office-pods-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/backyard-office-pods/backyard-office-pods-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1515,8 +802,6 @@
     ],
     "report_id": "MA-67EAD0",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/pickleball-facility-software/pickleball-facility-software-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/pickleball-facility-software/pickleball-facility-software-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1632,8 +917,6 @@
     ],
     "report_id": "MA-9B7988",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/childcare-waitlist-software/childcare-waitlist-software-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/childcare-waitlist-software/childcare-waitlist-software-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1749,8 +1032,6 @@
     ],
     "report_id": "MA-2B2575",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/restaurant-dynamic-pricing/restaurant-dynamic-pricing-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/restaurant-dynamic-pricing/restaurant-dynamic-pricing-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1866,8 +1147,6 @@
     ],
     "report_id": "MA-D7A104",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/drone-roof-inspection/drone-roof-inspection-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/drone-roof-inspection/drone-roof-inspection-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -1983,8 +1262,6 @@
     ],
     "report_id": "MA-AEE100",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/water-utility-cybersecurity/water-utility-cybersecurity-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/water-utility-cybersecurity/water-utility-cybersecurity-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -2100,8 +1377,6 @@
     ],
     "report_id": "MA-6AB800",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/ebike-battery-fire-safety/ebike-battery-fire-safety-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/ebike-battery-fire-safety/ebike-battery-fire-safety-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -2217,8 +1492,6 @@
     ],
     "report_id": "MA-0142D4",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/home-services-ai-sales-coaching/home-services-ai-sales-coaching-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/home-services-ai-sales-coaching/home-services-ai-sales-coaching-report.md",
     "verified_pdf_pages": 120
   },
   {
@@ -2247,7 +1520,7 @@
     ],
     "category": "Aging + Local Services",
     "subtitle": "Move management, estate cleanouts, aging-in-place transitions, and software for families navigating downsizing.",
-    "audience": "senior move managers, home-care groups, real-estate agents, estate-service operators, senior living communities, and local investors.",
+    "audience": "senior move managers, non-medical in-home service providers, real-estate agents, estate-service operators, senior living communities, and local investors.",
     "keywords": [
       "senior downsizing services",
       "senior move management",
@@ -2303,7 +1576,7 @@
       "senior living communities",
       "realtor referrals",
       "local SEO",
-      "hospital/social worker networks"
+      "senior-services referral networks"
     ],
     "risks": [
       "trust and liability",
@@ -2334,8 +1607,79 @@
     ],
     "report_id": "MA-3293F0",
     "pages": 120,
-    "pdf_path": "/Users/thomasgaffney/microatlas_research/site/reports/senior-downsizing-services/senior-downsizing-services-report.pdf",
-    "markdown_path": "/Users/thomasgaffney/microatlas_research/site/reports/senior-downsizing-services/senior-downsizing-services-report.md",
-    "verified_pdf_pages": 120
+    "verified_pdf_pages": 120,
+    "vend_or_archetypes": [
+      "senior move manager",
+      "estate sale company",
+      "non-medical in-home services provider",
+      "relocation software",
+      "real-estate service bundle"
+    ]
+  },
+  {
+    "slug": "ai-receptionists-dental-practices",
+    "title": "AI Receptionists for Dental Practices",
+    "category": "Healthcare AI",
+    "price": 79,
+    "pages": 120,
+    "description": "AI Receptionists for Dental Practices",
+    "detail_page": "reports/ai-receptionists-dental-practices/index.html",
+    "pdf": "reports/ai-receptionists-dental-practices/ai-receptionists-dental-practices-report.pdf",
+    "healthcare": true
+  },
+  {
+    "slug": "glp1-remote-patient-monitoring",
+    "title": "GLP-1 Remote Patient Monitoring for Weight-Loss Clinics",
+    "category": "Healthcare Operations",
+    "price": 79,
+    "pages": 120,
+    "description": "GLP-1 Remote Patient Monitoring for Weight-Loss Clinics",
+    "detail_page": "reports/glp1-remote-patient-monitoring/index.html",
+    "pdf": "reports/glp1-remote-patient-monitoring/glp1-remote-patient-monitoring-report.pdf",
+    "healthcare": true
+  },
+  {
+    "slug": "nemt-dispatch-medicaid",
+    "title": "NEMT Dispatch Software for Medicaid Transportation Brokers",
+    "category": "Healthcare Logistics",
+    "price": 79,
+    "pages": 120,
+    "description": "NEMT Dispatch Software for Medicaid Transportation Brokers",
+    "detail_page": "reports/nemt-dispatch-medicaid/index.html",
+    "pdf": "reports/nemt-dispatch-medicaid/nemt-dispatch-medicaid-report.pdf",
+    "healthcare": true
+  },
+  {
+    "slug": "cold-chain-glp1-pharmacy",
+    "title": "Cold-Chain Micro-Logistics for GLP-1 and Specialty Pharmacies",
+    "category": "Healthcare Logistics",
+    "price": 79,
+    "pages": 120,
+    "description": "Cold-Chain Micro-Logistics for GLP-1 and Specialty Pharmacies",
+    "detail_page": "reports/cold-chain-glp1-pharmacy/index.html",
+    "pdf": "reports/cold-chain-glp1-pharmacy/cold-chain-glp1-pharmacy-report.pdf",
+    "healthcare": true
+  },
+  {
+    "slug": "clinical-note-ai-compliance",
+    "title": "Compliance Automation for AI-Generated Clinical Notes",
+    "category": "Healthcare AI",
+    "price": 79,
+    "pages": 120,
+    "description": "Compliance Automation for AI-Generated Clinical Notes",
+    "detail_page": "reports/clinical-note-ai-compliance/index.html",
+    "pdf": "reports/clinical-note-ai-compliance/clinical-note-ai-compliance-report.pdf",
+    "healthcare": true
+  },
+  {
+    "slug": "pet-dental-care-insurance",
+    "title": "Pet Dental Care, Insurance Riders, and At-Home Oral Health",
+    "category": "Pet Health",
+    "price": 79,
+    "pages": 120,
+    "description": "Pet Dental Care, Insurance Riders, and At-Home Oral Health",
+    "detail_page": "reports/pet-dental-care-insurance/index.html",
+    "pdf": "reports/pet-dental-care-insurance/pet-dental-care-insurance-report.pdf",
+    "healthcare": true
   }
 ]
