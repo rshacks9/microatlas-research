@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* WATCHFLOOR design tokens */
+    --bg-0: #03060a;
+    --bg-1: #070c12;
+    --bg-2: #0b121b;
+    --bg-3: #101a25;
+    --line: #182635;
+    --line-hi: #2ee6c833;
+    --ink: #d7e6ef;
+    --ink-dim: #5f7484;
+    --ink-faint: #3a4b59;
+    --cyan: #2ee6c8;
+    --amber: #ffb020;
+    --blue: #4ea8ff;
+    --red: #ff3b47;
+    --violet: #9b8cff;
+    --green: #3df58a;
+
+    /* shadcn tokens mapped to the watchfloor palette (always dark) */
+    --background: 213 44% 5%;
+    --foreground: 202 39% 89%;
+    --card: 211 41% 7%;
+    --card-foreground: 202 39% 89%;
+    --popover: 211 41% 7%;
+    --popover-foreground: 202 39% 89%;
+    --primary: 169 79% 54%;
+    --primary-foreground: 213 44% 5%;
+    --secondary: 212 40% 10%;
+    --secondary-foreground: 202 39% 89%;
+    --muted: 212 40% 10%;
+    --muted-foreground: 206 18% 45%;
+    --accent: 212 40% 12%;
+    --accent-foreground: 202 39% 89%;
+    --destructive: 356 100% 62%;
+    --destructive-foreground: 202 39% 89%;
+    --border: 210 38% 15%;
+    --input: 210 38% 15%;
+    --ring: 169 79% 54%;
+    --radius: 0.125rem;
+    --sidebar-background: 213 44% 5%;
+    --sidebar-foreground: 202 39% 89%;
+    --sidebar-primary: 169 79% 54%;
+    --sidebar-primary-foreground: 213 44% 5%;
+    --sidebar-accent: 212 40% 10%;
+    --sidebar-accent-foreground: 202 39% 89%;
+    --sidebar-border: 210 38% 15%;
+    --sidebar-ring: 169 79% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-0);
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: rgba(46, 230, 200, 0.25);
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-1);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-faint);
+  }
+}
+
+@layer components {
+  /* Scanline + grain overlay, fixed above all content, below modals */
+  .wf-noise {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    background-image: url('/noise.png');
+    background-repeat: repeat;
+    opacity: 0.04;
+  }
+  .wf-scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 91;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(46, 230, 200, 0.5) 3px,
+      transparent 4px
+    );
+    opacity: 0.03;
+  }
+
+  /* HUD panel: translucent over globe */
+  .wf-panel {
+    background: rgba(11, 18, 27, 0.82);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+  }
+
+  .wf-glow {
+    box-shadow: 0 0 24px rgba(46, 230, 200, 0.08);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Chakra Petch', sans-serif;
+  }
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  .font-data {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .text-glow {
+    text-shadow: 0 0 8px currentColor;
+  }
+}
+
+@keyframes wf-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes wf-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes wf-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+@keyframes wf-sweep {
+  0% {
+    top: 0;
+    opacity: 0.9;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+@keyframes wf-eq {
+  0%,
+  100% {
+    height: 4px;
+  }
+  50% {
+    height: 14px;
+  }
+}
+
+.wf-anim-blink {
+  animation: wf-blink 1.2s steps(2, jump-none) infinite;
+}
+.wf-anim-marquee {
+  animation: wf-marquee var(--wf-marquee-dur, 60s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-anim-blink,
+  .wf-anim-marquee,
+  .wf-noise,
+  .wf-scanlines {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
