@@ -985,6 +985,42 @@ export function generateWorld(seed) {
 
   map.spawn = { x: start.x, y: start.y };
 
+  // --- scattered finds ------------------------------------------------------
+  // An open world with nothing to find is just a big empty map. Items are
+  // sprinkled on walkable land, tuned so the reward grows with distance from the
+  // start: near town you find a potion, far out you find an ultra orb. Each has
+  // a stable flag so a collected pickup stays collected across a save.
+  {
+    const NEAR = ['potion', 'orb', 'antidote', 'orb'];
+    const MID = ['superpotion', 'greatorb', 'repel', 'cureall', 'greatorb'];
+    const FAR = ['hyperpotion', 'ultraorb', 'revive', 'fullrestore', 'ultraorb'];
+    const maxD = Math.max(1, Math.max(W, H) / 2);
+    let placed = 0;
+    for (let tries = 0; tries < 26000 && placed < 90; tries++) {
+      const x = 4 + rng.int(W - 8);
+      const y = 4 + rng.int(H - 8);
+      const i = y * W + x;
+      if (isSolid(ground[i]) || isWater(ground[i]) || overlay[i] !== 0) continue;
+      if (buf.comp[i] !== buf.comp[startIdx]) continue;          // must be reachable
+      const d = Math.max(Math.abs(x - start.x), Math.abs(y - start.y));
+      if (d < 14) continue;                                      // not on the doorstep
+      // keep pickups off town plazas
+      let nearTown = false;
+      for (const t of towns) {
+        if (Math.max(Math.abs(t.x - x), Math.abs(t.y - y)) < 16) { nearTown = true; break; }
+      }
+      if (nearTown) continue;
+      const u = Math.min(1, d / maxD);
+      const pool = u < 0.3 ? NEAR : u < 0.62 ? MID : FAR;
+      map.entities.push({
+        kind: 'item', x, y, dir: 'down', blocking: false,
+        itemId: pool[rng.int(pool.length)],
+        flag: 'find_' + x + '_' + y,
+      });
+      placed++;
+    }
+  }
+
   const world = {
     map,
     towns,

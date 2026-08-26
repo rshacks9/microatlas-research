@@ -298,11 +298,23 @@ async function afterBattle(result) {
   O.stepsSinceEncounter = 0;
   if (result === 'lose' || partyWiped()) {
     await fade('out', 0.4, '#000');
-    await say(['You have no creatures able to battle!', 'You hurried back to the nearest recovery centre.']);
+    // Losing used to cost nothing at all, which also meant winning carried no
+    // relief. The cost is deliberately mild: a slice of your credits, capped, and
+    // never enough to leave you unable to restock.
+    const money = S.player.money | 0;
+    const fee = Math.min(Math.floor(money * 0.25), 400 + (S.badges | 0) * 250);
+    if (fee > 0) S.player.money = money - fee;
+
+    const where = nearestTown();
+    await say(fee > 0
+      ? ['You have no creatures able to battle!',
+         'You scrambled back to ' + where.name + ', dropping ' + fee + ' credits along the way.']
+      : ['You have no creatures able to battle!',
+         'You scrambled back to ' + where.name + '.']);
     healParty();
-    respawnAtHome();
+    enterMap('world', where.x, where.y, 'down');
     await fade('in', 0.4);
-    playBgm(O.map && O.map.data && O.map.data.bgm ? O.map.data.bgm : 'overworld');
+    playBgm('town');
     return;
   }
   // The battle scene has popped and the overworld is visible again; a short dip
@@ -315,6 +327,21 @@ async function afterBattle(result) {
 function respawnAtHome() {
   const home = (S.world && S.world.start) ? S.world.start : { x: 8, y: 8 };
   enterMap('world', home.x, home.y, 'down');
+}
+
+// Towns double as the checkpoint network. Respawning at the NEAREST one rather
+// than always at the start town means seeking out settlements is worth doing,
+// which is exactly the behaviour an open world wants to reward.
+function nearestTown() {
+  const towns = (S.world && S.world.towns) || [];
+  const home = (S.world && S.world.start) ? S.world.start : { x: 8, y: 8 };
+  if (!towns.length) return { x: home.x, y: home.y, name: 'the frontier' };
+  let best = towns[0], bestD = Infinity;
+  for (const t of towns) {
+    const d = Math.max(Math.abs(t.x - player.x), Math.abs(t.y - player.y));
+    if (d < bestD) { bestD = d; best = t; }
+  }
+  return { x: best.x, y: best.y, name: best.name || 'the nearest settlement' };
 }
 
 // ---------------------------------------------------------------- interaction
