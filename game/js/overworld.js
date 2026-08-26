@@ -192,7 +192,7 @@ function canEnter(nx, ny) {
   if (nx < 0 || ny < 0 || nx >= map.w || ny >= map.h) return false;
   if (map.solidAt(nx, ny)) return false;
   const e = map.entityAt ? map.entityAt(nx, ny) : null;
-  if (e && e.blocking !== false && e.kind !== 'item' && !(e.flag && getFlag(e.flag))) return false;
+  if (e && e.blocking !== false && e.kind !== 'item' && !(e.flag && getFlag(e.flag) && e.kind !== 'trainer')) return false;
   return true;
 }
 
@@ -477,7 +477,14 @@ async function talkTo(e) {
       await say('You found a ' + getItem(id).name + '!');
       return;
     }
-    if (e.kind === 'trainer' && !(e.flag && getFlag(e.flag))) {
+    if (e.kind === 'trainer') {
+      if (e.flag && getFlag(e.flag)) {
+        // Already beaten: they stay put and acknowledge it, rather than the world
+        // quietly deleting everyone you have defeated.
+        const lines = (e.lines && e.lines.length) ? e.lines : ['You bested me fair and square.'];
+        await say(lines, { speaker: e.name || undefined });
+        return;
+      }
       await startTrainerBattle(e);
       return;
     }
@@ -616,7 +623,11 @@ O.update = function (dt) {
     }
   }
 
-  O.cam.follow(player.px + TILE / 2, player.py + TILE / 2);
+  // Lead the camera in the direction of travel. It used to trail ~12px walking
+  // and ~21px running, so sprinting actively showed you less of what was ahead.
+  const lead = player.moving ? (O.lastRunning ? 22 : 12) : 0;
+  const d = DELTA[player.dir] || [0, 0];
+  O.cam.follow(player.px + TILE / 2 + d[0] * lead, player.py + TILE / 2 + d[1] * lead);
   O.cam.update(dt);
 };
 

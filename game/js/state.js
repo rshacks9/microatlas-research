@@ -29,7 +29,10 @@ export function resetState(seed, name) {
   S.map = null;
   S.mapId = 'world';
   S.interiors = Object.create(null);
-  S.player = { x: 0, y: 0, dir: 'down', name: name || 'Rowan', money: 3000, steps: 0 };
+  // Deliberately poor. With 3000 credits and 5 orbs up front, the economy was
+  // decorative for the whole game; starting lean makes the first purchase a real
+  // decision and gives the wild-battle bounty somewhere to matter.
+  S.player = { x: 0, y: 0, dir: 'down', name: name || 'Rowan', money: 600, steps: 0 };
   S.party = [];
   S.boxes = [];
   S.bag = Object.create(null);
@@ -40,7 +43,7 @@ export function resetState(seed, name) {
   S.repelSteps = 0;
   S.badges = 0;
   S.started = true;
-  addItem('orb', 5);
+  addItem('orb', 3);
   addItem('potion', 3);
 }
 

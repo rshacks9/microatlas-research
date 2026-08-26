@@ -74,11 +74,21 @@ export function expToNext(inst) {
   return { have, need, frac: Math.max(0, Math.min(1, have / need)) };
 }
 
-export function expGain(defeatedInst, participants, isTrainer) {
+// winnerLevel is optional. When supplied, beating something above your level pays
+// more and grinding well below it pays less, so walking outward is how you grow
+// and farming the starting meadow stops being optimal.
+export function expGain(defeatedInst, participants, isTrainer, winnerLevel) {
   const sp = getSpecies(defeatedInst.species);
   const n = Math.max(1, participants | 0);
-  const base = (sp.expYield * clampLevel(defeatedInst.level)) / 7;
-  return Math.max(1, Math.floor((base * (isTrainer ? 1.5 : 1)) / n));
+  const foeLv = clampLevel(defeatedInst.level);
+  const base = (sp.expYield * foeLv) / 7;
+
+  let gapMul = 1;
+  if (winnerLevel) {
+    const gap = foeLv - clampLevel(winnerLevel);
+    gapMul = Math.max(0.35, Math.min(2.2, 1 + gap * 0.09));
+  }
+  return Math.max(1, Math.floor((base * (isTrainer ? 1.5 : 1) * gapMul) / n));
 }
 
 // ---- stat stages -------------------------------------------------------

@@ -144,10 +144,42 @@ if (SCRIPT !== 'boot') {
 
   // Returns the first direction to walk toward the nearest reachable grass tile.
   const blocked = [];   // 'x,y' tiles we bumped into (NPCs the BFS cannot see)
-  const nextDir = () => page.evaluate((blockedList) => {
-    const blockedSet = new Set(blockedList);
+
+  // Pick the goal ONCE. Re-planning the GOAL every step made the walker oscillate
+  // between two equidistant grass patches in opposite directions and never arrive;
+  // re-planning only the PATH to a fixed goal is stable and still routes around
+  // anything that blocks us.
+  const goal = await page.evaluate(() => {
     const g = window.__game;
     if (!g || !g.S || !g.S.world) return null;
+    const m = g.S.world.map;
+    const n = m.w * m.h;
+    const dist = new Int32Array(n).fill(-1);
+    const q = new Int32Array(n);
+    let head = 0, tail = 0;
+    const si = g.S.player.y * m.w + g.S.player.x;
+    dist[si] = 0; q[tail++] = si;
+    while (head < tail) {
+      const i = q[head++];
+      if (dist[i] > 0 && g.isGrassTile(m.ground[i])) return { x: i % m.w, y: (i / m.w) | 0, d: dist[i] };
+      const x = i % m.w, y = (i / m.w) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h) continue;
+        const j = ny * m.w + nx;
+        if (dist[j] !== -1) continue;
+        if (g.isSolidTile(m.ground[j]) || g.overlayBlocksTile(m.overlay[j])) continue;
+        dist[j] = dist[i] + 1; q[tail++] = j;
+      }
+    }
+    return null;
+  });
+
+  // First step of the shortest path to that fixed goal, avoiding known blockers.
+  const nextDir = () => page.evaluate(([gx, gy, blockedList]) => {
+    const g = window.__game;
+    if (!g || !g.S || !g.S.world) return null;
+    const blockedSet = new Set(blockedList);
     const m = g.S.world.map;
     const sx = g.S.player.x, sy = g.S.player.y;
     if (g.isGrassTile(m.ground[sy * m.w + sx])) return 'here';
@@ -160,9 +192,10 @@ if (SCRIPT !== 'boot') {
     dist[si] = 0; q[tail++] = si;
     const D = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     const NAMES = ['right', 'left', 'down', 'up'];
+    const goalIdx = gy * m.w + gx;
     while (head < tail) {
       const i = q[head++];
-      if (dist[i] > 0 && g.isGrassTile(m.ground[i])) return NAMES[first[i]];
+      if (i === goalIdx || (dist[i] > 0 && g.isGrassTile(m.ground[i]))) return NAMES[first[i]];
       const x = i % m.w, y = (i / m.w) | 0;
       for (let d = 0; d < 4; d++) {
         const nx = x + D[d][0], ny = y + D[d][1];
@@ -177,7 +210,7 @@ if (SCRIPT !== 'boot') {
       }
     }
     return null;
-  }, blocked);
+  }, [goal ? goal.x : 0, goal ? goal.y : 0, blocked]);
 
   let encountered = false;
   let prev = await probe('walk-start');

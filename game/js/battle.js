@@ -66,7 +66,10 @@ function combatant(inst, side) {
 // ---------------------------------------------------------------- primitives
 function textSpeed() {
   const s = S.options && S.options.textSpeed;
-  return [24, 44, 72, 9999][Math.max(0, Math.min(3, s === undefined ? 2 : s))];
+  const base = [24, 44, 72, 9999][Math.max(0, Math.min(3, s === undefined ? 2 : s))];
+  // Holding confirm fast-forwards. A wild battle is ~50 presses; without this
+  // the most repeated interaction in the game is the most finger-punishing.
+  return Keys.a ? base * 8 : base;
 }
 
 // Show a message. If wait is false it auto-advances after a short beat.
@@ -158,7 +161,7 @@ B.update = function (dt) {
     }
     wr.t += dt;
     if (wr.kind === 'msgauto') {
-      if (wr.t > 0.5) { B.waiting = null; wr.resolve(); }
+      if (wr.t > (Keys.a ? 0.08 : 0.5)) { B.waiting = null; wr.resolve(); }
       else if (consume('a') && wr.t > 0.12) { B.waiting = null; wr.resolve(); }
     } else if (consume('a') && wr.t > 0.06) {
       sfx('select');
@@ -228,6 +231,12 @@ function drawInfoBox(ctx, c, x, y, isPlayer) {
     drawTextRight(ctx, cur + '/' + mx, x + w - 6, y + 23, { color: PAL.ink });
     const e = expToNext(inst);
     drawExpBar(ctx, x + 6, y + 30, w - 12, e.frac);
+  }
+  if (!isPlayer) {
+    // Without this the player cannot make a type decision without having already
+    // memorised the dex entry for whatever just appeared.
+    let bx = x + 2;
+    for (const ty of sp.types) bx += drawTypeBadge(ctx, ty, bx, y + h + 2) + 3;
   }
   if (inst.status && STATUS_LABEL[inst.status]) {
     const lx = x + 6, ly = y + (isPlayer ? 23 : 20);
@@ -350,11 +359,23 @@ function renderMenu(ctx, m) {
   }
   if (m.kind === 'moves') {
     drawWindow(ctx, 4, H - 54, W - 8, 50);
+    const foeTypes = B.foe ? getSpecies(B.foe.inst.species).types : [];
+    const known = !!(B.foe && S.dex.caught[B.foe.inst.species]);
     for (let i = 0; i < m.items.length; i++) {
       const col = i % 2, row = (i / 2) | 0;
       const ix = 20 + col * 108, iy = H - 46 + row * 13;
       const it = m.items[i];
       drawText(ctx, it.label, ix, iy, { color: it.disabled ? PAL.dim : PAL.ink });
+      // Effectiveness hints, but only for species you have already caught —
+      // knowing a matchup is a reward for collecting, not a freebie.
+      if (known && it.move && it.move.power > 0) {
+        const mult = effectiveness(it.move.type, foeTypes);
+        if (mult !== 1) {
+          const mark = mult > 1 ? '^' : (mult === 0 ? 'x' : 'v');
+          const tint = mult > 1 ? '#48c058' : (mult === 0 ? '#e04038' : '#e0a040');
+          drawText(ctx, mark, ix + 74, iy, { color: tint });
+        }
+      }
       if (i === m.index) drawCursor(ctx, ix - 9, iy, B.t);
     }
     const sel = m.items[m.index];
@@ -607,7 +628,8 @@ async function handleFoeFaint() {
   B.faintFoe = 0;
 
   const participants = Math.max(1, S.party.filter((c) => c && c.__participated).length);
-  const gain = expGain(B.foe.inst, participants, B.isTrainer);
+  const winnerLv = B.me && B.me.inst ? B.me.inst.level : 5;
+  const gain = expGain(B.foe.inst, participants, B.isTrainer, winnerLv);
 
   // Wild battles used to pay nothing, so the only income in the game was ~16
   // one-shot town trainers. Paying out per wild win — scaled by the level of what

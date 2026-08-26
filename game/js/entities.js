@@ -45,7 +45,14 @@ export class Entity {
     this.defeated = false;
   }
 
-  get hidden() { return !!(this.flag && getFlag(this.flag)); }
+  // A defeated trainer is not GONE, just beaten: they keep standing there with
+  // their post-match line. Only pickups and one-shot events truly disappear.
+  get hidden() {
+    if (!this.flag || !getFlag(this.flag)) return false;
+    return this.kind !== 'trainer';
+  }
+
+  get beaten() { return !!(this.flag && getFlag(this.flag) && this.kind === 'trainer'); }
 
   // Pixel position, including the tween between tiles.
   get px() {
@@ -142,7 +149,7 @@ export class Entity {
 
   // Does this trainer see the player? Returns the distance, or 0 if not.
   seesPlayer(px, py, map) {
-    if (this.kind !== 'trainer' || this.hidden || this.sight <= 0) return 0;
+    if (this.kind !== 'trainer' || this.hidden || this.beaten || this.sight <= 0) return 0;
     const d = DELTA[this.dir];
     if (!d) return 0;
     for (let i = 1; i <= this.sight; i++) {
