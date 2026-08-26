@@ -5,7 +5,7 @@ import { drawWindow, drawText, drawTextRight, drawTextCentered, drawHpBar, drawE
          drawCursor, wrapText, PAL, textWidth, drawTypeBadge } from './ui.js';
 import { Keys, consume, pressed } from './input.js';
 import { drawSprite, getSprite, spriteSize } from './sprites.js';
-import { getSpecies } from './creatures.js';
+import { getSpecies, DEX_COUNT } from './creatures.js';
 import { getMove } from './moves.js';
 import { getItem, ITEMS } from './items.js';
 import { effectiveness, matchupText, TYPE_COLORS } from './types.js';
@@ -13,7 +13,7 @@ import { statsFor, maxHp, damage, accuracyCheck, speedOf, catchChance, expGain,
          endOfTurnDamage, aiChooseMove, fleeChance, STRUGGLE, expToNext } from './battlecalc.js';
 import { displayName, isFainted, giveExp, tryEvolve, evolveInto, learnMove, knowsMove,
          hasUsableMove, MOVE_SLOTS, buildTeam, firstHealthy } from './party.js';
-import { S, seeSpecies, addMoney, removeItem, itemCount, bagList } from './state.js';
+import { S, seeSpecies, addMoney, removeItem, itemCount, bagList, dexCaughtCount } from './state.js';
 import { sfx, playBgm } from './audio.js';
 import { rand } from './rng.js';
 
@@ -694,7 +694,15 @@ async function throwBall(itemId) {
 
   if (res.caught) {
     await pause(0.25);
+    const isNew = !S.dex.caught[B.foe.inst.species];
+    sfx('levelup');
     await msg('Gotcha! ' + displayName(B.foe.inst) + ' was caught!');
+    if (isNew) {
+      // Progress feedback on every new catch — the completion drive only works
+      // if the player can see the gap closing.
+      const after = dexCaughtCount() + 1;
+      await msg(displayName(B.foe.inst) + ' was added to your dex.  ' + after + '/' + DEX_COUNT + ' recorded.');
+    }
     B.ballAnim = null;
     return true;
   }
@@ -726,7 +734,12 @@ async function runBattle() {
   } else {
     await msg('A wild ' + foeName + ' appeared!');
   }
+  const firstSighting = !S.dex.seen[B.foe.inst.species];
   seeSpecies(B.foe.inst.species);
+  if (firstSighting) {
+    sfx('levelup');
+    await msg('Your dex has no record of this one!');
+  }
   await msg('Go, ' + displayName(B.me.inst) + '!', false);
   B.me.inst.__participated = true;
 

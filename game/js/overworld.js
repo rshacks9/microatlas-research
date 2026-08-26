@@ -348,25 +348,25 @@ async function talkTo(e) {
   e.frozen = true;
   try {
     if (e.kind === 'heal') {
-      await say(['Welcome to the Recovery Centre.', 'Shall I restore your team to full health?']);
-      const yes = await ask('Restore your team?', ['Yes', 'No']);
-      if (yes === 0) {
-        sfx('heal');
-        healParty();
-        await say('There you go — everyone is back on their feet.');
-        const s = await ask('Record your journey here?', ['Save', 'Not now']);
-        if (s === 0) {
-          const { saveGame } = await import('./save.js');
-          const ok = saveGame(0);
-          await say(ok ? 'Your journey has been recorded.' : 'Something went wrong saving. Storage may be full or blocked.');
-        }
-      } else {
-        await say('Come back any time.');
-      }
+      // Healing is the single most repeated interaction in the game, so it is one
+      // question, not a five-press conversation. Saving is folded in rather than
+      // being a second prompt: a player who never loses an hour of progress to a
+      // forgotten save is a player who comes back.
+      const yes = await ask('Rest your team here?', ['Yes', 'No']);
+      if (yes !== 0) { await say('Come back any time.'); return; }
+      sfx('heal');
+      healParty();
+      let saved = false;
+      try {
+        const { saveGame } = await import('./save.js');
+        saved = saveGame(0);
+      } catch (_) { saved = false; }
+      await say(saved
+        ? 'Everyone is back on their feet, and your journey is recorded.'
+        : 'Everyone is back on their feet. (Your journey could not be recorded — browser storage may be blocked.)');
       return;
     }
     if (e.kind === 'shop') {
-      await say(['Welcome to the supply shop.', 'What can I get you?']);
       await openShop(e.tier || 1);
       return;
     }
