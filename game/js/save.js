@@ -8,7 +8,7 @@ import { getItem } from './items.js';
 import { maxHp, clampLevel } from './battlecalc.js';
 
 export const SAVE_KEY_PREFIX = 'verdant.save.';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;   // v2: Wave 5 re-derives town content, so v1 worlds shifted
 export const SLOTS = 3;
 
 const STATUSES = ['brn', 'psn', 'par', 'slp', 'frz'];
@@ -164,7 +164,9 @@ function readRaw(slot) {
   let data;
   try { data = JSON.parse(text); } catch (_) { return null; }
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
-  if (num(data.v, 0, 999, -1) !== SAVE_VERSION) return null;
+  const v = num(data.v, 0, 999, -1);
+  // v1 saves load with a migration (see loadGame); anything else is refused.
+  if (v !== SAVE_VERSION && v !== 1) return null;
   return data;
 }
 
@@ -228,6 +230,22 @@ export function loadGame(slot) {
     S.time = num(d.time, 0, 1439, 480);
     S.playtime = num(d.playtime, 0, 1e7, 0);
     S.badges = num(d.badges, 0, 99, 0);
+
+    if (num(d.v, 0, 999, -1) === 1) {
+      // Wave 5 changed how towns draw from the world seed, so a v1 save's
+      // coordinates were recorded in a world that no longer exists exactly.
+      // Surface the player outdoors at their last known WORLD point (interior
+      // coordinates would land them near 0,0), keep everything they own, and
+      // let overworld's spawn safety absorb any tile that turned solid. The
+      // one-time banner is overworld's job (flag world_shifted).
+      if (S.mapId !== 'world') {
+        if (S.returnPoint) { S.player.x = S.returnPoint.x; S.player.y = S.returnPoint.y; }
+        else { S.player.x = -1; S.player.y = -1; }   // forces the spawn fallback
+      }
+      S.mapId = 'world';
+      S.returnPoint = null;
+      S.flags.world_shifted = true;
+    }
 
     const o = (d.options && typeof d.options === 'object') ? d.options : {};
     S.options.textSpeed = num(o.textSpeed, 0, 3, 2);

@@ -288,17 +288,25 @@ export function makeCamera(map);   // -> { x, y, follow(px,py,instant), shake(ma
 ## worldgen.js
 ```js
 export const BIOMES = ['OCEAN','BEACH','MEADOW','FOREST','JUNGLE','SWAMP','DESERT','SAVANNA','TUNDRA','MOUNTAIN','PEAK'];
-export function generateWorld(seed);   // -> { map: MapData, towns: [{x,y,name,id}], caves: [...], start:{x,y} }
+export function generateWorld(seed);   // -> { map: MapData, towns: [{x,y,name,id}], caves: [...],
+                                       //      shrines: [{x,y,species}], start:{x,y} }
+// Legendaries are NOT in encounter tables: each has a fixed shrine entity
+// (kind:'shrine', Seal-gated by overworld.js) at the far reach of its biome.
+// Roadside signposts (kind:'sign') outside each town name the two nearest
+// settlements with distance + compass and the wild level along the route.
 export function biomeAt(world, x, y);  // -> BIOME string
 export function levelAt(world, x, y);  // -> 2..60, scales with distance from start town
 export function encounterTableFor(biome); // -> [ { species, weight, minLvl, maxLvl } ]
 ```
-World is 512x512. `generateWorld` must be pure and deterministic in `seed`.
+World is 384x384 (WORLD_W/WORLD_H). `generateWorld` must be pure and deterministic in `seed`.
 
 ## towns.js
 ```js
-export function stampTown(map, x, y, rng, index);   // mutates world map, returns { name, entities, warps, doors }
-export function buildInterior(kind, seed, index);   // kind: 'heal'|'shop'|'house'|'cave' -> MapData
+export function stampTown(map, x, y, rng, index, tier); // mutates world map, returns { name, entities, warps, doors }
+export function buildInterior(kind, seed, index, hint); // kind: 'heal'|'shop'|'house'|'cave' -> MapData
+// hint (optional, caves): { biome, level } from the cave mouth — picks the
+// interior palette family and encounter level; caves carry a BFS-farthest
+// heart chamber with crystals and dense encounter ground.
 export const TOWN_NAMES = ['Willowmere', ...];
 ```
 
@@ -427,11 +435,15 @@ whitelist, use `Object.create(null)` for map-like objects, and never trust array
 ## audio.js
 ```js
 export function initAudio();           // must be called from a user gesture
-export function playBgm(name);         // 'title'|'town'|'overworld'|'cave'|'battle'|'victory'
+export function playBgm(name);         // 'title'|'town'|'overworld'|'overworld2'|'cave'|'cave2'
+                                       // |'battle'|'battle_warden'|'victory'
 export function stopBgm();
-export function sfx(name);             // 'select'|'cancel'|'bump'|'hit'|'crit'|'faint'|'catch'|'heal'|'levelup'|'encounter'
+export function sfx(name);             // 'select'|'cancel'|'bump'|'hit'|'hit_weak'|'hit_super'|'crit'|'faint'
+                                       // |'catch'|'lock'|'tick'|'fanfare_catch'|'heal'|'levelup'|'encounter'
+                                       // unknown names are silent no-ops — callers may wire ahead of the table
 export function setMusicEnabled(v);
 export function setSfxEnabled(v);
+export function setMusicDuck(v);       // 0..1 music gain multiplier, ~0.25s slew; battle ducks under danger/capture
 export function isAudioReady();
 ```
 Every function must be a safe no-op if the AudioContext is unavailable or suspended.

@@ -1,6 +1,6 @@
 // The overworld scene: grid movement, encounters, warps, interaction, trainer sight.
 import { Game, W, H, pushScene, popScene, transition, fade } from './game.js';
-import { TILE, T, isGrass, ledgeDir, isCounter } from './tiles.js';
+import { TILE, T, isGrass, isWater, ledgeDir, isCounter } from './tiles.js';
 import { GameMap } from './tilemap.js';
 import { makeCamera } from './camera.js';
 import { makeEntities, Entity, DELTA, OPPOSITE } from './entities.js';
@@ -12,7 +12,7 @@ import { maxHp } from './battlecalc.js';
 import { startBattle } from './battle.js';
 import { say, ask, showBanner, updateBanner, renderBanner, isDialogueOpen } from './dialogue.js';
 import { openPauseMenu, openShop } from './menus.js';
-import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay } from './state.js';
+import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay, dexCaughtCount } from './state.js';
 import { getSpecies, STARTERS } from './creatures.js';
 import { makeRng, rand } from './rng.js';
 import { playBgm, sfx } from './audio.js';
@@ -165,6 +165,14 @@ export function enterMap(mapId, x, y, dir) {
     const spot = nearestOpen(map, player.x, player.y);
     player.x = spot.x; player.y = spot.y;
     player.fromX = spot.x; player.fromY = spot.y;
+    if (map.solidAt(player.x, player.y)) {
+      // nearestOpen exhausted its radius — deep ocean or void, e.g. a migrated
+      // save with no usable coordinates. The map's own spawn is the one point
+      // guaranteed walkable.
+      const sp = data.spawn || { x: 1, y: 1 };
+      player.x = sp.x; player.y = sp.y;
+      player.fromX = sp.x; player.fromY = sp.y;
+    }
   }
 
   O.cam = makeCamera(map);
@@ -179,6 +187,12 @@ export function enterMap(mapId, x, y, dir) {
   // to the player.
   const here = (mapId === 'world') ? townNameAt(player.x, player.y) : data.name;
   if (here) showBanner(here, 2.2);
+  if (getFlag('world_shifted') && !getFlag('world_shifted_told')) {
+    // A migrated save woke up in a subtly different world; say so once, as a
+    // banner rather than a dialogue, so loading stays uninterrupted.
+    setFlag('world_shifted_told', true);
+    showBanner('The frontier has shifted since your last journey', 3.6);
+  }
   return map;
 }
 
@@ -347,7 +361,26 @@ async function doWildBattle(wild) {
   const battle = startBattle({ wild });
   await fade('in', 0.3);
   const result = await battle;
-  try { await afterBattle(result); } finally { endBusy(); }
+  try {
+    await afterBattle(result);
+    // The intro ranger sets one explicit objective — weaken a wild one, throw an
+    // orb — and an objective a game sets and never acknowledges teaches the
+    // player that its promises are decorative. Pay it off exactly once, and
+    // only when this really IS the first catch: the flag alone would fire the
+    // congratulation mid-game on a pre-flag save, dozens of catches too late.
+    if (result === 'caught' && !getFlag('ranger_first_catch')) {
+      setFlag('ranger_first_catch', true);
+      if (dexCaughtCount() <= 2) {   // the starter plus the one just caught
+        addItem('orb', 5);
+        sfx('levelup');
+        await say([
+          'Your field radio crackles. It is the old ranger.',
+          'Ranger: Weakened it and threw the orb, just like I said. You will do fine out there.',
+          'Ranger: I left five orbs for you with the courier. Go fill that dex of yours.',
+        ]);
+      }
+    }
+  } finally { endBusy(); }
 }
 
 async function afterBattle(result) {
@@ -423,7 +456,9 @@ async function interact() {
     e = map.entityAt ? map.entityAt(f.x + d[0], f.y + d[1]) : null;
   }
 
-  if (e && !(e.flag && getFlag(e.flag))) {
+  // entityAt already hides spent one-shots; what still comes back flagged is
+  // a beaten trainer or stilled shrine, and talkTo owns those branches.
+  if (e) {
     beginBusy();
     try { await talkTo(e); } finally { endBusy(); }
     return true;
@@ -612,7 +647,7 @@ async function startTrainerBattle(e) {
     S.badges = (S.badges | 0) + 1;
     sfx('levelup');
     await say([
-      'The Warden hands you a Seal.',
+      e.seal ? 'You received the ' + e.seal + '!' : 'The Warden hands you a Seal.',
       'Seals: ' + S.badges + ' of ' + TOTAL_WARDENS + '.  Every settlement out there has one.',
     ]);
     await grantStarterMilestone();
@@ -659,6 +694,7 @@ O.update = function (dt) {
   O.t += dt;
   updateBanner(dt);
   updateEffects(dt);
+  updateAmbient(dt);
   if (!O.map || !O.cam) return;
 
   S.playtime += dt;
@@ -834,6 +870,103 @@ function renderEffects(ctx, cam) {
   }
 }
 
+// ---------------------------------------------------------------- ambient
+// Idle motion so the world reads as alive while the player stands still:
+// glints on open water, birds crossing the sky by day, wind gusts bending a
+// travelling line through the grass. Pure presentation — nothing here touches
+// gameplay state, so Math.random is fine (the same rule as battle shake).
+const AMBIENT = { birds: [], nextBird: 6, gust: null, nextGust: 5 };
+
+function updateAmbient(dt) {
+  const outdoors = S.mapId === 'world';
+  for (let i = AMBIENT.birds.length - 1; i >= 0; i--) {
+    const b = AMBIENT.birds[i];
+    b.x += b.vx * dt; b.t += dt;
+    if (b.x < -48 || b.x > W + 48) AMBIENT.birds.splice(i, 1);
+  }
+  AMBIENT.nextBird -= dt;
+  if (AMBIENT.nextBird <= 0) {
+    AMBIENT.nextBird = 14 + Math.random() * 22;
+    const h = (S.time / 60) % 24;
+    // Birds keep daylight hours; the night sky staying still is part of what
+    // makes night read as night.
+    if (outdoors && h > 6 && h < 20) {
+      const ltr = Math.random() < 0.5;
+      const y = 14 + Math.random() * (H * 0.38);
+      const n = 1 + ((Math.random() * 3) | 0);
+      for (let i = 0; i < n; i++) {
+        AMBIENT.birds.push({
+          x: ltr ? -12 - i * 8 : W + 12 + i * 8,
+          y: y + (i % 2) * 4 + i * 2,
+          vx: (ltr ? 1 : -1) * (32 + Math.random() * 12),
+          t: Math.random() * 2,
+        });
+      }
+    }
+  }
+  if (AMBIENT.gust) {
+    AMBIENT.gust.t += dt;
+    if (AMBIENT.gust.t >= AMBIENT.gust.life) AMBIENT.gust = null;
+  } else {
+    AMBIENT.nextGust -= dt;
+    if (AMBIENT.nextGust <= 0) {
+      AMBIENT.nextGust = 9 + Math.random() * 14;
+      if (outdoors) AMBIENT.gust = { t: 0, life: 1.7 };
+    }
+  }
+}
+
+// Under the actor pass: effects that belong to the ground plane.
+function renderAmbientGround(ctx, cam) {
+  const map = O.map;
+  if (!map || S.mapId !== 'world') return;
+  const tx0 = Math.floor(cam.ox / TILE), ty0 = Math.floor(cam.oy / TILE);
+  const tw = Math.ceil(W / TILE) + 1, th = Math.ceil(H / TILE) + 1;
+  const step = Math.floor(O.t * 2);
+  const gustX = AMBIENT.gust ? (AMBIENT.gust.t / AMBIENT.gust.life) * (W + 80) - 40 : -1e9;
+  for (let y = ty0; y <= ty0 + th; y++) {
+    for (let x = tx0; x <= tx0 + tw; x++) {
+      const g = map.at(x, y);
+      if (isWater(g)) {
+        // A per-tile hash re-picks a sparse set of glint tiles every half
+        // second; each glint swells and dies inside its half-second slot.
+        const hsh = ((x * 73856093) ^ (y * 19349663) ^ (step * 83492791)) >>> 0;
+        if (hsh % 97 < 3) {
+          const k = (O.t * 2) % 1;
+          ctx.globalAlpha = 0.5 * Math.sin(k * Math.PI);
+          ctx.fillStyle = '#eaf6ff';
+          ctx.fillRect(x * TILE - cam.ox + (hsh % 12) + 1, y * TILE - cam.oy + ((hsh >> 4) % 12) + 1, 2, 1);
+          ctx.globalAlpha = 1;
+        }
+      } else if (AMBIENT.gust && isGrass(g)) {
+        const sx = x * TILE - cam.ox;
+        const d = gustX - sx;
+        if (d > 0 && d < 30) {
+          // Light flecks riding the front, so the wind is a thing that ARRIVES
+          // and passes rather than a uniform wobble.
+          ctx.globalAlpha = 0.35 * (1 - d / 30);
+          ctx.fillStyle = '#d8f0a0';
+          ctx.fillRect(sx + ((x * 7 + y * 13) % 10) + 3, y * TILE - cam.oy + ((x * 5 + y * 3) % 8) + 4, 2, 1);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+  }
+}
+
+// Above the overlay, below the sky tint, so dusk colours the birds too.
+function renderAmbientSky(ctx) {
+  if (S.mapId !== 'world') return;
+  for (const b of AMBIENT.birds) {
+    const flap = Math.sin(b.t * 9) > 0;
+    const x = Math.round(b.x), y = Math.round(b.y + Math.sin(b.t * 2.2) * 2);
+    ctx.fillStyle = 'rgba(30,40,52,0.85)';
+    ctx.fillRect(x - 2, y - (flap ? 1 : 0), 2, 1);
+    ctx.fillRect(x + 1, y - (flap ? 1 : 0), 2, 1);
+    ctx.fillRect(x, y, 1, 1);
+  }
+}
+
 // ---------------------------------------------------------------- day / night
 // Keyframes over a 24h clock: [hour, r, g, b, alpha]. Interpolated so the world
 // slides between them instead of snapping at bucket boundaries.
@@ -895,6 +1028,7 @@ O.render = function (ctx) {
   ctx.fillRect(0, 0, W, H);
 
   map.render(ctx, cam, 'ground');
+  renderAmbientGround(ctx, cam);
 
   // Y-sorted actor pass so things overlap correctly.
   const actors = [];
@@ -908,6 +1042,7 @@ O.render = function (ctx) {
 
   renderEffects(ctx, cam);
   map.render(ctx, cam, 'overlay');
+  renderAmbientSky(ctx);
 
   drawSky(ctx);
 

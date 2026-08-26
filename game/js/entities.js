@@ -43,6 +43,16 @@ export class Entity {
     this.wanderTimer = 1 + rand.float() * 3;
     this.frozen = false;      // set while talking so they face the player
     this.defeated = false;
+
+    // Carry through every spec field this constructor does not model. Specs
+    // come from our own deterministic generators, never from saves, and a
+    // field the wrapper drops is a feature that silently never fires — the
+    // Warden Seal award (spec.warden/spec.seal), trainer challenge lines and
+    // shrine species/level all shipped dead exactly this way. `in` also sees
+    // the prototype accessors (hidden, px, ...), so those stay untouched.
+    for (const k of Object.keys(spec)) {
+      if (!(k in this)) this[k] = spec[k];
+    }
   }
 
   // A defeated trainer is not GONE, just beaten: they keep standing there with

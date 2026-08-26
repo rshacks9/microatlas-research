@@ -230,13 +230,13 @@ export class GameMap {
     return wp === undefined ? null : wp;
   }
 
-  /** O(1). -> Entity | null. Entities whose `flag` is set are invisible. */
+  /** O(1). -> Entity | null. Spent one-shot entities are invisible. */
   entityAt(x, y) {
     const list = this._entIdx.get(key(Math.floor(x), Math.floor(y)));
     if (!list) return null;
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
-      if (e && !(e.flag && getFlag(e.flag))) return e;
+      if (this.isLive(e)) return e;
     }
     return null;
   }
@@ -247,17 +247,26 @@ export class GameMap {
     return list ? list.slice() : [];
   }
 
-  /** Live (non-flagged) entities, in map order. */
+  /** Live entities, in map order. */
   entityList() {
     const out = [];
     for (let i = 0; i < this.entities.length; i++) {
       const e = this.entities[i];
-      if (e && !(e.flag && getFlag(e.flag))) out.push(e);
+      if (this.isLive(e)) out.push(e);
     }
     return out;
   }
 
-  isLive(e) { return !!e && !(e.flag && getFlag(e.flag)); }
+  // The single liveness rule. A set flag spends one-shot entities (pickups,
+  // gift NPCs, doors) — but a beaten trainer and a stilled shrine REMAIN:
+  // standing, blocking, and interactable with their after-lines. Filtering
+  // them out here made beaten trainers walk-through ghosts that vanished on
+  // map re-entry, while entities.js's `hidden` getter promised the opposite.
+  isLive(e) {
+    if (!e) return false;
+    if (!(e.flag && getFlag(e.flag))) return true;
+    return e.kind === 'trainer' || e.kind === 'shrine';
+  }
 
   // -- mutation -------------------------------------------------------------
 

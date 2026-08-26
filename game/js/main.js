@@ -3,14 +3,15 @@ import { Game, W, H, pushScene, popScene, replaceScene, clearScenes, topScene,
          updateFade, renderFade, fade, clear } from './game.js';
 import { initInput, beginFrame, updateInput, consume, Keys, setTouchVisible } from './input.js';
 import { buildAtlas } from './tileset.js';
-import { drawWindow, drawText, drawTextCentered, drawTextRight, drawCursor, PAL } from './ui.js';
-import { drawSprite, hasSprite } from './sprites.js';
+import { drawWindow, drawText, drawTextCentered, drawTextRight, drawCursor, drawTypeBadge,
+         wrapText, textWidth, LINE_H, PAL } from './ui.js';
+import { drawSprite, hasSprite, spriteSize } from './sprites.js';
 import { getSpecies, STARTERS } from './creatures.js';
 import { generateWorld } from './worldgen.js';
 import { makeCreature, displayName, addToParty } from './party.js';
 import { S, resetState, setFlag } from './state.js';
 import { Overworld, enterMap, player, holdControl, releaseControl } from './overworld.js';
-import { say, ask } from './dialogue.js';
+import { say } from './dialogue.js';
 import { initAudio, playBgm, sfx, setMusicEnabled, setSfxEnabled } from './audio.js';
 import { hasSave, loadGame, slotSummary } from './save.js';
 import * as tilesRef from './tiles.js';
@@ -154,6 +155,225 @@ const STARTER_BLURB = {
   BLOOM: 'steady and patient', EMBER: 'fierce and restless', TIDE: 'quick and curious',
 };
 
+// ------------------------------------------------------------------ starter pick
+// The starter is the first real decision in the game, and a text list sold it
+// short: you were asked to commit to a companion you had never seen. The pick is
+// its own scene — the three stand on pedestals, and the info panel sits in the
+// dialogue box's footprint so the eye stays where the ranger's text just was.
+const PICK_XS = [62, 160, 258];
+const PICK_TOP = 170;                              // pedestal surface; sprites stand on it
+const PICK_PANEL = { x: 4, y: H - 52 - 4, w: W - 8, h: 52 };
+
+const StarterPick = {
+  opaque: true,
+  __name: 'starterpick',
+  t: 0,
+  index: 1,
+  confirm: false,
+  confirmSel: 0,
+  _resolve: null,
+  _taps: null,
+  _onTap: null,
+  _fresh: true,
+
+  enter(p) {
+    this.t = 0;
+    this.index = 1;
+    this.confirm = false;
+    this.confirmSel = 0;
+    this._resolve = (p && p.resolve) || null;
+    this._taps = [];
+    this._fresh = true;
+    // On phones the on-screen pad drives this scene through Keys like everything
+    // else, but the creatures themselves are the natural touch targets, so direct
+    // canvas taps are folded into the same three actions.
+    const canvas = Game.canvas;
+    if (canvas) {
+      this._onTap = (e) => {
+        const r = canvas.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        this._taps.push({ x: (e.clientX - r.left) * W / r.width,
+                          y: (e.clientY - r.top) * H / r.height });
+      };
+      canvas.addEventListener('pointerdown', this._onTap);
+    }
+  },
+
+  exit() {
+    if (this._onTap && Game.canvas) Game.canvas.removeEventListener('pointerdown', this._onTap);
+    this._onTap = null;
+    // Resolve on exit, not on confirm, so a force-popped scene can never strand
+    // the awaiting intro. The browsed index is always a valid pick.
+    const r = this._resolve;
+    this._resolve = null;
+    if (r) r(this.index);
+  },
+
+  _move(d) {
+    this.index = (this.index + d + STARTERS.length) % STARTERS.length;
+    this.confirm = false;
+    sfx('select');
+  },
+  _open() { this.confirm = true; this.confirmSel = 0; sfx('select'); },
+  _accept() { sfx('select'); popScene(this.index); },
+  _cancel() { this.confirm = false; sfx('cancel'); },
+
+  // Hit box of a creature plus its pedestal, in canvas pixels.
+  _boxFor(i) {
+    const cx = PICK_XS[i];
+    return { x: cx - 34, y: PICK_TOP - 72, w: 68, h: 86 };
+  },
+  _selBox() { return this._boxFor(this.index); },
+
+  _confirmGeom() {
+    const sp = getSpecies(STARTERS[this.index]);
+    const label = 'Take ' + sp.name + '?';
+    const w = Math.max(textWidth(label) + 24, 96);
+    const rowY = 54 + 8 + LINE_H + 3;
+    return { label, x: Math.round((W - w) / 2), y: 54, w,
+             h: 8 + LINE_H + 3 + LINE_H * 2 + 5, rowY };
+  },
+
+  update(dt) {
+    this.t += dt;
+    // Skip the frame that pushed the scene so the edge that closed the last
+    // textbox cannot leak in as an instant confirm.
+    if (this._fresh) { this._fresh = false; return; }
+
+    const tap = this._taps.length ? this._taps.shift() : null;
+    const inBox = (p, b) => p && p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.h;
+
+    if (this.confirm) {
+      if (tap) {
+        const g = this._confirmGeom();
+        if (inBox(tap, { x: g.x, y: g.rowY - 2, w: g.w, h: LINE_H })) { this._accept(); return; }
+        if (inBox(tap, { x: g.x, y: g.rowY - 2 + LINE_H, w: g.w, h: LINE_H })) { this._cancel(); return; }
+        if (inBox(tap, this._selBox())) { this._accept(); return; }
+        for (let i = 0; i < STARTERS.length; i++) {
+          if (i !== this.index && inBox(tap, this._boxFor(i))) {
+            this._cancel(); this.index = i; sfx('select'); return;
+          }
+        }
+        this._cancel();
+        return;
+      }
+      if (consume('a') || consume('start')) {
+        if (this.confirmSel === 0) this._accept();
+        else this._cancel();
+        return;
+      }
+      if (consume('b')) { this._cancel(); return; }
+      if (consume('up') || consume('down')) { this.confirmSel = 1 - this.confirmSel; sfx('select'); return; }
+      if (consume('left')) { this._move(-1); return; }
+      if (consume('right')) { this._move(1); return; }
+      return;
+    }
+
+    if (tap) {
+      // A tap on any pedestal means THAT creature — routing unselected
+      // pedestals through half-screen paging selected the visual opposite of
+      // what was touched once wraparound got involved.
+      for (let i = 0; i < STARTERS.length; i++) {
+        if (inBox(tap, this._boxFor(i))) {
+          if (i === this.index) this._open();
+          else { this.index = i; sfx('select'); }
+          return;
+        }
+      }
+      // Below the pedestals sits the info panel; reading it must not change
+      // the selection. Only the open sky pages by canvas half.
+      if (tap.y < PICK_TOP + 14) { if (tap.x < W / 2) this._move(-1); else this._move(1); }
+      return;
+    }
+    if (consume('left')) { this._move(-1); return; }
+    if (consume('right')) { this._move(1); return; }
+    if (consume('a') || consume('start')) { this._open(); return; }
+    consume('b');   // there is nothing to back out to; swallow so it cannot reach scenes below
+  },
+
+  render(ctx) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#16283a');
+    g.addColorStop(0.6, '#25484a');
+    g.addColorStop(1, '#2f5c3e');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#20362c';
+    ctx.fillRect(0, PICK_TOP + 2, W, H - PICK_TOP - 2);
+
+    // The ranger's question carries over verbatim so the scene reads as part of
+    // the same conversation, not a menu that interrupted it.
+    drawTextCentered(ctx, 'Which one will you take?', W / 2, 16, { color: '#f4ecd8', shadow: '#101820' });
+
+    const selSp = getSpecies(STARTERS[this.index]);
+
+    for (let i = 0; i < STARTERS.length; i++) {
+      const sp = getSpecies(STARTERS[i]);
+      const cx = PICK_XS[i];
+      const sel = i === this.index;
+
+      ctx.fillStyle = '#101820';
+      ctx.fillRect(cx - 26, PICK_TOP, 52, 10);
+      ctx.fillStyle = sel ? '#6888a8' : '#3c4c58';
+      ctx.fillRect(cx - 24, PICK_TOP, 48, 8);
+      ctx.fillStyle = sel ? '#88a8c8' : '#4c5c68';
+      ctx.fillRect(cx - 24, PICK_TOP, 48, 2);
+
+      if (sel) {
+        // soft glow so the active choice reads at a glance, even in a still frame
+        ctx.save();
+        ctx.globalAlpha = 0.10;
+        ctx.fillStyle = '#f8f4e8';
+        ctx.beginPath(); ctx.arc(cx, PICK_TOP - 28, 36, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, PICK_TOP - 28, 26, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      if (hasSprite(sp.sprite)) {
+        const sz = spriteSize(sp.sprite);
+        const scale = sel ? 2 : 1;
+        const bob = sel ? Math.round(Math.sin(this.t * 2.6) * 2.5) : 0;
+        drawSprite(ctx, sp.sprite, cx - (sz.w * scale) / 2, PICK_TOP - sz.h * scale + bob,
+                   { scale, alpha: sel ? 1 : 0.62 });
+      }
+
+      if (!sel) drawTextCentered(ctx, sp.name, cx, PICK_TOP - 46, { color: '#88a494' });
+
+      if (sel && !this.confirm && Math.sin(this.t * 5) > -0.25) {
+        const ay = PICK_TOP - 78;
+        ctx.fillStyle = '#f4ecd8';
+        for (let r = 0; r < 4; r++) ctx.fillRect(cx - 3 + r, ay + r, 7 - r * 2, 1);
+      }
+    }
+
+    const P = PICK_PANEL;
+    drawWindow(ctx, P.x, P.y, P.w, P.h);
+    const nameEnd = drawText(ctx, selSp.name, P.x + 8, P.y + 6, { color: PAL.accent });
+    let bx = nameEnd + 8;
+    for (const ty of selSp.types) bx += drawTypeBadge(ctx, ty, bx, P.y + 5) + 3;
+    const flavour = wrapText(selSp.entry || '', P.w - 16).slice(0, 2);
+    for (let i = 0; i < flavour.length; i++) {
+      drawText(ctx, flavour[i], P.x + 8, P.y + 18 + i * LINE_H, { color: PAL.ink });
+    }
+    drawTextRight(ctx, 'Z to choose', P.x + P.w - 8, P.y + P.h - 12, { color: PAL.dim });
+
+    if (this.confirm) {
+      ctx.fillStyle = 'rgba(16,24,32,0.45)';
+      ctx.fillRect(0, 0, W, H);
+      const cg = this._confirmGeom();
+      drawWindow(ctx, cg.x, cg.y, cg.w, cg.h);
+      drawText(ctx, cg.label, cg.x + 8, cg.y + 6, { color: PAL.ink });
+      drawText(ctx, 'Yes', cg.x + 18, cg.rowY, { color: PAL.ink });
+      drawText(ctx, 'No', cg.x + 18, cg.rowY + LINE_H, { color: PAL.ink });
+      drawCursor(ctx, cg.x + 8, cg.rowY + this.confirmSel * LINE_H, this.t);
+    }
+  },
+};
+
+function pickStarter() {
+  return new Promise((resolve) => pushScene(StarterPick, { resolve }));
+}
+
 async function startNewGame() {
   clearScenes();
   pushScene(Loading, { text: 'Shaping the frontier...' });
@@ -192,15 +412,9 @@ async function startNewGame() {
   ]);
   await say('Ranger: Before you go wandering off, pick a companion. You will not last a day alone out there.');
 
-  const options = STARTERS.map((id) => {
-    const sp = getSpecies(id);
-    return sp.name + ' (' + sp.types.map((t) => t.charAt(0) + t.slice(1).toLowerCase()).join('/') + ')';
-  });
-  let choice = -1;
-  while (choice < 0) {
-    choice = await ask('Which one will you take?', options);
-    if (choice < 0) await say('Ranger: Take your time, but take one.');
-  }
+  // The scene cannot be dismissed without confirming a pick, so no retry loop:
+  // it always resolves 0..2.
+  const choice = await pickStarter();
 
   const starterId = STARTERS[choice] || STARTERS[0];
   const sp = getSpecies(starterId);

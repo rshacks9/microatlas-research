@@ -153,5 +153,41 @@ for (const biome of BIOMES) {
   for (const m of bad) fail(biome + ': ' + m);
 }
 
+// --- stampTown's shared-stream footprint is exactly one draw ---------------
+// Town content once drew a VARIABLE number of values from the world's shared
+// rng, so any content change (a new trainer archetype, one more team pick)
+// re-rolled every later town and moved every cave mouth for the same seed —
+// silently breaking saves that regenerate their world from seed. stampTown
+// now forks a private rng off a single shared draw; hold it to that.
+{
+  const { stampTown } = await import('../game/js/towns.js');
+  const { makeRng } = await import('../game/js/rng.js');
+  const { T } = await import('../game/js/tiles.js');
+  console.log('\n=== STAMP FOOTPRINT ===');
+  for (const [idx, tier] of [[0, 0], [3, 2], [7, 5], [9, 9]]) {
+    const w2 = 64, h2 = 64;
+    const scratch = {
+      id: 'world', w: w2, h: h2,
+      ground: new Uint8Array(w2 * h2).fill(T.GRASS),
+      overlay: new Uint8Array(w2 * h2),
+      biome: new Uint8Array(w2 * h2),
+      entities: [], warps: [],
+    };
+    let draws = 0;
+    const base = makeRng(1234 + idx);
+    const counted = new Proxy(base, {
+      get(t2, k) {
+        const v = t2[k];
+        if (typeof v !== 'function') return v;
+        return (...a) => { draws++; return v(...a); };
+      },
+    });
+    try { stampTown(scratch, 32, 32, counted, idx, tier); }
+    catch (e) { fail('stampTown threw on scratch map (idx ' + idx + '): ' + e.message); continue; }
+    console.log('  town idx ' + idx + ' tier ' + tier + ': shared rng draws = ' + draws);
+    if (draws !== 1) fail('stampTown drew ' + draws + ' shared values (idx ' + idx + ', tier ' + tier + ') — content changes will cascade across the world again');
+  }
+}
+
 console.log('\n' + (fails ? 'WORLDGEN: ' + fails + ' FAILURES' : 'WORLDGEN: all invariants hold'));
 process.exit(fails ? 1 : 0);

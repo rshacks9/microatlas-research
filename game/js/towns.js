@@ -175,28 +175,197 @@ const TRAVELLER_LINES = [
   ['I sketch every creature I meet. My book is nearly full.'],
 ];
 
-const TRAINER_TAUNTS = [
-  'You walk like someone with a team worth testing.',
-  'Hold it! Nobody strolls past me unchallenged.',
-  'I have been waiting all morning for a decent match.',
-  'Let us see what you have been feeding that lot.',
+// ---------------------------------------------------------------------------
+// Trainer archetypes
+//
+// Ordinary town trainers draw an archetype (voice + themed species pool) from
+// the town rng instead of a flat roster. Species ids come from docs/ROSTER.md;
+// `early` holds base forms a low-tier town would plausibly field, `mid` holds
+// the evolved/deeper picks, mirroring the tier split the flat roster used.
+// Only prize money and flags stay archetype-independent — those are balance.
+// ---------------------------------------------------------------------------
+
+const ARCHETYPES = [
+  { title: 'Hedge-Keeper', sprite: 'trainer_scout',
+    names: ['Pip', 'Nell', 'Tobin', 'Sorrel'],
+    early: ['glimmoth', 'sporecap', 'flitterwing', 'mottlemouse'],
+    mid: ['glimmoth', 'lumibud', 'myconaut'],
+    challenge: 'I keep every crawly thing the hedges will give me. Meet the collection!',
+    defeat: 'Back to the hedges. There is always a rarer one.' },
+  { title: 'Ridge Hiker', sprite: 'trainer_hiker',
+    names: ['Bram', 'Hetty', 'Cole', 'Ferris'],
+    early: ['pebblit', 'mottlemouse', 'dunewyrm'],
+    mid: ['tinplate', 'cragfang', 'emberbat', 'boulderkin'],
+    challenge: 'Forty switchbacks before breakfast, and my team climbed every one. Your move.',
+    defeat: 'Well walked. The summit humbles everybody eventually.' },
+  { title: 'Creel Angler', sprite: 'trainer_angler',
+    names: ['Wick', 'Marla', 'Dorrit', 'Sten'],
+    early: ['mudpuff', 'flitterwing'],
+    mid: ['mudpuff', 'bogwisp'],
+    challenge: 'Hooked everything worth hooking in this water. You look like fresh bait.',
+    defeat: 'Snapped my line clean. I will be telling this one for years.' },
+  { title: 'Night Collector', sprite: 'trainer_scout',
+    names: ['Vesper', 'Onna', 'Merle', 'Casca'],
+    early: ['shadewisp', 'glimmoth', 'zapkit'],
+    mid: ['nightveil', 'bogwisp', 'emberbat'],
+    challenge: 'Everything interesting comes out after dark. Including, apparently, you.',
+    defeat: 'Fine. The night keeps its secrets a little longer.' },
+  { title: 'Drove Herder', sprite: 'trainer_hiker',
+    names: ['Tam', 'Rosie', 'Gunnar', 'Effie'],
+    early: ['mottlemouse', 'zapkit', 'flitterwing'],
+    mid: ['voltlope', 'burrowarden'],
+    challenge: 'My herd minds me because I earned it. Let us see who yours minds.',
+    defeat: 'Soundly driven. Off home with us, then.' },
 ];
 
-// Low-level roster ids that actually appear in the wild (see docs/ROSTER.md).
-const EARLY_ROSTER = [
-  'mottlemouse', 'flitterwing', 'zapkit', 'pebblit', 'shadewisp',
-  'glimmoth', 'mudpuff', 'sporecap', 'frostkit', 'dunewyrm',
-];
-const MID_ROSTER = [
-  'burrowarden', 'galeplume', 'voltlope', 'emberbat', 'tinplate',
-  'bogwisp', 'cragfang', 'lumibud', 'myconaut', 'sandcoil',
+// ---------------------------------------------------------------------------
+// The ten Wardens
+//
+// One fixed identity per town index 0..9 (matching TOWN_NAMES). Each Warden has
+// a type specialty; `low`/`high` are specialty-type roster ids ordered weakest
+// to strongest so the tier-selected slice always fields the majority of the
+// team in-type, with `offLow`/`offHigh` as the single off-type companion on
+// teams of three or more. `tell` is the pre-battle line and must stay a honest
+// hint of what fighting the specialty feels like. Levels, prize, flag and Seal
+// counting are balance and belong to stampTown, not to this table.
+// The EMBER Warden fields the cindercub line: starters never spawn wild, but a
+// hearth-keeper raising one by hand is exactly what the roster note implies.
+// ---------------------------------------------------------------------------
+
+const WARDENS = [
+  { name: 'Maren Wyle', type: 'BLOOM', seal: 'Greenward Seal',
+    low: ['sporecap', 'glimmoth', 'lumibud'], high: ['glimmoth', 'lumibud', 'myconaut'],
+    offLow: 'mottlemouse', offHigh: 'burrowarden',
+    tell: 'Fair warning: my grove drains what it touches. Strike fast, or your strength waters my garden.',
+    after: 'Maren Wyle keeps her word — the grove will not test you twice.' },
+  { name: 'Corvin Vale', type: 'UMBRA', seal: 'Duskveil Seal',
+    low: ['shadewisp'], high: ['cragfang', 'nightveil'],
+    offLow: 'sporecap', offHigh: 'bogwisp',
+    tell: 'Every partner I keep was found in the dark, and they fight like it — half-seen and patient. Keep your nerve.',
+    after: 'Corvin Vale owes the dark one more apology. Go on.' },
+  { name: 'Odile Tern', type: 'GALE', seal: 'Skysworn Seal',
+    low: ['flitterwing', 'glimmoth'], high: ['emberbat', 'galeplume'],
+    offLow: 'mudpuff', offHigh: 'mudpuff',
+    tell: 'All of mine fight from the wing, and the wind always moves first. Ground them quickly or be worn down.',
+    after: 'Odile Tern salutes you. The sky remembers a good match.' },
+  { name: 'Hessa Mirk', type: 'TOXIN', seal: 'Thornvenom Seal',
+    low: ['sporecap'], high: ['bogwisp', 'sandcoil', 'myconaut'],
+    offLow: 'glimmoth', offHigh: 'glimmoth',
+    tell: 'I win slowly. Venom does its work between your moves — pack antidotes or pack regrets.',
+    after: 'Hessa Mirk suggests you keep carrying antidotes. Habit.' },
+  { name: 'Eira Kalder', type: 'FROST', seal: 'Rimelock Seal',
+    low: ['frostkit'], high: ['frostkit', 'rimewolf'],
+    offLow: 'pebblit', offHigh: 'galeplume',
+    tell: 'The cold fights beside me — it slows feet and stiffens joints. End it quickly, or it ends you slowly.',
+    after: 'Eira Kalder has nothing colder to offer. Walk warm.' },
+  { name: 'Lucen Vey', type: 'PSION', seal: 'Mindglow Seal',
+    low: ['bogwisp'], high: ['bogwisp', 'lumibud', 'nightveil'],
+    offLow: 'sporecap', offHigh: 'myconaut',
+    tell: 'My wisps unpick a battle from the inside; before the end you will doubt your own orders. Trust the first one.',
+    after: 'Lucen Vey saw this rematch coming, and declines it kindly.' },
+  { name: 'Aldous Brand', type: 'EMBER', seal: 'Hearthflare Seal',
+    low: ['cindercub', 'emberbat'], high: ['emberbat', 'pyrelynx'],
+    offLow: 'pebblit', offHigh: 'cragfang',
+    tell: 'Everything I raise was whelped beside the forge. Burns outlast the blow — bring salves, or bring water.',
+    after: 'Aldous Brand banks the fire for you. The hearth is yours.' },
+  { name: 'Renna Volk', type: 'SPARK', seal: 'Stormcall Seal',
+    low: ['zapkit'], high: ['voltlope', 'thunderjaw'],
+    offLow: 'flitterwing', offHigh: 'galeplume',
+    tell: 'Static gets into your creature before my strike does. When its legs seize mid-turn, that was me being polite.',
+    after: 'Renna Volk unplugs. The storm rests until you need it.' },
+  { name: 'Prue Alder', type: 'PLAIN', seal: 'Steadfast Seal',
+    low: ['mottlemouse'], high: ['mottlemouse', 'burrowarden'],
+    offLow: 'flitterwing', offHigh: 'voltlope',
+    tell: 'No venom, no weather, no tricks — just fundamentals drilled until they cannot miss. See if plain beats clever.',
+    after: 'Prue Alder has no excuses and wants none. Well fought.' },
+  { name: 'Garrick Bault', type: 'TERRA', seal: 'Deeproot Seal',
+    low: ['pebblit', 'dunewyrm', 'mudpuff'], high: ['sandcoil', 'cragfang', 'boulderkin'],
+    offLow: 'mottlemouse', offHigh: 'tinplate',
+    tell: 'My line is patient stone. Chip at it all day and it will still be standing — bring real force or do not knock.',
+    after: 'Garrick Bault stands aside. Stone knows when it is beaten.' },
 ];
 
-const TRAINER_KIT = [
-  { sprite: 'trainer_scout', name: 'Scout' },
-  { sprite: 'trainer_hiker', name: 'Hiker' },
-  { sprite: 'trainer_angler', name: 'Angler' },
+// ---------------------------------------------------------------------------
+// Biome dressing
+//
+// Towns keep the biome they were founded in. The plaza floor, the two inner
+// lanes, the plaza frame and the verge scatter swap per biome family, and each
+// family stamps one signature feature on the plaza. Every swapped ground tile
+// is walkable with encounterRate 0 (tame() already bans encounter grass inside
+// the fence), and a feature places at most two solid tiles on fixed plaza
+// coordinates chosen clear of doors, the noticeboard, NPC spawn tiles and the
+// main-street lanes — so dressing can never seal a route or an entity.
+// The high streets and the main street stay T.PATH unconditionally: the fence
+// ring only leaves gaps where it sees T.PATH on the footprint border.
+// ---------------------------------------------------------------------------
+
+// Mirrors worldgen.BIOMES (frozen contract order). Importing worldgen here
+// would close a cycle, so like the roster ids these live as plain strings.
+const BIOME_IDS = [
+  'OCEAN', 'BEACH', 'MEADOW', 'FOREST', 'JUNGLE', 'SWAMP',
+  'DESERT', 'SAVANNA', 'TUNDRA', 'MOUNTAIN', 'PEAK',
 ];
+
+const BIOME_FAMILY = {
+  DESERT: 'dry', SAVANNA: 'dry',
+  TUNDRA: 'frost', PEAK: 'frost',
+  MOUNTAIN: 'stone',
+  OCEAN: 'coast', BEACH: 'coast',
+  FOREST: 'lush', JUNGLE: 'lush', SWAMP: 'lush',
+};
+
+// feature = [west, centre, east] tiles for the three-tile plaza feature.
+const TOWN_DRESS = {
+  // Meadow keeps the classic packed-path square; its feature is a tended bush
+  // in a bloom bed.
+  meadow: { plaza: T.PATH, lane: T.PATH, frame: T.FLOWER, scatter: T.FLOWER,
+            feature: [T.FLOWER, T.BUSH, T.FLOWER] },
+  // Sand plaza and gravel lanes, with a cactus garden.
+  dry:    { plaza: T.SAND, lane: T.GRAVEL, frame: T.GRAVEL, scatter: T.GRAVEL,
+            feature: [T.SAND, T.CACTUS, T.SAND] },
+  // Trodden snow everywhere, and a fountain frozen mid-spray.
+  frost:  { plaza: T.SNOW, lane: T.SNOW, frame: T.ICE, scatter: T.ICE,
+            feature: [T.ICE, T.CRYSTAL, T.ICE] },
+  // Darker stone underfoot, and a standing stone on a gravel apron.
+  stone:  { plaza: T.GRAVEL, lane: T.GRAVEL, frame: T.FLOWER, scatter: T.GRAVEL,
+            feature: [T.GRAVEL, T.ROCK, T.GRAVEL] },
+  // Sand streets and a two-palm cluster.
+  coast:  { plaza: T.SAND, lane: T.SAND, frame: T.FLOWER, scatter: T.FLOWER,
+            feature: [T.PALM, T.SAND, T.PALM] },
+  // Dirt lanes, and an elder stump ringed by mushrooms.
+  lush:   { plaza: T.PATH, lane: T.DIRT, frame: T.MUSHROOM, scatter: T.MUSHROOM,
+            feature: [T.MUSHROOM, T.STUMP, T.MUSHROOM] },
+};
+
+// Feature anchor: plaza row 11 is the only interior row with no NPC spawn, and
+// x 9..11 sits west of the main-street lanes (x 12..13) and clear of the
+// noticeboard at (8,10). check-entitylock proves the remaining plaza stays
+// connected with the feature solids and blocking NPCs both in place.
+const FEATURE_LX = 9, FEATURE_LY = 11;
+
+/**
+ * Majority biome family over the footprint. Reads only map.biome, so the same
+ * seed always dresses the same town the same way; maps without biome data
+ * (or all-water samples) fall back to the meadow dressing.
+ */
+function townDressFor(map, ox, oy) {
+  const dress = (fam) => TOWN_DRESS[fam] || TOWN_DRESS.meadow;
+  if (!map.biome || map.biome.length < map.w * map.h) return dress('meadow');
+  const tally = Object.create(null);
+  for (let ly = 1; ly < FOOT_H; ly += 4) {
+    for (let lx = 1; lx < FOOT_W; lx += 4) {
+      const wx = ox + lx, wy = oy + ly;
+      if (!inBounds(map, wx, wy)) continue;
+      const fam = BIOME_FAMILY[BIOME_IDS[map.biome[mapIndex(map, wx, wy)]] || ''] || 'meadow';
+      tally[fam] = (tally[fam] || 0) + 1;
+    }
+  }
+  let best = 'meadow', bestN = 0;
+  for (const fam in tally) {
+    if (tally[fam] > bestN) { best = fam; bestN = tally[fam]; }
+  }
+  return dress(best);
+}
 
 // ---------------------------------------------------------------------------
 // stampTown
@@ -223,7 +392,14 @@ export function stampTown(map, cx, cy, rng, index, tier) {
   if (!map || !map.ground || !map.w || !map.h) {
     throw new Error('stampTown: need a MapData with w, h and ground');
   }
-  const r = rng && typeof rng.int === 'function' ? rng : makeRng(((index | 0) * 2654435761) >>> 0);
+  const shared = rng && typeof rng.int === 'function' ? rng : makeRng(((index | 0) * 2654435761) >>> 0);
+  // Exactly ONE draw from the world's shared stream, then a private fork for
+  // everything this town generates. Town content used to draw a variable
+  // number of shared values, so ANY content change (a new archetype, one more
+  // team pick) re-rolled every later town and moved every cave mouth for the
+  // same seed — silently corrupting saves that regenerate their world from
+  // seed. With the fork, stampTown's shared-stream footprint is fixed forever.
+  const r = makeRng((shared.int(0x7fffffff) ^ (((index | 0) + 1) * 0x9e3779b9)) >>> 0);
   const idx = Math.max(0, Math.floor(Number(index) || 0));
   const name = TOWN_NAMES[wrapIdx(idx, TOWN_NAMES.length)];
 
@@ -241,17 +417,24 @@ export function stampTown(map, cx, cy, rng, index, tier) {
 
   // ---- 1. author the plan ------------------------------------------------
   const plan = new Uint16Array(FOOT_W * FOOT_H);
+  const dress = townDressFor(map, ox, oy);
 
   // Streets. The two high streets and the two-lane main street run clear
-  // through the fence, so there is always a way in and a way out.
+  // through the fence, so there is always a way in and a way out — and they
+  // stay T.PATH in every biome, because the fence ring below only leaves a gap
+  // where it sees T.PATH on the border.
   planRect(plan, 0, ROAD_A, FOOT_W - 1, ROAD_A, T.PATH);
   planRect(plan, 0, ROAD_B, FOOT_W - 1, ROAD_B, T.PATH);
   planRect(plan, ROAD_X0, 0, ROAD_X1, FOOT_H - 1, T.PATH);
-  planRect(plan, 2, ROAD_N, FOOT_W - 3, ROAD_N, T.PATH);
-  planRect(plan, 2, ROAD_C, FOOT_W - 3, ROAD_C, T.PATH);
+  planRect(plan, 2, ROAD_N, FOOT_W - 3, ROAD_N, dress.lane);
+  planRect(plan, 2, ROAD_C, FOOT_W - 3, ROAD_C, dress.lane);
 
-  // Plaza.
-  planRect(plan, PLAZA.x0, PLAZA.y0, PLAZA.x1, PLAZA.y1, T.PATH);
+  // Plaza, floored in the biome's paving.
+  planRect(plan, PLAZA.x0, PLAZA.y0, PLAZA.x1, PLAZA.y1, dress.plaza);
+
+  // The biome's signature feature — three fixed plaza tiles, at most two of
+  // them solid (see the anchor comment on FEATURE_LX).
+  for (let f = 0; f < 3; f++) planSet(plan, FEATURE_LX + f, FEATURE_LY, dress.feature[f]);
 
   // Buildings.
   const doors = [];
@@ -269,15 +452,15 @@ export function stampTown(map, cx, cy, rng, index, tier) {
     doors.push({ kind: 'house', n, lx: d.doorX, ly: d.doorY, to: 'inside:house:' + idx + ':' + n });
   });
 
-  // Flower beds framing the plaza.
+  // Beds framing the plaza, in the biome's frame tile.
   for (const ly of [PLAZA.y0, PLAZA.y0 + 1, PLAZA.y1 - 1, PLAZA.y1]) {
-    if (planGet(plan, PLAZA.x0 - 1, ly) === 0) planSet(plan, PLAZA.x0 - 1, ly, T.FLOWER);
-    if (planGet(plan, PLAZA.x1 + 1, ly) === 0) planSet(plan, PLAZA.x1 + 1, ly, T.FLOWER);
+    if (planGet(plan, PLAZA.x0 - 1, ly) === 0) planSet(plan, PLAZA.x0 - 1, ly, dress.frame);
+    if (planGet(plan, PLAZA.x1 + 1, ly) === 0) planSet(plan, PLAZA.x1 + 1, ly, dress.frame);
   }
-  // Scattered blooms in the verges.
+  // Verge scatter — always a walkable, encounter-free tile.
   for (let i = 0; i < 18; i++) {
     const lx = r.range(1, FOOT_W - 2), ly = r.range(1, FOOT_H - 2);
-    if (planGet(plan, lx, ly) === 0) planSet(plan, lx, ly, T.FLOWER);
+    if (planGet(plan, lx, ly) === 0) planSet(plan, lx, ly, dress.scatter);
   }
 
   // Town noticeboard, on the west lip of the plaza.
@@ -371,7 +554,6 @@ export function stampTown(map, cx, cy, rng, index, tier) {
   // zone, so stampTown threw and every town silently lost all of its entities.
   const tierN = (tier === undefined || tier === null) ? idx : (tier | 0);
   const lvl = clamp(3 + tierN * 2, 3, 44);
-  const roster = tierN < 3 ? EARLY_ROSTER : MID_ROSTER;
   const TRAINER_POOL = [
     { lx: ROAD_X1, ly: SLOT_HEAL.y, dir: 'up' },
     { lx: ROAD_X0, ly: ROAD_C - 1, dir: 'down' },
@@ -381,20 +563,26 @@ export function stampTown(map, cx, cy, rng, index, tier) {
     const spot = TRAINER_POOL[i];
     const at = settle(WX(spot.lx), WY(spot.ly));
     if (!at) continue;
-    const kit = TRAINER_KIT[(idx + i) % TRAINER_KIT.length];
-    const teamSize = tierN === 0 ? 1 : r.range(1, 2);
+    // Archetype + name from the town rng; their pool is tier-filtered the same
+    // way the flat roster was, so nothing outlevels its neighbourhood.
+    const arch = r.pick(ARCHETYPES);
+    const pool = tierN < 3 ? arch.early : arch.mid;
+    // Teams of three only appear from tier 3 out — check-firstwalk caps every
+    // ambusher within 30 tiles of spawn at level 9, and lvl+2 breaks that cap
+    // for the low tiers a spawn-adjacent town can actually have.
+    const teamSize = tierN === 0 ? 1 : r.range(1, tierN < 3 ? 2 : 3);
     const team = [];
     for (let k = 0; k < teamSize; k++) {
-      team.push({ species: r.pick(roster), level: clamp(lvl + k, 2, 60) });
+      team.push({ species: r.pick(pool), level: clamp(lvl + k, 2, 60) });
     }
     entities.push({
       kind: 'trainer', x: at.x, y: at.y, dir: spot.dir,
-      sprite: kit.sprite, name: kit.name,
+      sprite: arch.sprite, name: arch.title + ' ' + r.pick(arch.names),
       sight: r.range(3, 4),
       team,
       prize: 80 + tierN * 60 + i * 20,
-      challenge: r.pick(TRAINER_TAUNTS),
-      lines: ['Good match. The frontier keeps you honest.'],
+      challenge: arch.challenge,
+      lines: [arch.defeat],
       flag: 'trainer_t' + idx + '_' + i,
     });
   }
@@ -410,22 +598,36 @@ export function stampTown(map, cx, cy, rng, index, tier) {
   const wardenLy = PLAZA.y0;
   const wardenAt = settle(WX(wardenLx), WY(wardenLy)) || settle(WX(wardenLx), WY(PLAZA.y1));
   if (wardenAt) {
+    // Fixed identity per town index; only the LEVELS come from the tier, so a
+    // Warden's name, specialty and Seal are the same on every seed. The team
+    // slice keeps the specialty in the majority: sizes 2 are all in-type, and
+    // the single off-type companion only joins teams of three or four.
+    const w = WARDENS[wrapIdx(idx, WARDENS.length)];
     const wLvl = clamp(lvl + 3, 4, 62);
+    const wPool = tierN >= 4 ? w.high : w.low;
     const wTeam = [];
     const wSize = tierN === 0 ? 2 : Math.min(4, 2 + Math.floor(tierN / 2));
-    for (let k = 0; k < wSize; k++) {
-      wTeam.push({ species: r.pick(roster), level: clamp(wLvl + k, 3, 64) });
+    if (wSize >= 3) {
+      wTeam.push({ species: tierN >= 4 ? w.offHigh : w.offLow, level: clamp(wLvl, 3, 64) });
+    }
+    // Pools are ordered weakest to strongest, so the ace closes the fight.
+    for (let k = 0; wTeam.length < wSize; k++) {
+      wTeam.push({
+        species: wPool[Math.min(k, wPool.length - 1)],
+        level: clamp(wLvl + wTeam.length, 3, 64),
+      });
     }
     entities.push({
       kind: 'trainer', warden: true,
       x: wardenAt.x, y: wardenAt.y, dir: 'down',
       sprite: 'trainer_scout',
-      name: 'Warden of ' + name,
+      name: 'Warden ' + w.name,
+      seal: w.seal,                   // overworld names the Seal when awarding it
       sight: 0,                       // Wardens never ambush; you choose to fight them
       team: wTeam,
       prize: 400 + tierN * 220,
-      challenge: 'I keep watch over ' + name + '. Show me what you have learned.',
-      lines: ['The Seal is yours. The frontier is wider than you think.'],
+      challenge: 'I hold the ' + w.seal + ' for ' + name + '. ' + w.tell,
+      lines: ['The ' + w.seal + ' is yours, fairly taken.', w.after],
       flag: 'warden_' + idx,
     });
   }
