@@ -181,6 +181,9 @@ if (SCRIPT !== 'boot') {
   const nextDir = () => page.evaluate(([gx, gy]) => {
     const g = window.__game;
     if (!g || !g.S || !g.S.world) return null;
+    // Use the game's REAL collision, entities included. Terrain-only planning
+    // walked into stationary NPCs (a Warden holds a plaza tile permanently).
+    const occupied = new Set(g.blockedTiles ? g.blockedTiles() : []);
     const m = g.S.world.map;
     const sx = g.S.player.x, sy = g.S.player.y;
     if (g.isGrassTile(m.ground[sy * m.w + sx])) return 'here';
@@ -204,6 +207,7 @@ if (SCRIPT !== 'boot') {
         const j = ny * m.w + nx;
         if (dist[j] !== -1) continue;
         if (g.isSolidTile(m.ground[j]) || g.overlayBlocksTile(m.overlay[j])) continue;
+        if (occupied.has(nx + ',' + ny)) continue;
         dist[j] = dist[i] + 1;
         first[j] = dist[i] === 0 ? d : first[i];
         q[tail++] = j;

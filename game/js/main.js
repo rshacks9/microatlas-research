@@ -392,7 +392,21 @@ function boot() {
   window.__game = { Game, S, enterMap, startNewGame,
     isSolidTile: tilesRef.isSolid,
     overlayBlocksTile: tilesRef.overlayBlocks,
-    isGrassTile: tilesRef.isGrass };
+    isGrassTile: tilesRef.isGrass,
+    // Tiles occupied by a blocking entity on the CURRENT map. Terrain alone is not
+    // the game's collision rule — a Warden standing in a plaza never moves, so a
+    // path planner that only knows tiles will walk into one forever.
+    blockedTiles() {
+      const out = [];
+      const ents = (Overworld && Overworld.entities) || [];
+      for (const e of ents) {
+        if (!e || e.hidden) continue;
+        if (e.blocking === false) continue;
+        if (e.kind === 'item' || e.kind === 'sign' || e.kind === 'door') continue;
+        out.push(e.x + ',' + e.y);
+      }
+      return out;
+    } };
 }
 
 if (document.readyState === 'loading') {
