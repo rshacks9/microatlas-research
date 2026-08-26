@@ -133,13 +133,16 @@ if (SCRIPT !== 'boot') {
   // test was testing the walker, not the game.
   const KEY = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
   const stepKey = async (dir) => {
-    // The game reads HELD keys. Changing direction costs an 80ms turn-in-place
-    // BEFORE the 160ms step, so anything under ~240ms produced a turn and no
-    // movement — which is why this walker looked stuck while re-planning.
+    // Exactly ONE tile per call, which the re-planner assumes.
+    //   turning:  80ms turn-in-place, then a 160ms step -> completes at 240ms
+    //   facing:   a 160ms step starting immediately
+    // Releasing at 150ms is past the turn but inside the step, so the in-flight
+    // step still completes and no second one starts. Holding 300ms produced TWO
+    // tiles per call, so the walker overshot every corner and orbited the goal.
     await page.keyboard.down(KEY[dir]);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(150);
     await page.keyboard.up(KEY[dir]);
-    await page.waitForTimeout(40);
+    await page.waitForTimeout(190);
   };
 
   // Returns the first direction to walk toward the nearest reachable grass tile.
