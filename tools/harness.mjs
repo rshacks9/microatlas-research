@@ -233,6 +233,11 @@ if (SCRIPT !== 'boot') {
     }
 
     let dir = await nextDir();
+    if (process.env.NAV_DEBUG && i < 24) {
+      console.log('  nav ' + i + ' at ' + st.x + ',' + st.y + ' map=' + st.map +
+                  ' dir=' + dir + ' steps=' + st.steps + ' goal=' + (goal ? goal.x + ',' + goal.y + ' d' + goal.d : 'NULL') +
+                  ' blocked=' + blocked.length);
+    }
     if (dir === null) { noPath = true; break; }
     // Already standing in grass: pace back and forth until an encounter rolls.
     const grazing = dir === 'here';

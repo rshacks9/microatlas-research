@@ -126,7 +126,8 @@ function snapshot() {
     party: S.party.map(packCreature),
     boxes: S.boxes.slice(0, BOX_MAX).map(packCreature),
     bag: Object.assign({}, S.bag),
-    dex: { seen: Object.assign({}, S.dex.seen), caught: Object.assign({}, S.dex.caught) },
+    dex: { seen: Object.assign({}, S.dex.seen), caught: Object.assign({}, S.dex.caught),
+           variant: Object.assign({}, S.dex.variant || {}) },
     flags: Object.assign({}, S.flags),
     time: S.time | 0,
     playtime: Math.floor(S.playtime),
@@ -209,6 +210,7 @@ export function loadGame(slot) {
     S.bag = sanitizeIdMap(d.bag, (k) => getItem(k).id === k, 64, 99);
     S.dex.seen = sanitizeIdMap(d.dex && d.dex.seen, (k) => getSpecies(k).id === k, 256, true);
     S.dex.caught = sanitizeIdMap(d.dex && d.dex.caught, (k) => getSpecies(k).id === k, 256, true);
+    S.dex.variant = sanitizeIdMap(d.dex && d.dex.variant, (k) => getSpecies(k).id === k, 256, true);
     S.flags = sanitizeIdMap(d.flags, (k) => /^[a-z0-9_:]{1,48}$/i.test(k), 512, true);
 
     S.time = num(d.time, 0, 1439, 480);

@@ -10,7 +10,7 @@ export const S = {
   party: [],
   boxes: [],
   bag: Object.create(null),
-  dex: { seen: Object.create(null), caught: Object.create(null) },
+  dex: { seen: Object.create(null), caught: Object.create(null), variant: Object.create(null) },
   flags: Object.create(null),
   time: 480,            // in-game minutes, 0..1439
   playtime: 0,          // real seconds
@@ -36,7 +36,7 @@ export function resetState(seed, name) {
   S.party = [];
   S.boxes = [];
   S.bag = Object.create(null);
-  S.dex = { seen: Object.create(null), caught: Object.create(null) };
+  S.dex = { seen: Object.create(null), caught: Object.create(null), variant: Object.create(null) };
   S.flags = Object.create(null);
   S.time = 480;
   S.playtime = 0;
@@ -74,7 +74,15 @@ export function bagList() {
 }
 
 export function seeSpecies(id) { if (id) S.dex.seen[id] = true; }
-export function catchSpecies(id) { if (id) { S.dex.seen[id] = true; S.dex.caught[id] = true; } }
+export function catchSpecies(id, variant) {
+  if (!id) return;
+  S.dex.seen[id] = true;
+  S.dex.caught[id] = true;
+  // A second, equally deep completion layer for free: the variant system already
+  // gives every species a recognisable alternate palette, and nothing recorded it.
+  if (variant) S.dex.variant[id] = true;
+}
+export function dexVariantCount() { return Object.keys(S.dex.variant || {}).length; }
 export function dexSeenCount() { return Object.keys(S.dex.seen).length; }
 export function dexCaughtCount() { return Object.keys(S.dex.caught).length; }
 

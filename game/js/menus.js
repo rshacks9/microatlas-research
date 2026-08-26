@@ -10,7 +10,7 @@ import { getItem, useItem, shopStock, sellPrice } from './items.js';
 import { maxHp, statsFor, expToNext } from './battlecalc.js';
 import { displayName, isFainted, hpFrac, swapParty } from './party.js';
 import { S, bagList, itemCount, removeItem, addItem, spendMoney, addMoney,
-         dexSeenCount, dexCaughtCount, clockString, playtimeString } from './state.js';
+         dexSeenCount, dexCaughtCount, dexVariantCount, clockString, playtimeString } from './state.js';
 import { sfx } from './audio.js';
 import { TYPE_COLORS, TYPE_NAMES } from './types.js';
 import { say, ask } from './dialogue.js';
@@ -343,8 +343,8 @@ export function openDex() {
       ctx.fillStyle = '#243040';
       ctx.fillRect(0, 0, W, H);
       drawText(ctx, 'FIELD DEX', 8, 6, { color: '#f0e8d8' });
-      drawTextRight(ctx, 'seen ' + dexSeenCount() + '  caught ' + dexCaughtCount() + '/' + DEX_COUNT,
-        W - 8, 6, { color: '#98a4b4' });
+      drawTextRight(ctx, 'seen ' + dexSeenCount() + '  caught ' + dexCaughtCount() + '/' + DEX_COUNT +
+        '  rare ' + dexVariantCount() + '/' + DEX_COUNT, W - 8, 6, { color: '#98a4b4' });
 
       drawWindow(ctx, 6, 18, 156, 214);
       const rows = 9;
@@ -358,13 +358,16 @@ export function openDex() {
         drawText(ctx, String(s.dexNo).padStart(3, '0'), 20, y, { color: PAL.shadow });
         drawText(ctx, seen ? s.name : '-----', 44, y, { color: seen ? PAL.ink : PAL.dim });
         if (caught && hasSprite('ball_orb')) drawSprite(ctx, 'ball_orb', 130, y - 2, { scale: 0.7 });
+        if (S.dex.variant && S.dex.variant[s.id]) drawText(ctx, '*', 142, y, { color: PAL.gold });
         if (i === self.index) drawCursor(ctx, 10, y, self.t);
       }
 
       const s = all[self.index];
       drawWindow(ctx, 166, 18, 148, 214);
       if (s && S.dex.seen[s.id]) {
-        if (hasSprite(s.sprite)) drawSprite(ctx, s.sprite, 206, 28, { scale: 2 });
+        if (hasSprite(s.sprite)) {
+          drawSprite(ctx, s.sprite, 206, 28, { scale: 2, variant: !!(S.dex.variant && S.dex.variant[s.id]) });
+        }
         drawTextCentered(ctx, s.name, 240, 100, { color: PAL.ink });
         let bx = 186;
         for (const t of s.types) bx += drawTypeBadge(ctx, t, bx, 114) + 4;

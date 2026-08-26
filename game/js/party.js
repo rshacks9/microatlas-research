@@ -15,7 +15,6 @@ function rollIvs(rng) {
   return iv;
 }
 
-// The 4 most recent moves learnable at or below `level`.
 // Build a sensible 4-move set for a creature generated at a given level.
 //
 // This used to keep simply the 4 MOST RECENTLY learned moves, which quietly
@@ -135,7 +134,7 @@ export function healthyCount() { return S.party.filter((c) => !isFainted(c)).len
 
 export function addToParty(inst) {
   if (!inst) return 'full';
-  catchSpecies(inst.species);
+  catchSpecies(inst.species, inst.variant);
   if (S.party.length < PARTY_MAX) { S.party.push(inst); return 'party'; }
   if (S.boxes.length < BOX_MAX) { S.boxes.push(inst); return 'box'; }
   return 'full';
