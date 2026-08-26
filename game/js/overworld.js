@@ -17,6 +17,9 @@ import { makeRng, rand } from './rng.js';
 import { playBgm, sfx } from './audio.js';
 import { drawText, drawWindow, PAL } from './ui.js';
 
+// Every settlement has exactly one Warden, so the Seal target is the town count.
+export const TOTAL_WARDENS = 10;
+
 const WALK_DUR = 0.16;
 const RUN_DUR = 0.09;
 
@@ -402,6 +405,14 @@ async function startTrainerBattle(e) {
   await fade('in', 0.3);
   const result = await battle;
   if (result === 'win' && e.flag) setFlag(e.flag, true);
+  if (result === 'win' && e.warden) {
+    S.badges = (S.badges | 0) + 1;
+    sfx('levelup');
+    await say([
+      'The Warden hands you a Seal.',
+      'Seals: ' + S.badges + ' of ' + TOTAL_WARDENS + '.  Every settlement out there has one.',
+    ]);
+  }
   e.defeated = result === 'win';
   await afterBattle(result);
 }

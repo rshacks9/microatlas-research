@@ -119,6 +119,7 @@ export function openPauseMenu() {
       drawWindow(ctx, 6, H - 34, 128, 28);
       drawText(ctx, S.player.name, 12, H - 28, { color: PAL.ink });
       drawText(ctx, S.player.money + ' cr', 12, H - 18, { color: PAL.accent });
+      drawText(ctx, 'Seals ' + (S.badges | 0) + '/10', 62, H - 18, { color: PAL.gold });
       drawTextRight(ctx, clockString(), 128, H - 28, { color: PAL.shadow });
       drawTextRight(ctx, playtimeString(), 128, H - 18, { color: PAL.shadow });
     },

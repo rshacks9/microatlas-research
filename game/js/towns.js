@@ -392,6 +392,37 @@ export function stampTown(map, cx, cy, rng, index) {
     });
   }
 
+  // ---- 3b. the town Warden ------------------------------------------------
+  // Each settlement is guarded by one Warden. Beating them awards a Seal, which
+  // is the game's only mastery ladder. Because the world is open, Wardens can be
+  // challenged in ANY order — the difficulty ordering comes from geography, since
+  // a Warden's team scales with how far its town sits from the start. That gives
+  // the player a visible goal without gating a single route.
+  // Stand the Warden in the plaza, facing the main street.
+  const wardenLx = (PLAZA.x0 + PLAZA.x1) >> 1;
+  const wardenLy = PLAZA.y0;
+  const wardenAt = settle(WX(wardenLx), WY(wardenLy)) || settle(WX(wardenLx), WY(PLAZA.y1));
+  if (wardenAt) {
+    const wLvl = clamp(lvl + 3, 4, 62);
+    const wTeam = [];
+    const wSize = idx === 0 ? 2 : Math.min(4, 2 + Math.floor(idx / 2));
+    for (let k = 0; k < wSize; k++) {
+      wTeam.push({ species: r.pick(roster), level: clamp(wLvl + k, 3, 64) });
+    }
+    entities.push({
+      kind: 'trainer', warden: true,
+      x: wardenAt.x, y: wardenAt.y, dir: 'down',
+      sprite: 'trainer_scout',
+      name: 'Warden of ' + name,
+      sight: 0,                       // Wardens never ambush; you choose to fight them
+      team: wTeam,
+      prize: 400 + idx * 220,
+      challenge: 'I keep watch over ' + name + '. Show me what you have learned.',
+      lines: ['The Seal is yours. The frontier is wider than you think.'],
+      flag: 'warden_' + idx,
+    });
+  }
+
   // ---- 4. hand everything to the map --------------------------------------
   for (const w of warps) map.warps.push(w);
   for (const e of entities) map.entities.push(e);

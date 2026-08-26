@@ -168,7 +168,10 @@ async function startNewGame() {
   await say('Ranger: ' + sp.name + ', then. A good pick — ' +
     (STARTER_BLURB[sp.types[0]] || 'a fine companion') + '.');
   await say('Ranger: Tall grass is where you will find wild ones. Weaken them first, then throw an orb.');
-  await say('Ranger: Press C for your menu. Good luck out there.');
+  // One line, not three. The opening is the most expensive place in the game to
+  // spend the player's patience, so the goal is stated once and the detail lives
+  // in the pause menu instead.
+  await say('Ranger: Every settlement keeps a Warden. Beat all ten for their Seals — any order you like, but the far ones hit hard.');
   sfx('levelup');
 }
 

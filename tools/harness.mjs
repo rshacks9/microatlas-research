@@ -103,12 +103,24 @@ const probe = async (label) => {
 await shot('01-title');
 
 if (SCRIPT !== 'boot') {
-  // Title -> new game -> starter pick. Mash A to get through intro dialogue.
-  await key('Enter', 6, 180);
+  // Title -> new game -> starter pick. Advance until the player actually has
+  // control, rather than a fixed press count that breaks whenever intro text
+  // changes length.
+  await key('Enter', 4, 180);
   await shot('02-intro');
-  await key('Enter', 10, 160);
-  await shot('03-starter');
-  await key('Enter', 8, 160);
+  let ready = false;
+  for (let i = 0; i < 60; i++) {
+    await key('Enter', 1, 150);
+    const st = await probe('intro' + i);
+    if (st && st.scene === 'overworld' && st.sceneCount === 1 && st.party > 0) {
+      // one more beat to be sure no dialogue is mid-close
+      await page.waitForTimeout(250);
+      const again = await probe('intro-confirm');
+      if (again && again.scene === 'overworld' && again.sceneCount === 1) { ready = true; break; }
+    }
+    if (i === 12) await shot('03-starter');
+  }
+  if (!ready) note('flow', 'never reached interactive overworld after 60 intro presses');
   await shot('04-overworld');
 
   const afterIntro = await probe('after-intro');
