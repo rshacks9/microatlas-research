@@ -133,16 +133,19 @@ if (SCRIPT !== 'boot') {
   // test was testing the walker, not the game.
   const KEY = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
   const stepKey = async (dir) => {
-    // The game reads HELD keys, and changing direction turns in place first, so a
-    // bare press moves nobody. Hold long enough to turn and then commit to a step.
+    // The game reads HELD keys. Changing direction costs an 80ms turn-in-place
+    // BEFORE the 160ms step, so anything under ~240ms produced a turn and no
+    // movement — which is why this walker looked stuck while re-planning.
     await page.keyboard.down(KEY[dir]);
-    await page.waitForTimeout(185);
+    await page.waitForTimeout(300);
     await page.keyboard.up(KEY[dir]);
-    await page.waitForTimeout(35);
+    await page.waitForTimeout(40);
   };
 
   // Returns the first direction to walk toward the nearest reachable grass tile.
-  const nextDir = () => page.evaluate(() => {
+  const blocked = [];   // 'x,y' tiles we bumped into (NPCs the BFS cannot see)
+  const nextDir = () => page.evaluate((blockedList) => {
+    const blockedSet = new Set(blockedList);
     const g = window.__game;
     if (!g || !g.S || !g.S.world) return null;
     const m = g.S.world.map;
@@ -167,13 +170,14 @@ if (SCRIPT !== 'boot') {
         const j = ny * m.w + nx;
         if (dist[j] !== -1) continue;
         if (g.isSolidTile(m.ground[j]) || g.overlayBlocksTile(m.overlay[j])) continue;
+        if (blockedSet.has(nx + ',' + ny)) continue;
         dist[j] = dist[i] + 1;
         first[j] = dist[i] === 0 ? d : first[i];
         q[tail++] = j;
       }
     }
     return null;
-  });
+  }, blocked);
 
   let encountered = false;
   let prev = await probe('walk-start');
@@ -184,11 +188,34 @@ if (SCRIPT !== 'boot') {
     if (!st) break;
     prev = st;
     if (st.scene === 'battle') { encountered = true; break; }
+
+    // The walker can stroll through a door. Once inside, the world-map BFS is
+    // meaningless because the player's coordinates are interior coordinates, so
+    // walk back out first. Interior exits are on the bottom row.
+    if (st.map !== 'world') {
+      for (let k = 0; k < 10 && (await probe('exit' + k)).map !== 'world'; k++) {
+        await stepKey('down');
+      }
+      continue;
+    }
+
     let dir = await nextDir();
     if (dir === null) { noPath = true; break; }
     // Already standing in grass: pace back and forth until an encounter rolls.
-    if (dir === 'here') dir = i % 2 ? 'left' : 'right';
+    const grazing = dir === 'here';
+    if (grazing) dir = i % 2 ? 'left' : 'right';
+    const before = st.steps;
     await stepKey(dir);
+    if (!grazing) {
+      const after = await probe('bump' + i);
+      if (after && after.steps === before) {
+        // Could not enter that tile — almost always a wandering NPC. Remember it
+        // and let the next re-plan route around.
+        const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
+        if (d) blocked.push((st.x + d[0]) + ',' + (st.y + d[1]));
+        if (blocked.length > 60) blocked.shift();
+      }
+    }
   }
 
   if (noPath) note('flow', 'no reachable encounter grass found from the spawn point');
@@ -197,6 +224,20 @@ if (SCRIPT !== 'boot') {
   if (!encountered) {
     note('flow', 'no wild encounter after navigating to grass (' +
                  (prev ? prev.grassSteps + ' grass steps, ' + prev.encounterRolls + ' rolls' : 'no state') + ')');
+  }
+
+  // Finish any battle we are still in before testing the menu — pressing C mid
+  // battle does nothing, which used to be reported as "the pause menu did not open".
+  // A 10-turn battle is ~6 messages a turn, so 60 presses was simply too few and
+  // reported a stuck battle that was merely long.
+  for (let i = 0; i < 240; i++) {
+    const st = await probe('finish' + i);
+    if (!st || st.scene !== 'battle') break;
+    await key('Enter', 1, 120);
+  }
+  const settled = await probe('settled');
+  if (settled && settled.scene === 'battle') {
+    note('flow', 'battle never ended after 240 confirm presses');
   }
 
   // Pause menu

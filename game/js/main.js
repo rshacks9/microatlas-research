@@ -8,7 +8,7 @@ import { drawSprite, hasSprite } from './sprites.js';
 import { getSpecies, STARTERS } from './creatures.js';
 import { generateWorld } from './worldgen.js';
 import { makeCreature, displayName, addToParty } from './party.js';
-import { S, resetState } from './state.js';
+import { S, resetState, setFlag } from './state.js';
 import { Overworld, enterMap, player } from './overworld.js';
 import { say, ask } from './dialogue.js';
 import { initAudio, playBgm, sfx, setMusicEnabled, setSfxEnabled } from './audio.js';
@@ -164,6 +164,9 @@ async function startNewGame() {
   const sp = getSpecies(starterId);
   const starter = makeCreature(starterId, 5, { where: 'home' });
   addToParty(starter);
+  // Remember the choice so the Seal milestones can hand over the lines you did
+  // not take — without that the dex caps at 30 of 34 and can never be completed.
+  setFlag('starter_' + starterId, true);
 
   await say('Ranger: ' + sp.name + ', then. A good pick — ' +
     (STARTER_BLURB[sp.types[0]] || 'a fine companion') + '.');

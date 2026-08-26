@@ -7,13 +7,13 @@ import { makeEntities, Entity, DELTA, OPPOSITE } from './entities.js';
 import { drawSprite, hasSprite, walkKey } from './sprites.js';
 import { generateWorld, biomeAt, levelAt, encounterTableFor } from './worldgen.js';
 import { buildInterior } from './towns.js';
-import { makeCreature, displayName, partyWiped, healParty, firstHealthy } from './party.js';
+import { makeCreature, displayName, partyWiped, healParty, firstHealthy, addToParty } from './party.js';
 import { maxHp } from './battlecalc.js';
 import { startBattle } from './battle.js';
 import { say, ask, showBanner, updateBanner, renderBanner, isDialogueOpen } from './dialogue.js';
 import { openPauseMenu, openShop } from './menus.js';
 import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay } from './state.js';
-import { getSpecies } from './creatures.js';
+import { getSpecies, STARTERS } from './creatures.js';
 import { makeRng, rand } from './rng.js';
 import { playBgm, sfx } from './audio.js';
 import { drawText, drawWindow, PAL } from './ui.js';
@@ -30,6 +30,7 @@ export const player = {
   moving: false, moveT: 0, moveDur: WALK_DUR,
   frame: 0, animT: 0,
   hopping: false, hopFrom: null,
+  stepParity: false,
   sprite: 'hero',
   get px() {
     if (!this.moving) return this.x * TILE;
@@ -56,6 +57,7 @@ const O = {
   encounterRolls: 0,
   effects: [],          // short-lived overworld puffs (grass rustle, running dust)
   lastRunning: false,
+  lastBump: -1,
   returnPoint: null,    // where to drop the player when leaving an interior
   turnHold: 0,
 };
@@ -150,8 +152,21 @@ export function enterMap(mapId, x, y, dir) {
   O.pendingWatcher = null;
 
   playBgm(data.bgm || (mapId === 'world' ? 'overworld' : 'town'));
-  if (data.name) showBanner(data.name, 2.2);
+  // Name the place you are actually standing in. The world map's own name was
+  // being shown for every town, so settlements the generator named were nameless
+  // to the player.
+  const here = (mapId === 'world') ? townNameAt(player.x, player.y) : data.name;
+  if (here) showBanner(here, 2.2);
   return map;
+}
+
+// Which settlement (if any) the player is standing in, for the location banner.
+function townNameAt(x, y) {
+  const towns = (S.world && S.world.towns) || [];
+  for (const t of towns) {
+    if (Math.max(Math.abs(t.x - x), Math.abs(t.y - y)) <= 13) return t.name || null;
+  }
+  return null;
 }
 
 function clampInt(v, lo, hi) { return Math.max(lo, Math.min(hi, Math.round(Number(v) || 0))); }
@@ -202,7 +217,9 @@ function startStep(dir, running) {
 
   if (!canEnter(nx, ny)) {
     player.dir = dir;
-    sfx('bump');
+    // Held against a wall this fired 60 times a second. Rate-limit it so a bump
+    // reads as one thud rather than a buzzsaw.
+    if (O.t - O.lastBump > 0.35) { sfx('bump'); O.lastBump = O.t; }
     return false;
   }
   player.fromX = player.x; player.fromY = player.y;
@@ -212,6 +229,7 @@ function startStep(dir, running) {
   player.hopping = false;
   player.moveT = 0;
   player.moveDur = running ? RUN_DUR : WALK_DUR;
+  player.stepParity = !player.stepParity;   // alternate the leading foot
   O.lastRunning = !!running;
   return true;
 }
@@ -475,6 +493,40 @@ async function talkTo(e) {
   }
 }
 
+// The two starter lines you did not pick are not in any encounter table, so a
+// dex could only ever reach 30 of 34. Wardens hand them over at the third and
+// sixth Seal, which closes the gap and turns the milestone into a real reward.
+async function grantStarterMilestone() {
+  const seals = S.badges | 0;
+  const slot = seals === 3 ? 0 : seals === 6 ? 1 : -1;
+  if (slot < 0) return;
+
+  const unchosen = STARTERS.filter((id) => !getFlag('starter_' + id));
+  const already = unchosen.filter((id) => getFlag('granted_' + id));
+  const remaining = unchosen.filter((id) => !getFlag('granted_' + id));
+  if (!remaining.length) return;
+  const giveId = remaining[0];
+
+  // Match the player's current team so the gift is usable, not a museum piece.
+  let lvl = 5;
+  for (const c of S.party) if (c && c.level > lvl) lvl = c.level;
+  lvl = Math.max(5, Math.min(60, lvl - 2));
+
+  const gift = makeCreature(giveId, lvl, { where: 'a Warden' });
+  const dest = addToParty(gift);
+  setFlag('granted_' + giveId, true);
+  sfx('levelup');
+  if (dest === 'full') {
+    await say('The Warden offers you a companion, but you have nowhere to put it.');
+    setFlag('granted_' + giveId, false);
+    return;
+  }
+  await say([
+    'The Warden says: a keeper of Seals should know the whole frontier.',
+    'You received ' + displayName(gift) + '!' + (dest === 'box' ? ' It went to storage.' : ''),
+  ]);
+}
+
 async function startTrainerBattle(e) {
   sfx('encounter');
   await say((e.name ? e.name + ': ' : '') + (e.challenge || "Let's battle!"));
@@ -490,6 +542,7 @@ async function startTrainerBattle(e) {
       'The Warden hands you a Seal.',
       'Seals: ' + S.badges + ' of ' + TOTAL_WARDENS + '.  Every settlement out there has one.',
     ]);
+    await grantStarterMilestone();
   }
   e.defeated = result === 'win';
   await afterBattle(result);
@@ -548,7 +601,11 @@ O.update = function (dt) {
   if (player.moving) {
     player.moveT += dt;
     player.animT += dt;
-    if (player.animT > player.moveDur * 0.5) { player.animT = 0; player.frame = (player.frame + 1) % 3; }
+    // Drive the frame from progress THROUGH the step rather than a timer that
+    // ticks over exactly as the step ends — frame 2 was being assigned on the
+    // final tick and never rendered, so the same foot lifted on every tile.
+    const prog = Math.min(0.999, player.moveT / Math.max(0.0001, player.moveDur));
+    player.frame = player.stepParity ? (prog < 0.5 ? 1 : 2) : (prog < 0.5 ? 2 : 1);
     if (player.moveT >= player.moveDur) {
       player.moving = false;
       player.hopping = false;

@@ -216,7 +216,10 @@ const TRAINER_KIT = [
  * @param {number} index town index; picks the name and scales the trainers
  * @returns {{name:string, entities:object[], warps:object[], doors:object[], x:number, y:number}}
  */
-export function stampTown(map, cx, cy, rng, index) {
+// `index` identifies the town (names, flags). `tier` is its DIFFICULTY, derived
+// by the caller from distance to the start town — they are not the same thing,
+// and conflating them put level-23 trainers in the starting settlement.
+export function stampTown(map, cx, cy, rng, index, tier) {
   if (!map || !map.ground || !map.w || !map.h) {
     throw new Error('stampTown: need a MapData with w, h and ground');
   }
@@ -363,8 +366,12 @@ export function stampTown(map, cx, cy, rng, index) {
 
   // Trainers loitering on the approach lanes. Both stand in one lane of the
   // two-lane main street, so they can never wall the town off.
-  const lvl = clamp(4 + idx * 2, 3, 44);
-  const roster = idx < 3 ? EARLY_ROSTER : MID_ROSTER;
+  // NB: not named `T` — that is the tile-constant import, and shadowing it with a
+  // const in this scope put every earlier T.GRASS reference in the temporal dead
+  // zone, so stampTown threw and every town silently lost all of its entities.
+  const tierN = (tier === undefined || tier === null) ? idx : (tier | 0);
+  const lvl = clamp(3 + tierN * 2, 3, 44);
+  const roster = tierN < 3 ? EARLY_ROSTER : MID_ROSTER;
   const TRAINER_POOL = [
     { lx: ROAD_X1, ly: SLOT_HEAL.y, dir: 'up' },
     { lx: ROAD_X0, ly: ROAD_C - 1, dir: 'down' },
@@ -375,7 +382,7 @@ export function stampTown(map, cx, cy, rng, index) {
     const at = settle(WX(spot.lx), WY(spot.ly));
     if (!at) continue;
     const kit = TRAINER_KIT[(idx + i) % TRAINER_KIT.length];
-    const teamSize = idx === 0 ? 1 : r.range(1, 2);
+    const teamSize = tierN === 0 ? 1 : r.range(1, 2);
     const team = [];
     for (let k = 0; k < teamSize; k++) {
       team.push({ species: r.pick(roster), level: clamp(lvl + k, 2, 60) });
@@ -385,7 +392,7 @@ export function stampTown(map, cx, cy, rng, index) {
       sprite: kit.sprite, name: kit.name,
       sight: r.range(3, 4),
       team,
-      prize: 80 + idx * 60 + i * 20,
+      prize: 80 + tierN * 60 + i * 20,
       challenge: r.pick(TRAINER_TAUNTS),
       lines: ['Good match. The frontier keeps you honest.'],
       flag: 'trainer_t' + idx + '_' + i,
@@ -405,7 +412,7 @@ export function stampTown(map, cx, cy, rng, index) {
   if (wardenAt) {
     const wLvl = clamp(lvl + 3, 4, 62);
     const wTeam = [];
-    const wSize = idx === 0 ? 2 : Math.min(4, 2 + Math.floor(idx / 2));
+    const wSize = tierN === 0 ? 2 : Math.min(4, 2 + Math.floor(tierN / 2));
     for (let k = 0; k < wSize; k++) {
       wTeam.push({ species: r.pick(roster), level: clamp(wLvl + k, 3, 64) });
     }
@@ -416,7 +423,7 @@ export function stampTown(map, cx, cy, rng, index) {
       name: 'Warden of ' + name,
       sight: 0,                       // Wardens never ambush; you choose to fight them
       team: wTeam,
-      prize: 400 + idx * 220,
+      prize: 400 + tierN * 220,
       challenge: 'I keep watch over ' + name + '. Show me what you have learned.',
       lines: ['The Seal is yours. The frontier is wider than you think.'],
       flag: 'warden_' + idx,

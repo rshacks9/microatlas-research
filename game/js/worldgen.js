@@ -855,8 +855,22 @@ export function generateWorld(seed) {
     name: 'Verdant Frontier',
   };
 
+  // A town's difficulty tier must come from DISTANCE to the start town, not from
+  // its placement index. startTownIndex is chosen by biome and centrality, so it
+  // is rarely 0 — which meant the "go easy on the first town" case almost never
+  // fired on the town the player actually starts in, and a fresh level-5 starter
+  // could meet a level-23 trainer eight tiles from spawn.
+  const startSite = sites[Math.min(startTownIndex, sites.length - 1)] || sites[0];
+  let maxSiteD = 1;
+  for (const st of sites) {
+    const d = Math.max(Math.abs(st.x - startSite.x), Math.abs(st.y - startSite.y));
+    if (d > maxSiteD) maxSiteD = d;
+  }
+
   for (let s = 0; s < sites.length; s++) {
     const site = sites[s];
+    const siteD = Math.max(Math.abs(site.x - startSite.x), Math.abs(site.y - startSite.y));
+    const tier = s === startTownIndex ? 0 : Math.max(1, Math.round(9 * (siteD / maxSiteD)));
     clearTownSite(site.x, site.y, TOWN_CLEAR, ground, overlay, biome);
 
     let name = townNames[s % townNames.length] || `Settlement ${s + 1}`;
@@ -864,7 +878,7 @@ export function generateWorld(seed) {
 
     if (typeof Towns.stampTown === 'function') {
       try {
-        const res = Towns.stampTown(map, site.x, site.y, rng, s);
+        const res = Towns.stampTown(map, site.x, site.y, rng, s, tier);
         stamped = true;
         if (res && typeof res === 'object') {
           if (typeof res.name === 'string' && res.name) name = res.name;
@@ -879,7 +893,16 @@ export function generateWorld(seed) {
           }
         }
       } catch (err) {
+        // Falling back silently hid a real defect: a variable-shadowing bug made
+        // stampTown throw on every town, so every settlement lost all of its
+        // NPCs, trainers, Wardens, shops and healers, and worldgen reported
+        // success. A degraded world must be loud about being degraded.
         stamped = false;
+        try {
+          console.error('[worldgen] stampTown failed for town ' + s + ' at ' +
+                        site.x + ',' + site.y + ' — the town will have no buildings ' +
+                        'or people: ' + (err && err.message ? err.message : err));
+        } catch (_) { /* console may be absent */ }
       }
     }
 

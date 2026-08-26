@@ -12,7 +12,7 @@ import { effectiveness, matchupText, TYPE_COLORS } from './types.js';
 import { statsFor, maxHp, damage, accuracyCheck, speedOf, catchChance, expGain,
          endOfTurnDamage, aiChooseMove, fleeChance, STRUGGLE, expToNext } from './battlecalc.js';
 import { displayName, isFainted, giveExp, tryEvolve, evolveInto, learnMove, knowsMove,
-         hasUsableMove, MOVE_SLOTS, buildTeam, firstHealthy } from './party.js';
+         hasUsableMove, MOVE_SLOTS, buildTeam, firstHealthy, addToParty } from './party.js';
 import { S, seeSpecies, addMoney, removeItem, itemCount, bagList, dexCaughtCount } from './state.js';
 import { sfx, playBgm } from './audio.js';
 import { rand } from './rng.js';
@@ -101,9 +101,17 @@ function tweenHp(who, from, to, dur = 0.6) {
 B.update = function (dt) {
   B.t += dt;
 
-  // Hit-stop: a few frozen frames on impact. This is the cheapest way to make a
-  // hit feel like it connected — everything stops, including animations and the
-  // coroutine, so the frame of impact actually registers.
+  // Visual timers decay even during hit-stop. They MUST be updated before the
+  // early return below: freezing the coroutine is the point, freezing the screen
+  // flash is not. With the decay after the return, a crit set flash to 1, painted
+  // an opaque white rect over the whole screen and held it for the full 160ms
+  // freeze — so the best moment in the game rendered as a white void.
+  if (B.flash > 0) B.flash = Math.max(0, B.flash - dt * 5.5);
+  if (B.shake.t > 0) B.shake.t = Math.max(0, B.shake.t - dt);
+
+  // Hit-stop: a few frozen frames on impact. The cheapest way to make a hit feel
+  // like it connected — the coroutine and animations stop, so the frame of impact
+  // actually registers.
   if (B.hitstop > 0) {
     B.hitstop -= dt;
     for (const p of B.popups) p.t += dt * 0.35;   // popups still drift, slowly
@@ -127,8 +135,6 @@ B.update = function (dt) {
   }
 
   if (B.intro > 0) B.intro = Math.max(0, B.intro - dt * 1.8);
-  if (B.flash > 0) B.flash = Math.max(0, B.flash - dt * 4);
-  if (B.shake.t > 0) B.shake.t = Math.max(0, B.shake.t - dt);
 
   // animations
   for (let i = B.anims.length - 1; i >= 0; i--) {
@@ -259,7 +265,7 @@ B.render = function (ctx) {
     const fy = 92 - sz.h * scale + 10 - Math.round(Math.sin(B.t * 2) * 1.5) - Math.round(B.recoil.foe * 3);
     ctx.save();
     if (B.faintFoe > 0) { ctx.globalAlpha = Math.max(0, 1 - B.faintFoe); ctx.translate(0, B.faintFoe * 26); }
-    drawSprite(ctx, key, fx, fy, { scale, variant: !!B.foe.inst.variant, silhouette: B.flash > 0.5, tint: '#ffffff' });
+    drawSprite(ctx, key, fx, fy, { scale, variant: !!B.foe.inst.variant, silhouette: B.recoil.foe > 0.75, tint: '#ffffff' });
     ctx.restore();
   }
 
@@ -273,7 +279,8 @@ B.render = function (ctx) {
     const my = 156 - sz.h * scale + 14 + Math.round(B.recoil.me * 3);
     ctx.save();
     if (B.faintMe > 0) { ctx.globalAlpha = Math.max(0, 1 - B.faintMe); ctx.translate(0, B.faintMe * 30); }
-    drawSprite(ctx, key, mx, my, { scale, flip: true, variant: !!B.me.inst.variant });
+    drawSprite(ctx, key, mx, my, { scale, flip: true, variant: !!B.me.inst.variant,
+      silhouette: B.recoil.me > 0.75, tint: '#ffffff' });
     ctx.restore();
   }
 
@@ -319,7 +326,9 @@ B.render = function (ctx) {
   if (B.menu) renderMenu(ctx, B.menu);
 
   if (B.flash > 0) {
-    ctx.globalAlpha = Math.min(1, B.flash);
+    // Hard-capped: the screen must never go fully white, or the moment of impact
+    // is hidden behind the effect meant to sell it.
+    ctx.globalAlpha = Math.min(0.5, B.flash);
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 1;
@@ -542,7 +551,7 @@ async function performMove(attacker, defender, moveSlot) {
     }
     if (r.crit) anyCrit = true;
     total += r.dmg;
-    B.flash = r.crit ? 1 : 0.7;
+    B.flash = r.crit ? 0.55 : (r.mult > 1 ? 0.4 : 0.26);
     sfx(r.crit ? 'crit' : 'hit');
     await applyDamage(defender, r.dmg, { crit: r.crit, mult: r.mult });
   }
@@ -599,6 +608,16 @@ async function handleFoeFaint() {
 
   const participants = Math.max(1, S.party.filter((c) => c && c.__participated).length);
   const gain = expGain(B.foe.inst, participants, B.isTrainer);
+
+  // Wild battles used to pay nothing, so the only income in the game was ~16
+  // one-shot town trainers. Paying out per wild win — scaled by the level of what
+  // you beat, which is itself scaled by how far out you are — makes pushing into
+  // dangerous ground the way you earn.
+  if (!B.isTrainer) {
+    const bounty = Math.max(6, Math.round(B.foe.inst.level * 4.5));
+    addMoney(bounty);
+    await msg('You collected ' + bounty + ' credits.', false);
+  }
   for (const c of S.party) {
     if (!c || isFainted(c) || !c.__participated) continue;
     const res = giveExp(c, gain);
@@ -694,14 +713,29 @@ async function throwBall(itemId) {
 
   if (res.caught) {
     await pause(0.25);
-    const isNew = !S.dex.caught[B.foe.inst.species];
+    const caughtInst = B.foe.inst;
+    const name = displayName(caughtInst);
+    const isNew = !S.dex.caught[caughtInst.species];
     sfx('levelup');
-    await msg('Gotcha! ' + displayName(B.foe.inst) + ' was caught!');
+    await msg('Gotcha! ' + name + ' was caught!');
+
+    // Actually keep it. Without this the ball is spent, the message plays, and
+    // the creature evaporates — the worst possible bug in a game about catching.
+    caughtInst.ball = itemId;
+    caughtInst.met = { level: caughtInst.level, where: caughtInst.met ? caughtInst.met.where : 'the wild' };
+    const dest = addToParty(caughtInst);
+
+    if (dest === 'box') {
+      await msg(name + ' was sent to storage — your team is full.');
+    } else if (dest === 'full') {
+      await msg('There was nowhere to put ' + name + '. It slipped away!');
+      B.ballAnim = null;
+      return true;
+    }
     if (isNew) {
       // Progress feedback on every new catch — the completion drive only works
       // if the player can see the gap closing.
-      const after = dexCaughtCount() + 1;
-      await msg(displayName(B.foe.inst) + ' was added to your dex.  ' + after + '/' + DEX_COUNT + ' recorded.');
+      await msg(name + ' was added to your dex.  ' + dexCaughtCount() + '/' + DEX_COUNT + ' recorded.');
     }
     B.ballAnim = null;
     return true;
@@ -742,7 +776,7 @@ async function runBattle() {
   }
   if (B.foe.inst.variant) {
     // The payoff moment for the variable-ratio hook. Make it unmissable.
-    for (let i = 0; i < 3; i++) { sfx('catch'); B.flash = 1; await pause(0.16); }
+    for (let i = 0; i < 3; i++) { sfx('catch'); B.flash = 0.5; await pause(0.16); }
     await msg('This ' + foeName + ' has an unusual shimmer to it!');
   }
   await msg('Go, ' + displayName(B.me.inst) + '!', false);
@@ -941,6 +975,7 @@ B.enter = function (params) {
   runBattle()
     .then(async (result) => {
       B.result = result;
+      if (result === 'win') playBgm('victory');
       if (result === 'win' && B.isTrainer) {
         const prize = Math.max(0, (B.trainerSpec.prize | 0) || 200);
         await msg('You defeated ' + (B.trainerSpec.name || 'the challenger') + '!');
