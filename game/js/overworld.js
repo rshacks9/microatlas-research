@@ -11,7 +11,8 @@ import { makeCreature, displayName, partyWiped, healParty, firstHealthy } from '
 import { startBattle } from './battle.js';
 import { say, ask, showBanner, updateBanner, renderBanner, isDialogueOpen } from './dialogue.js';
 import { openPauseMenu, openShop } from './menus.js';
-import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney } from './state.js';
+import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay } from './state.js';
+import { getSpecies } from './creatures.js';
 import { makeRng, rand } from './rng.js';
 import { playBgm, sfx } from './audio.js';
 import { drawText, drawWindow, PAL } from './ui.js';
@@ -237,11 +238,26 @@ function rollEncounter() {
   try { table = encounterTableFor(currentBiome()) || []; } catch (_) { table = []; }
   if (!table.length) return null;
 
+  // Time of day reweights the table so night genuinely feels different from noon.
+  // Nocturnal types become common after dark and scarce at midday, which gives the
+  // clock a reason to exist and rewards a player for coming back at another hour.
+  const tod = timeOfDay();
+  const weightFor = (e) => {
+    const w = e.weight || 1;
+    const types = getSpecies(e.species).types || [];
+    const nocturnal = types.includes('UMBRA') || types.includes('PSION') || types.includes('TOXIN');
+    if (tod === 'night') return w * (nocturnal ? 3 : 0.7);
+    if (tod === 'evening') return w * (nocturnal ? 1.6 : 0.95);
+    if (tod === 'day') return w * (nocturnal ? 0.35 : 1.15);
+    return w;   // morning: neutral
+  };
+
   let total = 0;
-  for (const e of table) total += (e.weight || 1);
+  for (const e of table) total += weightFor(e);
+  if (total <= 0) return null;
   let r = rand.float() * total;
   let pick = table[0];
-  for (const e of table) { r -= (e.weight || 1); if (r <= 0) { pick = e; break; } }
+  for (const e of table) { r -= weightFor(e); if (r <= 0) { pick = e; break; } }
   if (!pick || !pick.species) return null;
 
   // Difficulty comes from DISTANCE, not from the biome table. The table's level range
@@ -536,6 +552,54 @@ async function triggerWatcher(e) {
 
 function waitSec(s) { return new Promise((res) => setTimeout(res, s * 1000)); }
 
+// ---------------------------------------------------------------- day / night
+// Keyframes over a 24h clock: [hour, r, g, b, alpha]. Interpolated so the world
+// slides between them instead of snapping at bucket boundaries.
+const SKY_KEYS = [
+  [0,   10, 16, 52, 0.62],   // deep night
+  [5,   20, 28, 68, 0.54],   // late night
+  [7,  126, 80, 58, 0.24],   // dawn warmth
+  [9,    0,  0,  0, 0.00],   // morning, clear
+  [16,   0,  0,  0, 0.00],   // day, clear
+  [18, 156, 86, 40, 0.24],   // golden hour
+  [20,  66, 42, 84, 0.40],   // dusk
+  [22,  16, 22, 60, 0.56],   // night falls
+  [24,  10, 16, 52, 0.62],
+];
+
+function skyOverlay() {
+  const h = (S.time / 60) % 24;
+  let a = SKY_KEYS[0], b = SKY_KEYS[SKY_KEYS.length - 1];
+  for (let i = 0; i < SKY_KEYS.length - 1; i++) {
+    if (h >= SKY_KEYS[i][0] && h <= SKY_KEYS[i + 1][0]) { a = SKY_KEYS[i]; b = SKY_KEYS[i + 1]; break; }
+  }
+  const span = Math.max(0.0001, b[0] - a[0]);
+  const t = Math.max(0, Math.min(1, (h - a[0]) / span));
+  const lerp = (i) => a[i] + (b[i] - a[i]) * t;
+  return { r: Math.round(lerp(1)), g: Math.round(lerp(2)), b: Math.round(lerp(3)), a: lerp(4) };
+}
+
+function drawSky(ctx) {
+  const map = O.map;
+  if (!map) return;
+  const indoor = !!(map.data && map.data.indoor) || String(S.mapId).startsWith('inside');
+  const s = skyOverlay();
+  // Interiors are lit, so they only pick up a fraction of the outdoor tint.
+  const alpha = indoor ? s.a * 0.35 : s.a;
+  if (alpha <= 0.005) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = Math.min(0.8, alpha);
+  ctx.fillStyle = 'rgb(' + Math.max(40, s.r + 90) + ',' + Math.max(40, s.g + 90) + ',' + Math.max(60, s.b + 90) + ')';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = Math.min(0.4, alpha * 0.55);
+  ctx.fillStyle = 'rgb(' + s.r + ',' + s.g + ',' + s.b + ')';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- render
 O.render = function (ctx) {
   const map = O.map, cam = O.cam;
@@ -561,6 +625,8 @@ O.render = function (ctx) {
   for (const a of actors) a.draw();
 
   map.render(ctx, cam, 'overlay');
+
+  drawSky(ctx);
 
   renderBanner(ctx);
   if (S.repelSteps > 0) {
