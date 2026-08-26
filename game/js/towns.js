@@ -48,6 +48,23 @@ export const CAVE_NAMES = [
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 const wrapIdx = (i, n) => ((Math.floor(Number(i) || 0) % n) + n) % n;
 
+/**
+ * 8-way compass word for the bearing from (fx,fy) to (tx,ty) in tile space
+ * (y grows southward). Integer math only — no trig — so the word is identical
+ * on every engine. The minor axis is kept only when it is at least ~tan(22.5°)
+ * of the major one (5*min >= 2*max), so shallow bearings read as straight.
+ */
+function compassWord(fx, fy, tx, ty) {
+  const dx = tx - fx, dy = ty - fy;
+  const ax = Math.abs(dx), ay = Math.abs(dy);
+  if (!ax && !ay) return 'here';
+  const diag = ax && ay && 5 * Math.min(ax, ay) >= 2 * Math.max(ax, ay);
+  const ns = dy < 0 ? 'north' : 'south';
+  const ew = dx < 0 ? 'west' : 'east';
+  if (diag) return ns + '-' + ew;
+  return ax >= ay ? ew : ns;
+}
+
 /** Town footprint, in tiles. Every local coordinate below lives in this box. */
 export const FOOT_W = 26, FOOT_H = 22;
 
@@ -518,12 +535,23 @@ export function stampTown(map, cx, cy, rng, index, tier) {
   }
 
   // Signpost (sits ON the sign tile — that is what makes it readable).
+  // Directions come from the stamped DOOR tiles, not from the slot layout: a
+  // door clipped by the map edge must drop off the sign, and the words must
+  // stay true if a slot ever moves. outDoors is already filtered to doors that
+  // actually survived the blit.
   const signX = WX(signLocal.x), signY = WY(signLocal.y);
   if (inBounds(map, signX, signY) && groundAt(map, signX, signY) === T.SIGN) {
+    const services = [];
+    const healAt = outDoors.find((d) => d.kind === 'heal');
+    if (healAt) services.push('Recovery Centre ' + compassWord(signX, signY, healAt.x, healAt.y) + '.');
+    const shopAt = outDoors.find((d) => d.kind === 'shop');
+    if (shopAt) services.push('Supplies ' + compassWord(signX, signY, shopAt.x, shopAt.y) + '.');
+    const signLines = [name + '. Population: enough.'];
+    if (services.length) signLines.push(services.join(' '));
     entities.push({
       kind: 'sign', x: signX, y: signY, dir: 'down',
       sprite: 'sign', name: name,
-      lines: [name + '. Population: enough.', 'Recovery Centre north-west. Supplies north-east.'],
+      lines: signLines,
       blocking: false,
     });
   }
@@ -1077,6 +1105,47 @@ function buildCave(rng, index, hint) {
       flag: 'cave' + index + '_item' + i,
       blocking: false,
     });
+  }
+
+  // ---- entry patch ---------------------------------------------------------
+  // The mouth chamber must be able to roll encounters: the random patches above
+  // can land anywhere, leaving the first minute of a cave dead. BFS out to six
+  // steps from the spawn; if fewer than ENTRY_MIN encounter tiles landed there,
+  // convert the nearest floor/patch tiles until the mouth carries its own
+  // patch. Conversions swap one walkable tile for another walkable tile, so no
+  // path can close and reachable-encounter counts can only rise. No rng: the
+  // top-up is a pure function of the layout already generated, so every other
+  // dressing decision for a seed is byte-identical with or without it. The
+  // heart chamber is untouchable from here — a connected cave of 200+ floor
+  // tiles always puts its deepest tile well past six steps from the mouth.
+  {
+    const ENTRY_MIN = 6, ENTRY_RADIUS = 6;
+    const ed = new Int32Array(size * size).fill(-1);
+    const eq = [data.spawn.y * size + data.spawn.x];
+    ed[eq[0]] = 0;
+    const near = [];
+    let entryEnc = 0;
+    for (let qi = 0; qi < eq.length; qi++) {
+      const cur = eq[qi];
+      const id = ground[cur];
+      if (id === theme.enc) entryEnc++;
+      else if (cur !== eq[0] && (id === theme.floor || id === theme.patch)) near.push(cur);
+      if (ed[cur] >= ENTRY_RADIUS) continue;
+      const cx4 = cur % size, cy4 = (cur / size) | 0;
+      for (const d of DIRS4) {
+        const nx = cx4 + d[0], ny = cy4 + d[1];
+        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+        const ni = ny * size + nx;
+        if (ed[ni] >= 0 || isSolid(ground[ni])) continue;
+        ed[ni] = ed[cur] + 1;
+        eq.push(ni);
+      }
+    }
+    // `near` is in BFS order, so the top-up hugs the spawn.
+    for (let i = 0; i < near.length && entryEnc < ENTRY_MIN; i++) {
+      ground[near[i]] = theme.enc;
+      entryEnc++;
+    }
   }
 
   return data;

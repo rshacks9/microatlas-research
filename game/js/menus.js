@@ -9,7 +9,7 @@ import { getMove } from './moves.js';
 import { getItem, useItem, shopStock, sellPrice } from './items.js';
 import { maxHp, statsFor, expToNext } from './battlecalc.js';
 import { displayName, isFainted, hpFrac, swapParty, nextMilestone } from './party.js';
-import { S, bagList, itemCount, removeItem, addItem, spendMoney, addMoney,
+import { S, PARTY_MAX, BOX_MAX, bagList, itemCount, removeItem, addItem, spendMoney, addMoney,
          dexSeenCount, dexCaughtCount, dexVariantCount, clockString, playtimeString } from './state.js';
 import { sfx } from './audio.js';
 import { TYPE_COLORS, TYPE_NAMES } from './types.js';
@@ -86,6 +86,7 @@ function dim(ctx, alpha = 0.55) {
 // ------------------------------------------------------------------ pause menu
 const PAUSE_ITEMS = [
   { label: 'Party', icon: 'icon_party' },
+  { label: 'Storage', icon: 'ball_orb' },
   { label: 'Bag', icon: 'icon_bag' },
   { label: 'Dex', icon: 'icon_dex' },
   { label: 'Map', icon: 'icon_map' },
@@ -102,6 +103,7 @@ export function openPauseMenu() {
       const label = PAUSE_ITEMS[i].label;
       if (label === 'Close') { self.close(-1); return; }
       if (label === 'Party') { await openParty(); return; }
+      if (label === 'Storage') { await openStorage(); return; }
       if (label === 'Bag') { await openBag({ context: 'field' }); return; }
       if (label === 'Dex') { await openDex(); return; }
       if (label === 'Map') { await openWorldMap(S.world); return; }
@@ -119,13 +121,15 @@ export function openPauseMenu() {
         drawText(ctx, it.label, x + 26, iy, { color: PAL.ink });
         if (i === self.index) drawCursor(ctx, x + 2, iy, self.t);
       }
-      // status strip
-      drawWindow(ctx, 6, H - 34, 128, 28);
-      drawText(ctx, S.player.name, 12, H - 28, { color: PAL.ink });
-      drawText(ctx, S.player.money + ' cr', 12, H - 18, { color: PAL.accent });
-      drawText(ctx, 'Seals ' + (S.badges | 0) + '/10', 62, H - 18, { color: PAL.gold });
-      drawTextRight(ctx, clockString(), 128, H - 28, { color: PAL.shadow });
-      drawTextRight(ctx, playtimeString(), 128, H - 18, { color: PAL.shadow });
+      // status strip — one field per x-range per row; left/right pairs never meet
+      // (money maxes at '999999 cr' = x66, playtime right edge starts at x98).
+      const sealTotal = S.world && S.world.towns ? S.world.towns.length : 10;
+      drawWindow(ctx, 6, H - 44, 128, 38);
+      drawText(ctx, S.player.name, 12, H - 38, { color: PAL.ink });
+      drawTextRight(ctx, clockString(), 128, H - 38, { color: PAL.shadow });
+      drawText(ctx, S.player.money + ' cr', 12, H - 28, { color: PAL.accent });
+      drawTextRight(ctx, playtimeString(), 128, H - 28, { color: PAL.shadow });
+      drawText(ctx, 'Seals ' + (S.badges | 0) + '/' + sealTotal, 12, H - 18, { color: PAL.gold });
     },
   });
   return new Promise((resolve) => pushScene(sc, { resolve }));
@@ -201,15 +205,106 @@ export function openParty(opts = {}) {
   return new Promise((resolve) => pushScene(sc, { resolve }));
 }
 
+// ------------------------------------------------------------------ storage
+const STORAGE_ROWS = 8;
+
+export function openStorage() {
+  const build = () => S.boxes.map((c, i) => ({ c, i, label: displayName(c) }));
+
+  const sc = makeListScene({
+    items: build(),
+    rows: STORAGE_ROWS,
+    async onPick(i, self) {
+      const c = S.boxes[i];
+      if (!c) return;
+      const choice = await ask('What about ' + displayName(c) + '?', ['Withdraw', 'Summary', 'Cancel']);
+      if (choice === 0) {
+        let msg;
+        if (S.party.length < PARTY_MAX) {
+          S.boxes.splice(i, 1);
+          S.party.push(c);
+          msg = displayName(c) + ' joined the party.';
+        } else {
+          // Full party: the withdrawn creature trades places with a chosen member.
+          const pi = await openParty({ pick: true });
+          if (pi < 0 || !S.party[pi]) return;
+          const out = S.party[pi];
+          S.party[pi] = c;
+          S.boxes[i] = out;
+          msg = displayName(c) + ' joined the party. ' + displayName(out) + ' was sent to storage.';
+        }
+        // Rebuild before the message so the list behind it already shows the result.
+        self.items = build();
+        if (self.index >= self.items.length) self.index = Math.max(0, self.items.length - 1);
+        if (self.scroll > self.index) self.scroll = self.index;
+        await say(msg);
+      } else if (choice === 1) {
+        await openSummary(i, S.boxes);
+      }
+    },
+    render(ctx, self) {
+      ctx.fillStyle = '#243040';
+      ctx.fillRect(0, 0, W, H);
+      drawText(ctx, 'STORAGE', 8, 6, { color: '#f0e8d8' });
+      drawTextRight(ctx, 'Box ' + S.boxes.length + '/' + BOX_MAX +
+        '  Party ' + S.party.length + '/' + PARTY_MAX, W - 8, 6, { color: '#98a4b4' });
+
+      drawWindow(ctx, 6, 18, W - 12, 200);
+      if (!self.items.length) {
+        drawTextCentered(ctx, 'Storage is empty.', W / 2, 100, { color: PAL.ink });
+        drawTextCentered(ctx, 'Catches past a party of ' + PARTY_MAX + ' are kept here.',
+          W / 2, 114, { color: PAL.shadow });
+      }
+      for (let r = 0; r < STORAGE_ROWS; r++) {
+        const i = self.scroll + r;
+        if (i >= self.items.length) break;
+        const c = self.items[i].c;
+        const sp = getSpecies(c.species);
+        const y = 24 + r * 24;
+        if (hasSprite(sp.sprite)) drawSprite(ctx, sp.sprite, 14, y - 1, { scale: 0.6, variant: !!c.variant });
+        drawText(ctx, displayName(c) + (c.variant ? ' *' : ''), 38, y + 2,
+          { color: c.variant ? PAL.gold : PAL.ink });
+        drawText(ctx, 'L' + c.level, 38, y + 12, { color: PAL.shadow });
+        const mx = maxHp(c);
+        drawTextRight(ctx, c.hp + '/' + mx, W - 16, y + 2, { color: isFainted(c) ? PAL.hpBad : PAL.shadow });
+        if (c.status) drawTextRight(ctx, c.status.toUpperCase(), W - 16, y + 12, { color: PAL.hpWarn });
+        if (i === self.index) drawCursor(ctx, 8, y + 7, self.t);
+      }
+      drawText(ctx, 'A: select    B: back', 8, H - 12, { color: '#98a4b4' });
+    },
+  });
+  return new Promise((resolve) => pushScene(sc, { resolve }));
+}
+
 // ------------------------------------------------------------------ summary
-function openSummary(index) {
+// Potential grades: iv 0..31 -> E/D/C/B/A/S in 6-wide bands, so a +4 tonic
+// crosses a boundary within at most two uses.
+const IV_GRADES = [[30, 'S'], [24, 'A'], [18, 'B'], [12, 'C'], [6, 'D'], [0, 'E']];
+const IV_GRADE_COLORS = { S: PAL.gold, A: PAL.hpGood, B: PAL.accent, C: PAL.shadow, D: PAL.dim, E: PAL.dim };
+
+function ivGrade(iv) {
+  const v = Math.max(0, Math.floor(Number(iv) || 0));
+  for (const [min, g] of IV_GRADES) if (v >= min) return g;
+  return 'E';
+}
+
+function drawIvGrade(ctx, rx, y, iv) {
+  const g = ivGrade(iv);
+  drawTextRight(ctx, g, rx, y, { color: IV_GRADE_COLORS[g] || PAL.dim });
+}
+
+// list: creature array the summary pages through; defaults to the party so
+// existing callers keep their signature. Storage passes S.boxes.
+function openSummary(index, list) {
   const sc = {
-    opaque: true, t: 0, resolve: null, i: index,
+    opaque: true, t: 0, resolve: null, i: index, list: list || null,
     enter(p) { this.resolve = p && p.resolve; },
     update(dt) {
       this.t += dt;
-      if (consume('left')) { this.i = (this.i - 1 + S.party.length) % S.party.length; sfx('select'); }
-      if (consume('right')) { this.i = (this.i + 1) % S.party.length; sfx('select'); }
+      const arr = this.list || S.party;
+      const n = Math.max(1, arr.length);
+      if (consume('left')) { this.i = (this.i - 1 + n) % n; sfx('select'); }
+      if (consume('right')) { this.i = (this.i + 1) % n; sfx('select'); }
       if (consume('b') || consume('a')) {
         sfx('cancel');
         const r = this.resolve; this.resolve = null;
@@ -217,7 +312,8 @@ function openSummary(index) {
       }
     },
     render(ctx) {
-      const c = S.party[this.i];
+      const arr = this.list || S.party;
+      const c = arr[this.i];
       ctx.fillStyle = '#243040';
       ctx.fillRect(0, 0, W, H);
       if (!c) return;
@@ -232,6 +328,7 @@ function openSummary(index) {
       for (const t of sp.types) bx += drawTypeBadge(ctx, t, bx, 46) + 3;
       const mx = maxHp(c);
       drawText(ctx, 'HP ' + c.hp + '/' + mx, 78, 60, { color: PAL.ink });
+      drawIvGrade(ctx, 148, 60, (c.ivs || {}).hp);
       drawHpBar(ctx, 78, 70, 68, c.hp, mx);
       const e = expToNext(c);
       drawText(ctx, 'EXP', 78, 76, { color: PAL.shadow });
@@ -239,13 +336,15 @@ function openSummary(index) {
 
       const st = statsFor(c);
       drawWindow(ctx, 158, 4, 158, 92);
-      const rows = [['Attack', st.atk], ['Defence', st.def], ['Sp. Atk', st.spa], ['Sp. Def', st.spd], ['Speed', st.spe]];
+      const rows = [['Attack', st.atk, 'atk'], ['Defence', st.def, 'def'], ['Sp. Atk', st.spa, 'spa'],
+                    ['Sp. Def', st.spd, 'spd'], ['Speed', st.spe, 'spe']];
       for (let i = 0; i < rows.length; i++) {
         drawText(ctx, rows[i][0], 166, 12 + i * 14, { color: PAL.ink });
         drawTextRight(ctx, String(rows[i][1]), 240, 12 + i * 14, { color: PAL.ink });
         const frac = Math.min(1, rows[i][1] / 200);
-        ctx.fillStyle = '#20303c'; ctx.fillRect(246, 14 + i * 14, 62, 4);
-        ctx.fillStyle = PAL.accent; ctx.fillRect(246, 14 + i * 14, Math.round(62 * frac), 4);
+        ctx.fillStyle = '#20303c'; ctx.fillRect(246, 14 + i * 14, 50, 4);
+        ctx.fillStyle = PAL.accent; ctx.fillRect(246, 14 + i * 14, Math.round(50 * frac), 4);
+        drawIvGrade(ctx, 310, 12 + i * 14, (c.ivs || {})[rows[i][2]]);
       }
 
       drawWindow(ctx, 4, 100, W - 8, 92);
@@ -277,13 +376,21 @@ let bagLastIndex = 0;
 
 export function openBag(opts = {}) {
   const context = opts.context || 'field';
-  const build = () => bagList()
-    .filter((id) => {
+  // Field view keeps battle-only items visible (greyed, below the usable ones):
+  // hiding them contradicted the intro's "you have 3 orbs" instruction.
+  const build = () => {
+    const usable = [], battleOnly = [];
+    for (const id of bagList()) {
       const it = getItem(id);
-      if (context === 'battle') return it.inBattle !== false;
-      return it.inField !== false;
-    })
-    .map((id) => ({ id, label: getItem(id).name, count: itemCount(id) }));
+      if (context === 'battle') {
+        if (it.inBattle !== false) usable.push({ id, label: it.name, count: itemCount(id) });
+        continue;
+      }
+      const e = { id, label: it.name, count: itemCount(id), battleOnly: it.inField === false };
+      (e.battleOnly ? battleOnly : usable).push(e);
+    }
+    return usable.concat(battleOnly);
+  };
 
   let items = build();
 
@@ -297,6 +404,7 @@ export function openBag(opts = {}) {
       const it = getItem(entry.id);
       if (opts.pick) { self.close(entry.id); return; }
 
+      if (entry.battleOnly) { await say('That can only be used during a battle.'); return; }
       if (it.kind === 'key') { await say(it.desc || 'An important item.'); return; }
       if (it.kind === 'ball') { await say('Balls can only be used in battle.'); return; }
       if (it.kind === 'repel') {
@@ -333,17 +441,19 @@ export function openBag(opts = {}) {
         if (i >= self.items.length) break;
         const e = self.items[i];
         const y = 26 + r * 16;
-        drawText(ctx, e.label, 22, y, { color: PAL.ink });
-        drawTextRight(ctx, 'x' + e.count, W - 20, y, { color: PAL.shadow });
+        drawText(ctx, e.label, 22, y, { color: e.battleOnly ? PAL.dim : PAL.ink });
+        drawTextRight(ctx, 'x' + e.count, W - 20, y, { color: e.battleOnly ? PAL.dim : PAL.shadow });
         if (i === self.index) drawCursor(ctx, 12, y, self.t);
       }
       const cur = self.items[self.index];
       drawWindow(ctx, 6, 172, W - 12, 44);
       if (cur) {
         const lines = wrapText(getItem(cur.id).desc || '', W - 30);
-        for (let i = 0; i < Math.min(3, lines.length); i++) {
+        const maxLines = cur.battleOnly ? 2 : 3;
+        for (let i = 0; i < Math.min(maxLines, lines.length); i++) {
           drawText(ctx, lines[i], 16, 180 + i * 11, { color: PAL.ink });
         }
+        if (cur.battleOnly) drawText(ctx, '(used in battle)', 16, 202, { color: PAL.dim });
       }
       drawText(ctx, 'A: use    B: back', 8, H - 12, { color: '#98a4b4' });
     },
@@ -354,6 +464,14 @@ export function openBag(opts = {}) {
 }
 
 // ------------------------------------------------------------------ dex
+// Habitat rules: legendaries never enter encounter tables (shrine-only) and
+// starters (empty biomes) only come from the intro ranger.
+function habitatLine(sp) {
+  if (sp.rarity === 'legendary') return 'Habitat: a distant shrine';
+  if (!sp.biomes || !sp.biomes.length) return 'Habitat: given by the ranger';
+  return 'Habitat: ' + sp.biomes.map((b) => b.charAt(0) + b.slice(1).toLowerCase()).join(', ');
+}
+
 export function openDex() {
   const all = allSpecies();
   const sc = makeListScene({
@@ -392,11 +510,18 @@ export function openDex() {
         drawTextCentered(ctx, s.name, 240, 100, { color: PAL.ink });
         let bx = 186;
         for (const t of s.types) bx += drawTypeBadge(ctx, t, bx, 114) + 4;
-        drawText(ctx, 'Ht ' + s.height + 'm', 176, 130, { color: PAL.shadow });
-        drawText(ctx, 'Wt ' + s.weight + 'kg', 176, 141, { color: PAL.shadow });
+        drawText(ctx, 'Ht ' + s.height + 'm   Wt ' + s.weight + 'kg', 176, 130, { color: PAL.shadow });
+        const hab = wrapText(habitatLine(s), 132);
+        const habN = Math.min(2, hab.length);
+        for (let i = 0; i < habN; i++) {
+          drawText(ctx, hab[i], 176, 141 + i * 10, { color: PAL.accent });
+        }
+        const ey = 141 + habN * 10 + 3;
         const lines = wrapText(s.entry || '', 132);
-        for (let i = 0; i < Math.min(7, lines.length); i++) {
-          drawText(ctx, lines[i], 176, 156 + i * 10, { color: PAL.ink });
+        // Panel inner bottom is y=228; never let entry text cross it.
+        const maxE = Math.max(0, Math.floor((228 - ey) / 10));
+        for (let i = 0; i < Math.min(maxE, lines.length); i++) {
+          drawText(ctx, lines[i], 176, ey + i * 10, { color: PAL.ink });
         }
       } else {
         drawTextCentered(ctx, 'Not yet encountered', 240, 118, { color: PAL.dim });
@@ -495,6 +620,13 @@ function drawDangerRings(g, world, size, mw, mh) {
     { dx: -1, dy: 0, room: spx },
   ].sort((a, b) => b.room - a.room);
   const dir = dirs[0];
+  // Bands close together along the walk (or clamped at the map edge) used to
+  // stack labels on the same pixels; a label keeps walking outward until its
+  // rect is clear of every placed one, or is dropped rather than overlap.
+  const placed = [];
+  const collides = (r) => placed.some((p) =>
+    r.x < p.x + p.w + 2 && p.x < r.x + r.w + 2 &&
+    r.y < p.y + p.h + 2 && p.y < r.y + r.h + 2);
   for (const thr of DANGER_LEVELS) {
     for (let k = 0; k <= dir.room; k++) {
       const px = spx + dir.dx * k, py = spy + dir.dy * k;
@@ -503,12 +635,29 @@ function drawDangerRings(g, world, size, mw, mh) {
       const tw = textWidth(tag);
       const lx = Math.max(1, Math.min(size - tw - 2, px - (tw >> 1)));
       const ly = Math.max(1, Math.min(size - 10, py - 3));
+      const rect = { x: lx - 1, y: ly - 1, w: tw + 2, h: 9 };
+      if (collides(rect)) continue;
+      placed.push(rect);
       g.fillStyle = 'rgba(16,24,32,0.55)';
-      g.fillRect(lx - 1, ly - 1, tw + 2, 9);
+      g.fillRect(rect.x, rect.y, rect.w, rect.h);
       drawText(g, tag, lx, ly, { color: '#f8dc8a' });
       break;
     }
   }
+}
+
+// Cave-mouth marker: dark peak with a lit opening — reads on both the grey
+// mountain and near-white peak biome fills, and is reused verbatim in the legend.
+function drawCaveMarker(ctx, px, py) {
+  ctx.fillStyle = '#101418';
+  ctx.beginPath();
+  ctx.moveTo(px, py - 3);
+  ctx.lineTo(px + 3, py + 2);
+  ctx.lineTo(px - 3, py + 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#f0a060';
+  ctx.fillRect(px - 1, py, 2, 2);
 }
 
 export function openWorldMap(world) {
@@ -534,9 +683,9 @@ export function openWorldMap(world) {
       }
 
       const mw = world.map.w, mh = world.map.h;
-      const size = 190;
-      const ox = (W - size) / 2, oy = 26;
-      const step = Math.max(1, Math.floor(mw / size));
+      // 184px leaves two clear legend rows below the map (rows at y212/y224).
+      const size = 184;
+      const ox = (W - size) / 2, oy = 22;
 
       if (!this.cache) this.cache = buildRegionMap(world, size);
       ctx.drawImage(this.cache, Math.round(ox), Math.round(oy));
@@ -548,6 +697,12 @@ export function openWorldMap(world) {
         const px = ox + (t.x / mw) * size, py = oy + (t.y / mh) * size;
         ctx.fillStyle = '#f0e070';
         ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 3, 3);
+      }
+      // cave mouths
+      const caves = Array.isArray(world.caves) ? world.caves : [];
+      for (const cv of caves) {
+        if (!cv) continue;
+        drawCaveMarker(ctx, Math.round(ox + (cv.x / mw) * size), Math.round(oy + (cv.y / mh) * size));
       }
       // shrines — optional; worldgen may not provide them yet
       const shrines = (world.shrines || (S.world && S.world.shrines));
@@ -573,12 +728,27 @@ export function openWorldMap(world) {
         ctx.fillStyle = '#fff';
         ctx.fillRect(Math.round(ppx) - 1, Math.round(ppy) - 1, 3, 3);
       }
-      drawText(ctx, 'You are here', 8, H - 24, { color: '#e04038' });
-      drawText(ctx, 'Settlements', 8, H - 14, { color: '#f0e070' });
-      if (Array.isArray(shrines) && shrines.length) {
-        drawTextRight(ctx, 'Shrines', W - 8, H - 24, { color: PAL.gold || '#f0c020' });
+      // legend: two rows below the map, each entry showing its actual marker
+      const ly1 = 212, ly2 = 224;
+      ctx.fillStyle = '#e04038'; ctx.fillRect(9, ly1 + 1, 5, 5);
+      ctx.fillStyle = '#fff'; ctx.fillRect(10, ly1 + 2, 3, 3);
+      drawText(ctx, 'You are here', 18, ly1, { color: '#c8d0dc' });
+      ctx.fillStyle = '#f0e070'; ctx.fillRect(102, ly1 + 2, 3, 3);
+      drawText(ctx, 'Settlement', 110, ly1, { color: '#c8d0dc' });
+      if (caves.length) {
+        drawCaveMarker(ctx, 199, ly1 + 3);
+        drawText(ctx, 'Cave', 207, ly1, { color: '#c8d0dc' });
       }
-      drawTextRight(ctx, 'B: back', W - 8, H - 14, { color: '#98a4b4' });
+      if (Array.isArray(shrines) && shrines.length) {
+        ctx.fillStyle = PAL.gold || '#f0c020';
+        ctx.beginPath();
+        ctx.moveTo(11, ly2); ctx.lineTo(14, ly2 + 3); ctx.lineTo(11, ly2 + 6); ctx.lineTo(8, ly2 + 3);
+        ctx.closePath(); ctx.fill();
+        drawText(ctx, 'Shrine', 18, ly2, { color: '#c8d0dc' });
+      }
+      ctx.fillStyle = '#f0c878'; ctx.fillRect(102, ly2 + 2, 8, 2);
+      drawText(ctx, 'L## = wild level', 114, ly2, { color: '#c8d0dc' });
+      drawTextRight(ctx, 'B: back', W - 8, ly2, { color: '#98a4b4' });
     },
   };
   return new Promise((resolve) => pushScene(sc, { resolve }));
@@ -778,12 +948,16 @@ export async function openOptions() {
     },
     render(ctx, self) {
       dim(ctx, 0.8);
-      drawWindow(ctx, 40, 64, W - 80, 100);
-      drawText(ctx, 'OPTIONS', 50, 72, { color: PAL.accent });
-      for (let i = 0; i < self.items.length; i++) {
-        const y = 92 + i * 16;
-        drawText(ctx, self.items[i].label, 60, y, { color: PAL.ink });
-        if (i === self.index) drawCursor(ctx, 50, y, self.t);
+      // Window height follows the row count so the last row never clips.
+      const n = self.items.length;
+      const wh = 16 * n + 24;
+      const wx = 40, wy = Math.round((H - wh) / 2);
+      drawWindow(ctx, wx, wy, W - 80, wh);
+      drawText(ctx, 'OPTIONS', wx + 10, wy + 8, { color: PAL.accent });
+      for (let i = 0; i < n; i++) {
+        const y = wy + 24 + i * 16;
+        drawText(ctx, self.items[i].label, wx + 20, y, { color: PAL.ink });
+        if (i === self.index) drawCursor(ctx, wx + 10, y, self.t);
       }
     },
   });

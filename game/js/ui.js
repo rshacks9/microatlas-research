@@ -171,14 +171,35 @@ export function drawCursor(ctx, x, y, t = 0) {
   }
 }
 
+// WCAG relative luminance of a hex colour; used to keep badge labels at
+// >= 4.5:1 contrast against every TYPE_COLORS background.
+function relLuminance(hex) {
+  let h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  const n = parseInt(h.slice(0, 6), 16);
+  if (!isFinite(n)) return 0;
+  const lin = (v) => {
+    v /= 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
 export function drawTypeBadge(ctx, type, x, y) {
   const label = (TYPE_NAMES[type] || type || '').toUpperCase();
-  const w = Math.max(26, textWidth(label) + 6);
+  const bg = TYPE_COLORS[type] || '#888';
+  // Width follows the label (2px inset each side inside a 1px border) and is
+  // returned so callers can lay out whatever follows the badge. The label
+  // keeps a 1px field row above and below so glyphs never touch the border.
+  const w = Math.max(12, textWidth(label) + 4);
+  const bx = Math.round(x), by = Math.round(y);
   ctx.fillStyle = '#101820';
-  ctx.fillRect(Math.round(x), Math.round(y), w, 9);
-  ctx.fillStyle = TYPE_COLORS[type] || '#888';
-  ctx.fillRect(Math.round(x) + 1, Math.round(y) + 1, w - 2, 7);
-  drawText(ctx, label, x + 3, y + 1, { color: '#101820' });
+  ctx.fillRect(bx, by, w, 11);
+  ctx.fillStyle = bg;
+  ctx.fillRect(bx + 1, by + 1, w - 2, 9);
+  // 0.19 is where contrast against ink and paper crosses over.
+  const inkCol = relLuminance(bg) > 0.19 ? '#101820' : PAL.paper;
+  drawText(ctx, label, bx + 2, by + 2, { color: inkCol });
   return w;
 }
 

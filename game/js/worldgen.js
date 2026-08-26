@@ -1042,7 +1042,7 @@ export function generateWorld(seed) {
       ground[best] = T.STAIRS;
       entities.push({
         kind: 'shrine', x: sx2, y: sy2, dir: 'down', blocking: true,
-        sprite: 'npc_elder', name: 'Ancient Shrine',
+        sprite: 'shrine', name: 'Ancient Shrine',
         species: spec.species, level: spec.level,
         flag: 'shrine_' + spec.species,
       });

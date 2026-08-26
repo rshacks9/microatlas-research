@@ -7,9 +7,53 @@ import { UI_SPRITES } from './spritedata_ui.js';
 
 export const KEY = '0123456789abcdefghijklmnopqrstuv';
 
+// ---- shrine monument ----------------------------------------------------
+// Static overworld landmark, same 16x24 record contract as the character
+// sprites. Authored with role letters and compiled to KEY chars at load.
+//   o outline, R stone, r stone lite, d stone shade, m moss, g carved sigil
+const SHRINE_ROLES = 'oRrdmg';
+const SHRINE_PAL = ['#202028', '#8e8e96', '#bcbcc2', '#606068', '#4a8c3c', '#e8c040'];
+const SHRINE_ART = [
+  '................',
+  '................',
+  '....oooooooo....',
+  '..oorrrrrrrroo..',
+  '..orrRRRRRRddo..',
+  '...ooRRRRRRoo...',
+  '....orRRRRdo....',
+  '....orRRRRdo....',
+  '....orRggRdo....',
+  '....ogRRRRgo....',
+  '....orRggRdo....',
+  '....orRRRRdo....',
+  '....orRdRRdo....',
+  '....orRRdRdo....',
+  '....orRRRddo....',
+  '....omRRRRdo....',
+  '....omRRRRd.....',
+  '....omRRRRdo....',
+  '...oomRRRRdoo...',
+  '..ormmRRRRRddo..',
+  '..orRmRRRRRddo..',
+  '.oorRRRRRRRRdoo.',
+  '.orRmRRRRRRRRdo.',
+  '.oooooooooooooo.',
+];
+const SHRINE_SPRITE = {
+  w: 16, h: 24, pal: SHRINE_PAL,
+  rows: SHRINE_ART.map((r) => r.replace(/[^.]/g, (ch) => {
+    const i = SHRINE_ROLES.indexOf(ch);
+    if (i < 0) throw new Error('sprites: bad shrine role char "' + ch + '"');
+    return KEY[i];
+  })),
+};
+
 export const SPRITES = Object.assign(
   Object.create(null),
-  CHAR_SPRITES, CREATURE_SPRITES_A, CREATURE_SPRITES_B, CREATURE_SPRITES_C, UI_SPRITES
+  CHAR_SPRITES, CREATURE_SPRITES_A, CREATURE_SPRITES_B, CREATURE_SPRITES_C, UI_SPRITES,
+  // Entities resolve draw keys through walkKey() with a '<base>_down_0' final
+  // fallback, so the monument registers under both its bare key and that one.
+  { shrine: SHRINE_SPRITE, shrine_down_0: SHRINE_SPRITE }
 );
 
 const cache = new Map();

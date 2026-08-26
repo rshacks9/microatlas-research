@@ -49,6 +49,67 @@ function setupCanvas() {
   return { canvas, ctx };
 }
 
+// ------------------------------------------------------------------ options persistence
+// Options live under their own key: a New Journey resets S, and a save slot can
+// be deleted, but neither may take the player's settings with them. Every
+// storage access is guarded — private mode and disabled storage must be no-ops.
+const OPTIONS_KEY = 'verdant.options';
+let optionsOnDevice = false;   // true once the key is known to exist
+
+function optionsStorage() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    localStorage.setItem('__vf_probe_opts', '1');
+    localStorage.removeItem('__vf_probe_opts');
+    return localStorage;
+  } catch (_) { return null; }   // private mode / disabled storage
+}
+
+// Applies the stored options onto S.options. Returns false when no usable
+// stored copy exists; every field is range-checked before it is trusted.
+function loadStoredOptions() {
+  const st = optionsStorage();
+  if (!st) return false;
+  let text;
+  try { text = st.getItem(OPTIONS_KEY); } catch (_) { return false; }
+  if (!text || typeof text !== 'string' || text.length > 4096) return false;
+  let o;
+  try { o = JSON.parse(text); } catch (_) { return false; }
+  if (!o || typeof o !== 'object') return false;
+  const ts = Number(o.textSpeed);
+  if (isFinite(ts)) S.options.textSpeed = Math.max(0, Math.min(3, Math.floor(ts)));
+  if (typeof o.music === 'boolean') S.options.music = o.music;
+  if (typeof o.sfx === 'boolean') S.options.sfx = o.sfx;
+  if (typeof o.autoRun === 'boolean') S.options.autoRun = o.autoRun;
+  return true;
+}
+
+function persistOptions() {
+  const st = optionsStorage();
+  if (!st) return false;
+  try {
+    st.setItem(OPTIONS_KEY, JSON.stringify({
+      textSpeed: S.options.textSpeed | 0,
+      music: !!S.options.music,
+      sfx: !!S.options.sfx,
+      autoRun: !!S.options.autoRun,
+    }));
+    optionsOnDevice = true;
+    return true;
+  } catch (_) { return false; }
+}
+
+// ------------------------------------------------------------------ control wording
+// Key names are meaningless on a touch screen; wording must follow the control
+// surface actually in use. pointer:coarse mirrors the pad-visibility rule in
+// boot; ontouchstart is the fallback where matchMedia is missing.
+function touchControls() {
+  try {
+    if (window.matchMedia) return window.matchMedia('(pointer: coarse)').matches;
+  } catch (_) { /* fall through */ }
+  return 'ontouchstart' in window;
+}
+
 // ------------------------------------------------------------------ title scene
 const Title = {
   opaque: true,
@@ -129,24 +190,36 @@ const Title = {
     if (cur && cur.sum) {
       const s = cur.sum;
       const cw = 190, cx = (W - cw) / 2, cy = by + 16 + this.items.length * 15 + 6;
-      drawWindow(ctx, cx, cy, cw, 44);
-      drawText(ctx, 'Seals ' + s.badges + '/10', cx + 8, cy + 6, { color: PAL.gold });
-      drawTextRight(ctx, 'Dex ' + s.dexCaught + '/34', cx + cw - 8, cy + 6, { color: PAL.accent });
+      drawWindow(ctx, cx, cy, cw, 52);
+      // Fixed columns: each stat owns its span, so no value width can ever run
+      // one string into another. The Seal total is the generated town count;
+      // the world is not built at the title, so the usual count stands in.
+      const sealTotal = (S.world && S.world.towns ? S.world.towns.length : 10);
+      drawText(ctx, 'Seals ' + s.badges + '/' + sealTotal, cx + 8, cy + 6, { color: PAL.gold });
+      drawText(ctx, 'Dex ' + s.dexCaught + '/34', cx + 112, cy + 6, { color: PAL.accent });
       drawText(ctx, s.money + ' cr', cx + 8, cy + 16, { color: PAL.shadow });
+      // Sprite row above, level row below: stacked in the sprite's own box the
+      // level digits overwrote the sprite and the window frame.
       let px = cx + 8;
       for (const m of s.party.slice(0, 6)) {
         const sp = getSpecies(m.species);
         if (hasSprite(sp.sprite)) {
+          // Scale the whole sprite into the 14px box; the old fixed offset put
+          // most of it outside the clip, leaving an unreadable sliver.
+          const sz = spriteSize(sp.sprite);
+          const sc = 14 / Math.max(sz.w, sz.h);
           ctx.save();
           ctx.beginPath(); ctx.rect(px, cy + 26, 14, 14); ctx.clip();
-          drawSprite(ctx, sp.sprite, px - 9, cy + 17, { scale: 0.44, variant: !!m.variant });
+          drawSprite(ctx, sp.sprite, px + (14 - sz.w * sc) / 2, cy + 26 + (14 - sz.h * sc) / 2,
+                     { scale: sc, variant: !!m.variant });
           ctx.restore();
         }
-        drawText(ctx, String(m.level), px + 1, cy + 36, { color: PAL.ink, shadow: PAL.paper });
-        px += 17;
+        drawTextCentered(ctx, String(m.level), px + 7, cy + 42, { color: PAL.shadow });
+        px += 19;
       }
     }
-    drawTextCentered(ctx, 'Z / Enter to choose', W / 2, H - 18, { color: '#88a494' });
+    drawTextCentered(ctx, touchControls() ? 'Tap A to choose' : 'Z / Enter to choose',
+                     W / 2, H - 18, { color: '#88a494' });
   },
 };
 
@@ -239,6 +312,10 @@ const StarterPick = {
     // Skip the frame that pushed the scene so the edge that closed the last
     // textbox cannot leak in as an instant confirm.
     if (this._fresh) { this._fresh = false; return; }
+    // A player mashing through the intro must SEE the choice before they can
+    // commit it: every confirming input — key, tap, confirm dialog — is inert
+    // for the first beats. Browsing stays live throughout.
+    const locked = this.t < 0.35;
 
     const tap = this._taps.length ? this._taps.shift() : null;
     const inBox = (p, b) => p && p.x >= b.x && p.x < b.x + b.w && p.y >= b.y && p.y < b.y + b.h;
@@ -246,9 +323,9 @@ const StarterPick = {
     if (this.confirm) {
       if (tap) {
         const g = this._confirmGeom();
-        if (inBox(tap, { x: g.x, y: g.rowY - 2, w: g.w, h: LINE_H })) { this._accept(); return; }
+        if (inBox(tap, { x: g.x, y: g.rowY - 2, w: g.w, h: LINE_H })) { if (!locked) this._accept(); return; }
         if (inBox(tap, { x: g.x, y: g.rowY - 2 + LINE_H, w: g.w, h: LINE_H })) { this._cancel(); return; }
-        if (inBox(tap, this._selBox())) { this._accept(); return; }
+        if (inBox(tap, this._selBox())) { if (!locked) this._accept(); return; }
         for (let i = 0; i < STARTERS.length; i++) {
           if (i !== this.index && inBox(tap, this._boxFor(i))) {
             this._cancel(); this.index = i; sfx('select'); return;
@@ -258,6 +335,7 @@ const StarterPick = {
         return;
       }
       if (consume('a') || consume('start')) {
+        if (locked) return;
         if (this.confirmSel === 0) this._accept();
         else this._cancel();
         return;
@@ -275,7 +353,7 @@ const StarterPick = {
       // what was touched once wraparound got involved.
       for (let i = 0; i < STARTERS.length; i++) {
         if (inBox(tap, this._boxFor(i))) {
-          if (i === this.index) this._open();
+          if (i === this.index) { if (!locked) this._open(); }
           else { this.index = i; sfx('select'); }
           return;
         }
@@ -287,7 +365,7 @@ const StarterPick = {
     }
     if (consume('left')) { this._move(-1); return; }
     if (consume('right')) { this._move(1); return; }
-    if (consume('a') || consume('start')) { this._open(); return; }
+    if (consume('a') || consume('start')) { if (!locked) this._open(); return; }
     consume('b');   // there is nothing to back out to; swallow so it cannot reach scenes below
   },
 
@@ -355,7 +433,8 @@ const StarterPick = {
     for (let i = 0; i < flavour.length; i++) {
       drawText(ctx, flavour[i], P.x + 8, P.y + 18 + i * LINE_H, { color: PAL.ink });
     }
-    drawTextRight(ctx, 'Z to choose', P.x + P.w - 8, P.y + P.h - 12, { color: PAL.dim });
+    drawTextRight(ctx, touchControls() ? 'Tap to choose' : 'Z to choose',
+                  P.x + P.w - 8, P.y + P.h - 12, { color: PAL.dim });
 
     if (this.confirm) {
       ctx.fillStyle = 'rgba(16,24,32,0.45)';
@@ -380,7 +459,12 @@ async function startNewGame() {
   await frameBreak();
 
   const seed = (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
+  // resetState restores default options; the ones the player set must outlive
+  // it, and outlive the page via their own key.
+  const keepOpts = Object.assign({}, S.options);
   resetState(seed, 'Rowan');
+  Object.assign(S.options, keepOpts);
+  persistOptions();
 
   try {
     S.world = generateWorld(seed);
@@ -429,8 +513,10 @@ async function startNewGame() {
   await say('Ranger: Tall grass is where you will find wild ones. Weaken them first, then throw an orb.');
   // One line, not three. The opening is the most expensive place in the game to
   // spend the player's patience, so the goal is stated once and the detail lives
-  // in the pause menu instead.
-  await say('Ranger: Every settlement keeps a Warden. Beat all ten for their Seals — any order you like, but the far ones hit hard.');
+  // in the pause menu instead. The Seal count is the generated town count.
+  const sealTotal = (S.world && S.world.towns ? S.world.towns.length : 10);
+  await say('Ranger: Every settlement keeps a Warden. Beat all ' + sealTotal +
+    ' for their Seals — any order you like, but the far ones hit hard.');
   sfx('levelup');
   } finally {
     releaseControl();
@@ -441,6 +527,11 @@ async function continueGame(slot) {
   clearScenes();
   pushScene(Loading, { text: 'Recovering your journey...' });
   await frameBreak();
+
+  // The save embeds an options copy, but the session's options are the current
+  // truth whenever the device-level store exists; a save from before that store
+  // existed seeds it instead, so migrating players keep their settings.
+  const sessionOpts = optionsOnDevice ? Object.assign({}, S.options) : null;
 
   if (!loadGame(slot)) {
     clearScenes();
@@ -461,6 +552,9 @@ async function continueGame(slot) {
     await say('The frontier could not be rebuilt from that record.');
     return;
   }
+
+  if (sessionOpts) Object.assign(S.options, sessionOpts);
+  persistOptions();
 
   setMusicEnabled(S.options.music);
   setSfxEnabled(S.options.sfx);
@@ -561,6 +655,12 @@ function boot() {
   const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   setTouchVisible(isTouch);
 
+  // Stored options apply from the first frame; audio flags must match them
+  // before the first gesture arms the audio graph.
+  optionsOnDevice = loadStoredOptions();
+  setMusicEnabled(S.options.music);
+  setSfxEnabled(S.options.sfx);
+
   try { buildAtlas(); } catch (e) { reportError('atlas', e); }
 
   // Audio must start from a gesture; arm it on the first input of any kind.
@@ -611,6 +711,9 @@ function boot() {
     };
   };
   window.__game = { Game, S, enterMap, startNewGame,
+    // Menus must persist an option the moment it changes; until they own a
+    // proper import seam this is the hook they (and tests) can call.
+    persistOptions,
     isSolidTile: tilesRef.isSolid,
     overlayBlocksTile: tilesRef.overlayBlocks,
     isGrassTile: tilesRef.isGrass,

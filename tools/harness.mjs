@@ -294,10 +294,25 @@ if (SCRIPT !== 'boot') {
     note('flow', 'battle never ended after 240 confirm presses');
   }
 
-  // Pause menu
-  await key('KeyC', 1, 350);
+  // The battle popping is not the end of the sequence: post-battle fades hold
+  // input for ~0.5s, and a loss follows with the wipe dialogue. Dismiss any
+  // lingering dialogue, let the fades settle, and only then judge the menu —
+  // pressing C once into that window mis-reported a working menu as broken.
+  for (let i = 0; i < 12; i++) {
+    const st = await probe('drain' + i);
+    if (st && st.sceneCount <= 1) break;
+    await key('Enter', 1, 200);
+  }
+  await page.waitForTimeout(700);
+
+  // Pause menu — retry a few times; a swallowed first press is timing, not a bug.
+  let menuState = null;
+  for (let i = 0; i < 3; i++) {
+    await key('KeyC', 1, 350);
+    menuState = await probe('menu');
+    if (menuState && (menuState.scene === 'menu' || menuState.sceneCount >= 2)) break;
+  }
   await shot('08-menu');
-  const menuState = await probe('menu');
   if (menuState && menuState.scene !== 'menu' && menuState.sceneCount < 2) {
     note('flow', 'pause menu did not open on C (scene=' + menuState.scene + ')');
   }
