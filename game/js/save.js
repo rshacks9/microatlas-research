@@ -55,6 +55,7 @@ function sanitizeCreature(raw) {
     hp: 0,
     status: STATUSES.indexOf(raw.status) !== -1 ? raw.status : null,
     sleepTurns: num(raw.sleepTurns, 0, 7, 0),
+    variant: !!raw.variant,
     moves: [],
     ball: (typeof raw.ball === 'string' && getItem(raw.ball).id === raw.ball) ? raw.ball : 'orb',
     met: { level: 1, where: 'somewhere' },
@@ -106,7 +107,7 @@ function sanitizeIdMap(raw, validator, maxKeys, maxVal) {
 function packCreature(c) {
   return {
     species: c.species, nickname: c.nickname, level: c.level, exp: c.exp,
-    ivs: c.ivs, hp: c.hp, status: c.status, sleepTurns: c.sleepTurns,
+    ivs: c.ivs, hp: c.hp, status: c.status, sleepTurns: c.sleepTurns, variant: !!c.variant,
     moves: c.moves.map((m) => ({ id: m.id, pp: m.pp, ppMax: m.ppMax })),
     ball: c.ball, met: c.met,
   };

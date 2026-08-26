@@ -69,6 +69,91 @@ function rasterize(data) {
   return c;
 }
 
+// ---- rare variant palettes ---------------------------------------------
+// A variant sprite is the same pixel data with every palette colour hue-rotated.
+// Doing it as a palette transform (rather than authoring 34 more sprites) means
+// every creature, including ones added later, gets a variant for free.
+const variantCache = new Map();
+
+function hexToRgb(hex) {
+  let h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  if (h.length < 6) return null;
+  const n = parseInt(h.slice(0, 6), 16);
+  if (!isFinite(n)) return null;
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function rgbToHex(r, g, b) {
+  const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return '#' + c(r) + c(g) + c(b);
+}
+
+// Rotate hue and nudge saturation so variants read as "wrong colour, same creature".
+function shiftColor(hex, deg, satBoost) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0, sat = 0;
+  const d = max - min;
+  if (d !== 0) {
+    sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  h = (h + deg / 360) % 1;
+  sat = Math.max(0, Math.min(1, sat * (satBoost || 1)));
+  const hue2 = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  if (sat === 0) return rgbToHex(l * 255, l * 255, l * 255);
+  const q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat;
+  const pp = 2 * l - q;
+  return rgbToHex(hue2(pp, q, h + 1 / 3) * 255, hue2(pp, q, h) * 255, hue2(pp, q, h - 1 / 3) * 255);
+}
+
+export function getVariantSprite(key) {
+  if (variantCache.has(key)) return variantCache.get(key);
+  const data = SPRITES[key];
+  let canvas;
+  if (!data || validateSprite(data)) {
+    canvas = placeholder(16, 16);
+  } else {
+    // Hue rotation is derived from the key so a given species always has the
+    // same variant colours — a player can learn to recognise them.
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    const deg = 100 + (h % 160);
+    canvas = rasterize({ ...data, pal: data.pal.map((c) => shiftColor(c, deg, 1.15)) });
+  }
+  variantCache.set(key, canvas);
+  return canvas;
+}
+
+const variantFlipCache = new Map();
+export function getVariantFlipped(key) {
+  if (variantFlipCache.has(key)) return variantFlipCache.get(key);
+  const src = getVariantSprite(key);
+  const c = makeCanvas(src.width, src.height);
+  const g = c.getContext('2d');
+  if (g) {
+    g.imageSmoothingEnabled = false;
+    g.translate(src.width, 0);
+    g.scale(-1, 1);
+    g.drawImage(src, 0, 0);
+  }
+  variantFlipCache.set(key, c);
+  return c;
+}
+
 export function hasSprite(key) { return !!SPRITES[key]; }
 
 export function getSprite(key) {
@@ -121,7 +206,9 @@ export function getTinted(key, color) {
 export function drawSprite(ctx, key, x, y, opts = {}) {
   const src = opts.silhouette && opts.tint
     ? getTinted(key, opts.tint)
-    : (opts.flip ? getFlipped(key) : getSprite(key));
+    : opts.variant
+      ? (opts.flip ? getVariantFlipped(key) : getVariantSprite(key))
+      : (opts.flip ? getFlipped(key) : getSprite(key));
   if (!src || !src.width) return;
   const scale = opts.scale || 1;
   const w = Math.round(src.width * scale);

@@ -38,9 +38,13 @@ export function movesAtLevel(speciesId, level) {
 export function makeCreature(speciesId, level, opts = {}) {
   const sp = getSpecies(speciesId);
   const lv = clampLevel(level);
+  const rollRare = opts.rng || (() => Math.random());
   const inst = {
     species: sp.id,
     nickname: opts.nickname || null,
+    // ~1 in 320. The whole point of a rare variant is that the player keeps
+    // taking one more step because the next one MIGHT be it.
+    variant: opts.variant !== undefined ? !!opts.variant : rollRare() < 1 / 320,
     level: lv,
     exp: expForLevel(sp.growth, lv),
     ivs: opts.ivs || rollIvs(opts.rng),

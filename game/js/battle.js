@@ -259,7 +259,7 @@ B.render = function (ctx) {
     const fy = 92 - sz.h * scale + 10 - Math.round(Math.sin(B.t * 2) * 1.5) - Math.round(B.recoil.foe * 3);
     ctx.save();
     if (B.faintFoe > 0) { ctx.globalAlpha = Math.max(0, 1 - B.faintFoe); ctx.translate(0, B.faintFoe * 26); }
-    drawSprite(ctx, key, fx, fy, { scale, silhouette: B.flash > 0.5, tint: '#ffffff' });
+    drawSprite(ctx, key, fx, fy, { scale, variant: !!B.foe.inst.variant, silhouette: B.flash > 0.5, tint: '#ffffff' });
     ctx.restore();
   }
 
@@ -273,7 +273,7 @@ B.render = function (ctx) {
     const my = 156 - sz.h * scale + 14 + Math.round(B.recoil.me * 3);
     ctx.save();
     if (B.faintMe > 0) { ctx.globalAlpha = Math.max(0, 1 - B.faintMe); ctx.translate(0, B.faintMe * 30); }
-    drawSprite(ctx, key, mx, my, { scale, flip: true });
+    drawSprite(ctx, key, mx, my, { scale, flip: true, variant: !!B.me.inst.variant });
     ctx.restore();
   }
 
@@ -739,6 +739,11 @@ async function runBattle() {
   if (firstSighting) {
     sfx('levelup');
     await msg('Your dex has no record of this one!');
+  }
+  if (B.foe.inst.variant) {
+    // The payoff moment for the variable-ratio hook. Make it unmissable.
+    for (let i = 0; i < 3; i++) { sfx('catch'); B.flash = 1; await pause(0.16); }
+    await msg('This ' + foeName + ' has an unusual shimmer to it!');
   }
   await msg('Go, ' + displayName(B.me.inst) + '!', false);
   B.me.inst.__participated = true;

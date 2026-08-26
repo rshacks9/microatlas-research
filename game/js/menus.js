@@ -169,10 +169,10 @@ export function openParty(opts = {}) {
         if (hasSprite(sp.sprite)) {
           ctx.save();
           ctx.beginPath(); ctx.rect(10, y + 1, 30, 30); ctx.clip();
-          drawSprite(ctx, sp.sprite, 9, y - 1, { scale: 0.94 });
+          drawSprite(ctx, sp.sprite, 9, y - 1, { scale: 0.94, variant: !!c.variant });
           ctx.restore();
         }
-        drawText(ctx, displayName(c), 44, y + 5, { color: PAL.ink });
+        drawText(ctx, displayName(c) + (c.variant ? ' *' : ''), 44, y + 5, { color: c.variant ? PAL.gold : PAL.ink });
         drawText(ctx, 'L' + c.level, 44, y + 16, { color: PAL.ink });
         const mx = maxHp(c);
         drawHpBar(ctx, 74, y + 18, 90, c.hp, mx);
@@ -209,8 +209,8 @@ function openSummary(index) {
       const sp = getSpecies(c.species);
 
       drawWindow(ctx, 4, 4, 150, 92);
-      if (hasSprite(sp.sprite)) drawSprite(ctx, sp.sprite, 10, 20, { scale: 2 });
-      drawText(ctx, displayName(c), 78, 10, { color: PAL.ink });
+      if (hasSprite(sp.sprite)) drawSprite(ctx, sp.sprite, 10, 20, { scale: 2, variant: !!c.variant });
+      drawText(ctx, displayName(c) + (c.variant ? ' *' : ''), 78, 10, { color: c.variant ? PAL.gold : PAL.ink });
       drawText(ctx, 'No. ' + String(sp.dexNo).padStart(3, '0'), 78, 22, { color: PAL.shadow });
       drawText(ctx, 'Level ' + c.level, 78, 34, { color: PAL.ink });
       let bx = 78;
