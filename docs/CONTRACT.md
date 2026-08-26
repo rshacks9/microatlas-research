@@ -461,6 +461,19 @@ export function isAudioReady();
 Every function must be a safe no-op if the AudioContext is unavailable or suspended.
 
 ## state.js
+
+Wave-6 additions:
+```js
+export const EXPLORE_CELL = 4, EXPLORE_W = 96, EXPLORE_H = 96;
+export function markExplored(x, y, radius = 6);  // chart cells near a world tile
+export function isExplored(x, y);                // world-tile query; false pre-reset
+export function getRecord();      // device-lifetime Frontier Record (own storage key)
+export function updateRecord({ adds, maxes });   // increments + high-water marks
+```
+`S.explored` is a Uint8Array of 4x4-tile cells; saves persist it (save.js).
+The Record never lives inside a save slot — it survives New Journey and
+deleted saves, and every storage access degrades silently when blocked.
+
 ```js
 export const S = {
   seed: 0, world: null, map: null, mapId: 'world',
@@ -479,6 +492,12 @@ export function timeOfDay();   // -> 'morning'|'day'|'evening'|'night'
 ```
 
 ## overworld.js
+
+`TRIAL_KEEPERS` (exported): the three Verdant Trial gauntlet trainers, offered
+when `S.badges >= town count` and re-offered by any beaten Warden until the
+`trial_done` flag is set. No legendaries; endgame level band 50-64
+(tools/check-entities.mjs enforces both).
+
 ```js
 export const Overworld = { /* scene */ };
 export function enterMap(mapId, x, y, dir);

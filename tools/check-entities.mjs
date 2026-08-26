@@ -72,6 +72,26 @@ if (item) {
   if (item.hidden !== true) fail('collected pickup not hidden');
 }
 
+// --- the Verdant Trial gauntlet must be fightable ---------------------------
+console.log('\n=== TRIAL KEEPERS ===');
+{
+  const { TRIAL_KEEPERS } = await import('../game/js/overworld.js');
+  if (!Array.isArray(TRIAL_KEEPERS) || TRIAL_KEEPERS.length !== 3) {
+    fail('expected 3 Trial Keepers, got ' + (TRIAL_KEEPERS && TRIAL_KEEPERS.length));
+  }
+  for (const k of TRIAL_KEEPERS || []) {
+    if (!k.team || !k.team.length) { fail(k.name + ' has no team'); continue; }
+    for (const m of k.team) {
+      const sp = getSpecies(m.species);
+      if (sp.id !== m.species) fail(k.name + ' fields unknown species "' + m.species + '"');
+      if (sp.rarity === 'legendary') fail(k.name + ' fields a legendary — the player hunts those');
+      if (!(m.level >= 50 && m.level <= 64)) fail(k.name + ': ' + m.species + ' level ' + m.level + ' outside the endgame band');
+    }
+  }
+  console.log('  keepers: ' + TRIAL_KEEPERS.length + ', team members: ' +
+    TRIAL_KEEPERS.reduce((n, k) => n + k.team.length, 0));
+}
+
 // Leave no test flags behind for any later in-process import of state.
 S.flags = {};
 

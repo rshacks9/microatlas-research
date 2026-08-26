@@ -12,7 +12,7 @@ import { maxHp } from './battlecalc.js';
 import { startBattle } from './battle.js';
 import { say, ask, showBanner, updateBanner, renderBanner, isDialogueOpen } from './dialogue.js';
 import { openPauseMenu, openShop } from './menus.js';
-import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay, dexCaughtCount } from './state.js';
+import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay, dexCaughtCount, markExplored, updateRecord } from './state.js';
 import { getSpecies, STARTERS } from './creatures.js';
 import { makeRng, rand } from './rng.js';
 import { playBgm, sfx } from './audio.js';
@@ -188,6 +188,7 @@ export function enterMap(mapId, x, y, dir) {
   // Name the place you are actually standing in. The world map's own name was
   // being shown for every town, so settlements the generator named were nameless
   // to the player.
+  if (mapId === 'world') markExplored(player.x, player.y, 8);
   const here = (mapId === 'world') ? townNameAt(player.x, player.y) : data.name;
   if (here) showBanner(here, 2.2);
   if (getFlag('world_shifted') && !getFlag('world_shifted_told')) {
@@ -374,6 +375,7 @@ async function doWildBattle(wild) {
     // player that its promises are decorative. Pay it off exactly once, and
     // only when this really IS the first catch: the flag alone would fire the
     // congratulation mid-game on a pre-flag save, dozens of catches too late.
+    if (result === 'caught') updateRecord({ maxes: { bestDex: dexCaughtCount() } });
     if (result === 'caught' && !getFlag('ranger_first_catch')) {
       setFlag('ranger_first_catch', true);
       if (dexCaughtCount() <= 2) {   // the starter plus the one just caught
@@ -590,6 +592,10 @@ async function talkTo(e) {
       if (e.flag && getFlag(e.flag)) {
         // Already beaten: they stay put and acknowledge it, rather than the world
         // quietly deleting everyone you have defeated.
+        if (e.warden && (S.badges | 0) >= sealGoal() && !getFlag('trial_done')) {
+          await offerVerdantTrial(e.name || 'The Warden');
+          return;
+        }
         const lines = (e.lines && e.lines.length) ? e.lines : ['You bested me fair and square.'];
         await say(lines, { speaker: e.name || undefined });
         return;
@@ -663,10 +669,79 @@ async function startTrainerBattle(e) {
       e.seal ? 'You received the ' + e.seal + '!' : 'The Warden hands you a Seal.',
       'Seals: ' + S.badges + ' of ' + sealGoal() + '.  Every settlement out there has one.',
     ]);
+    updateRecord({ maxes: { bestSeals: S.badges } });
     await grantStarterMilestone();
+    if (S.badges >= sealGoal() && !getFlag('trial_done')) {
+      await offerVerdantTrial(e.name || 'The Warden');
+    }
   }
   e.defeated = result === 'win';
   await afterBattle(result);
+}
+
+// ---------------------------------------------------------------- the Trial
+// The ending the Seals were always pointing at: with every Seal held, the
+// Wardens' Circle convenes and the Keepers test you back-to-back with no rest
+// between rounds. Losing costs what any loss costs and the Circle will convene
+// again from any beaten Warden — the ending must be winnable eventually, not
+// missable forever.
+export const TRIAL_KEEPERS = [
+  { name: 'Keeper Bramwell', challenge: 'The Circle opens with stone. Wear through me if you can.',
+    team: [{ species: 'boulderkin', level: 54 }, { species: 'ironclad', level: 56 }, { species: 'thornmane', level: 55 }],
+    prize: 1200 },
+  { name: 'Keeper Sable', challenge: 'Round two. What you cannot see will decide this.',
+    team: [{ species: 'nightveil', level: 55 }, { species: 'bogwisp', level: 54 }, { species: 'rimewolf', level: 56 }],
+    prize: 1500 },
+  { name: 'Keeper Oriane', challenge: 'Last round. The Circle asks for everything now.',
+    team: [{ species: 'thunderjaw', level: 57 }, { species: 'galeplume', level: 55 },
+           { species: 'tidalquill', level: 56 }, { species: 'pyrelynx', level: 58 }],
+    prize: 2400 },
+];
+
+async function offerVerdantTrial(byName) {
+  await say([
+    byName + ': Every Seal on the frontier answers to you now.',
+    byName + ': The Wardens\' Circle convenes for the Verdant Trial — three Keepers, no rest between rounds.',
+  ]);
+  const yes = await ask('Face the Verdant Trial?', ['Begin', 'Not yet']);
+  if (yes !== 0) {
+    await say('The Circle will convene whenever you speak to a Warden you have bested.');
+    return;
+  }
+  await runVerdantTrial();
+}
+
+async function runVerdantTrial() {
+  healParty();   // the Trial starts fair; what it never does is heal BETWEEN rounds
+  await say('The light shifts. The Circle has formed around you.');
+  for (let i = 0; i < TRIAL_KEEPERS.length; i++) {
+    const k = TRIAL_KEEPERS[i];
+    sfx('encounter');
+    await say(k.name + ': ' + k.challenge);
+    await encounterWipe();
+    const battle = startBattle({ trainer: k, bg: ['#2c2440', '#483860', '#241c34'] });
+    await fade('in', 0.3);
+    const result = await battle;
+    if (result !== 'win') {
+      await afterBattle(result);
+      await say('The Circle disperses. It will convene again when you are ready.');
+      return;
+    }
+    if (i < TRIAL_KEEPERS.length - 1) {
+      await say(k.name + ' steps back. No one heals you. The next round begins.');
+    }
+  }
+  // The ending.
+  setFlag('trial_done', true);
+  updateRecord({ adds: { trials: 1 }, maxes: { bestSeals: S.badges, bestDex: dexCaughtCount() } });
+  sfx('fanfare_catch');
+  await say([
+    'The Keepers lower their orbs. The Circle is silent, then it bows.',
+    'Keeper Oriane: The frontier has a new Warden of Wardens. Walk it however you please.',
+    'You completed the Verdant Trial!',
+    'Your journey is recorded in the Frontier Record. A New Journey+ awaits from the title screen.',
+  ]);
+  await afterBattle('win');
 }
 
 // ---------------------------------------------------------------- warps
@@ -771,6 +846,7 @@ function handleInput(dt) {
 }
 
 function onStepComplete() {
+  if (S.mapId === 'world') markExplored(player.x, player.y);
   S.player.x = player.x; S.player.y = player.y; S.player.dir = player.dir;
   S.player.steps++;
   O.stepsSinceEncounter++;

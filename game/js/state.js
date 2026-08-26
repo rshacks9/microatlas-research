@@ -19,6 +19,7 @@ export const S = {
   returnPoint: null,   // world tile to emerge at when leaving an interior
   badges: 0,
   started: false,
+  explored: null,       // Uint8Array(EXPLORE_W*EXPLORE_H) of charted 4x4-tile cells
 };
 
 export const PARTY_MAX = 6;
@@ -45,8 +46,97 @@ export function resetState(seed, name) {
   S.returnPoint = null;
   S.badges = 0;
   S.started = true;
+  S.explored = new Uint8Array(EXPLORE_W * EXPLORE_H);
   addItem('orb', 3);
   addItem('potion', 3);
+}
+
+// ---------------------------------------------------------------------------
+// Explored chart: the region map draws only where the player has been. Cells
+// are 4x4 world tiles — coarse enough that the whole chart is ~1KB in a save,
+// fine enough that one map pixel (~2 tiles) never straddles a charted and an
+// uncharted cell visibly.
+export const EXPLORE_CELL = 4;
+export const EXPLORE_W = 96;    // ceil(384 / 4); worldgen's WORLD_W stays the authority
+export const EXPLORE_H = 96;
+
+/** Chart the cells within `radius` world tiles of x,y. Cheap; call per step. */
+export function markExplored(x, y, radius = 6) {
+  if (!S.explored) S.explored = new Uint8Array(EXPLORE_W * EXPLORE_H);
+  const c0x = Math.max(0, ((x - radius) / EXPLORE_CELL) | 0);
+  const c1x = Math.min(EXPLORE_W - 1, ((x + radius) / EXPLORE_CELL) | 0);
+  const c0y = Math.max(0, ((y - radius) / EXPLORE_CELL) | 0);
+  const c1y = Math.min(EXPLORE_H - 1, ((y + radius) / EXPLORE_CELL) | 0);
+  for (let cy = c0y; cy <= c1y; cy++) {
+    for (let cx = c0x; cx <= c1x; cx++) S.explored[cy * EXPLORE_W + cx] = 1;
+  }
+}
+
+/** Has the world tile x,y been charted? Unstarted state reads as uncharted. */
+export function isExplored(x, y) {
+  if (!S.explored) return false;
+  const cx = (x / EXPLORE_CELL) | 0, cy = (y / EXPLORE_CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= EXPLORE_W || cy >= EXPLORE_H) return false;
+  return S.explored[cy * EXPLORE_W + cx] === 1;
+}
+
+// ---------------------------------------------------------------------------
+// Frontier Record: lifetime stats across every journey on this device. Lives
+// in its own storage key, never inside a save slot, so it survives New
+// Journey and deleted saves alike. Every access is guarded — a blocked store
+// degrades to an in-memory record, never a crash.
+const RECORD_KEY = 'verdant.record';
+const RECORD_SHAPE = {
+  journeys: 0,        // games started
+  trials: 0,          // Verdant Trials completed
+  bestDex: 0,
+  bestSeals: 0,
+  totalPlaytime: 0,   // seconds, lifetime
+  lastSeed: 0,
+};
+let recordCache = null;
+
+function recordStore() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    localStorage.setItem('__vf_rec_probe', '1');
+    localStorage.removeItem('__vf_rec_probe');
+    return localStorage;
+  } catch (_) { return null; }
+}
+
+export function getRecord() {
+  if (recordCache) return recordCache;
+  const rec = Object.assign({}, RECORD_SHAPE);
+  const st = recordStore();
+  if (st) {
+    try {
+      const d = JSON.parse(st.getItem(RECORD_KEY) || '{}');
+      if (d && typeof d === 'object' && !Array.isArray(d)) {
+        for (const k of Object.keys(RECORD_SHAPE)) {
+          const v = Number(d[k]);
+          if (Number.isFinite(v) && v >= 0) rec[k] = Math.min(v, 1e9);
+        }
+      }
+    } catch (_) { /* hostile or absent record: keep defaults */ }
+  }
+  recordCache = rec;
+  return rec;
+}
+
+/** Merge numeric updates into the record and persist. adds= increments, maxes= high-water marks. */
+export function updateRecord({ adds = {}, maxes = {} } = {}) {
+  const rec = getRecord();
+  for (const k of Object.keys(adds)) {
+    if (k in RECORD_SHAPE) rec[k] = Math.min(1e9, rec[k] + Math.max(0, Number(adds[k]) || 0));
+  }
+  for (const k of Object.keys(maxes)) {
+    if (k in RECORD_SHAPE) rec[k] = Math.max(rec[k], Math.min(1e9, Math.max(0, Number(maxes[k]) || 0)));
+  }
+  if ('lastSeed' in maxes) rec.lastSeed = (Number(maxes.lastSeed) >>> 0);
+  const st = recordStore();
+  if (st) { try { st.setItem(RECORD_KEY, JSON.stringify(rec)); } catch (_) { /* full or blocked */ } }
+  return rec;
 }
 
 export function setFlag(k, v = true) { S.flags[k] = v; }
