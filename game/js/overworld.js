@@ -50,6 +50,8 @@ const O = {
   pendingWatcher: null,
   grassSteps: 0,
   encounterRolls: 0,
+  effects: [],          // short-lived overworld puffs (grass rustle, running dust)
+  lastRunning: false,
   returnPoint: null,    // where to drop the player when leaving an interior
   turnHold: 0,
 };
@@ -139,6 +141,7 @@ export function enterMap(mapId, x, y, dir) {
   O.cam = makeCamera(map);
   O.cam.follow(player.px + TILE / 2, player.py + TILE / 2, true);
   O.stepsSinceEncounter = 0;
+  O.effects = [];
   O.busy = false;
   O.pendingWatcher = null;
 
@@ -205,6 +208,7 @@ function startStep(dir, running) {
   player.hopping = false;
   player.moveT = 0;
   player.moveDur = running ? RUN_DUR : WALK_DUR;
+  O.lastRunning = !!running;
   return true;
 }
 
@@ -438,6 +442,7 @@ O.resume = function () {
 O.update = function (dt) {
   O.t += dt;
   updateBanner(dt);
+  updateEffects(dt);
   if (!O.map || !O.cam) return;
 
   S.playtime += dt;
@@ -494,7 +499,12 @@ function onStepComplete() {
   S.player.x = player.x; S.player.y = player.y; S.player.dir = player.dir;
   S.player.steps++;
   O.stepsSinceEncounter++;
-  if (O.map && O.map.grassAt && O.map.grassAt(player.x, player.y)) O.grassSteps++;
+  if (O.map && O.map.grassAt && O.map.grassAt(player.x, player.y)) {
+    O.grassSteps++;
+    addEffect('rustle', player.x, player.y);
+  } else if (O.lastRunning) {
+    addEffect('dust', player.fromX, player.fromY);
+  }
   if (S.repelSteps > 0) S.repelSteps--;
 
   const map = O.map;
@@ -551,6 +561,46 @@ async function triggerWatcher(e) {
 }
 
 function waitSec(s) { return new Promise((res) => setTimeout(res, s * 1000)); }
+
+// ---------------------------------------------------------------- step effects
+// Walking was completely silent and still — no rustle, no dust. These are the
+// cheapest possible "the world reacted to me" feedback, and movement is the thing
+// the player does most.
+function addEffect(kind, tx, ty) {
+  if (O.effects.length > 24) O.effects.shift();
+  O.effects.push({ kind, x: tx * TILE, y: ty * TILE, t: 0, life: kind === 'dust' ? 0.32 : 0.36 });
+}
+
+function updateEffects(dt) {
+  for (let i = O.effects.length - 1; i >= 0; i--) {
+    const e = O.effects[i];
+    e.t += dt;
+    if (e.t >= e.life) O.effects.splice(i, 1);
+  }
+}
+
+function renderEffects(ctx, cam) {
+  for (const e of O.effects) {
+    const k = Math.min(0.999, e.t / e.life);
+    const sx = Math.round(e.x - cam.ox);
+    const sy = Math.round(e.y - cam.oy);
+    if (sx < -20 || sy < -20 || sx > W + 20 || sy > H + 20) continue;
+    if (e.kind === 'rustle') {
+      const frame = Math.min(2, Math.floor(k * 3));
+      const key = 'grass_tuft_' + frame;
+      if (hasSprite(key)) drawSprite(ctx, key, sx, sy + 8, { alpha: 1 - k * 0.35 });
+    } else {
+      // running dust: two small puffs drifting back and fading
+      ctx.save();
+      ctx.globalAlpha = (1 - k) * 0.55;
+      ctx.fillStyle = '#d8cba8';
+      const spread = Math.round(k * 5);
+      ctx.fillRect(sx + 5 - spread, sy + 13 - Math.round(k * 3), 2, 2);
+      ctx.fillRect(sx + 9 + spread, sy + 13 - Math.round(k * 2), 2, 2);
+      ctx.restore();
+    }
+  }
+}
 
 // ---------------------------------------------------------------- day / night
 // Keyframes over a 24h clock: [hour, r, g, b, alpha]. Interpolated so the world
@@ -624,6 +674,7 @@ O.render = function (ctx) {
   actors.sort((a, b) => a.y - b.y);
   for (const a of actors) a.draw();
 
+  renderEffects(ctx, cam);
   map.render(ctx, cam, 'overlay');
 
   drawSky(ctx);

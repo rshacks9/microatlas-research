@@ -1,275 +1,696 @@
-// WebAudio chiptune engine. No audio files — every voice is synthesized.
-// Every export is a safe no-op when there is no AudioContext (Node, blocked autoplay).
+// audio.js — Verdant Frontier chiptune engine.
+//
+// Everything you hear is synthesized at runtime: pulse/square voices with a
+// selectable duty cycle, a triangle voice, and a white-noise percussion
+// channel. There are no audio files and no external assets.
+//
+// All music in this file is original to Verdant Frontier.
+//
+// Safety contract: the module must import cleanly in Node (no top-level DOM or
+// AudioContext access) and every exported function must be a silent no-op if
+// the AudioContext is unavailable, blocked, or has been closed. Nothing here is
+// ever allowed to throw into the game loop.
 
-let ctx = null;
-let master = null, musicGain = null, sfxGain = null;
-let ready = false;
-let musicOn = true, sfxOn = true;
+// ---------------------------------------------------------------------------
+// engine state
+// ---------------------------------------------------------------------------
 
-let current = null;        // name of the playing track
-let timer = null;          // scheduler interval
-let nextNoteTime = 0;
-let step = 0;
-let queuedAfter = null;    // track to return to after a one-shot fanfare
+const A = {
+  ctx: null,
+  ok: false,            // context exists and is usable
+  dead: false,          // construction failed once; never retry
+  master: null,
+  musicGain: null,
+  sfxGain: null,
+  noiseBuf: null,
+  waves: null,          // duty -> PeriodicWave cache
+  timer: null,
+  players: [],          // active bgm players (usually 1, 2 while crossfading)
+  compiled: null,       // name -> compiled track cache
+  pending: null,        // { name, at } resume after a one-shot fanfare
+  musicOn: true,
+  sfxOn: true,
+};
 
-const LOOKAHEAD_MS = 25;
-const SCHEDULE_AHEAD = 0.12;
+const MASTER_GAIN = 0.25;   // deliberately quiet — must never startle
+const LOOKAHEAD_MS = 25;    // scheduler wake interval
+const SCHEDULE_AHEAD = 0.10; // seconds of notes queued in front of the clock
+const FADE = 0.4;           // crossfade seconds
 
-// ---------------------------------------------------------------- notes
-const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+// ---------------------------------------------------------------------------
+// note names -> frequency
+// ---------------------------------------------------------------------------
 
-function freq(note) {
-  if (!note) return 0;
-  const m = /^([A-G])([#b]?)(-?\d)$/.exec(note);
-  if (!m) return 0;
-  let s = SEMI[m[1]];
-  if (m[2] === '#') s++;
-  else if (m[2] === 'b') s--;
-  const midi = (parseInt(m[3], 10) + 1) * 12 + s;
-  return 440 * Math.pow(2, (midi - 69) / 12);
+const SEMITONE = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
+const freqCache = Object.create(null);
+
+/** 'C4' | 'F#3' | 'Bb1' -> Hz. Unknown input returns 0 (treated as a rest). */
+function noteFreq(name) {
+  if (typeof name !== 'string') return 0;
+  const hit = freqCache[name];
+  if (hit !== undefined) return hit;
+  const m = /^([A-Ga-g])([#sb]?)(-?\d)$/.exec(name);
+  let f = 0;
+  if (m) {
+    let semi = SEMITONE[m[1].toLowerCase()];
+    if (m[2] === '#' || m[2] === 's') semi += 1;
+    else if (m[2] === 'b') semi -= 1;
+    const midi = (parseInt(m[3], 10) + 1) * 12 + semi;
+    f = 440 * Math.pow(2, (midi - 69) / 12);
+  }
+  freqCache[name] = f;
+  return f;
 }
 
-// ---------------------------------------------------------------- tracks
-// Each track: { bpm, div (steps per beat), lead[], bass[], drum[] }
-// Note strings, or null for a rest. Arrays loop independently, so a 16-step
-// bass under a 32-step lead gives cheap variation.
+// ---------------------------------------------------------------------------
+// note tables
+//
+// Music is stored as one-bar patterns (4 beats of 4/4) plus a sequence string
+// that names the bar order, so a 16-bar loop costs only a handful of patterns.
+// A melodic pattern is an array of [pitch, beats]; pitch is a note name or null
+// for a rest. A percussion pattern is a string, one character per step:
+//   k = kick, s = snare, h = hat, . = rest
+// ---------------------------------------------------------------------------
+
+/** Eight driving eighth-notes alternating between two octaves of one root. */
+function pulse8(lo, hi) {
+  return [[lo, 0.5], [lo, 0.5], [hi, 0.5], [lo, 0.5],
+          [lo, 0.5], [lo, 0.5], [hi, 0.5], [lo, 0.5]];
+}
+/** Bouncy town bass: root, fifth-ish, root, colour tone, all off-beat gapped. */
+function bounce(a, b, c) {
+  return [[a, 0.5], [null, 0.5], [b, 0.5], [null, 0.5],
+          [a, 0.5], [null, 0.5], [c, 0.5], [null, 0.5]];
+}
+
 const TRACKS = {
+  // ---- title: slow and wistful, A minor -----------------------------------
   title: {
-    bpm: 82, div: 2, wave: 'triangle', gain: 0.5,
-    lead: ['E4', null, 'G4', null, 'B4', null, 'A4', null, 'G4', null, 'E4', null, 'D4', null, null, null,
-           'C4', null, 'E4', null, 'G4', null, 'F4', null, 'E4', null, 'D4', null, 'E4', null, null, null],
-    bass: ['E2', null, null, null, 'C2', null, null, null, 'G2', null, null, null, 'D2', null, null, null],
-    drum: [],
+    tempo: 76,
+    lead: { voice: { type: 'square', duty: 0.125, gain: 0.30, legato: 0.96 },
+      pat: {
+        a: [['A4', 1], ['C5', 1], ['B4', 1.5], ['G4', 0.5]],
+        b: [['E5', 2], ['D5', 1], ['C5', 1]],
+        c: [['F4', 1], ['A4', 1], ['G4', 2]],
+        d: [[null, 1], ['E4', 1], ['G4', 1], ['A4', 1]],
+        e: [['C5', 1.5], ['B4', 0.5], ['A4', 2]],
+        f: [['D5', 1], ['C5', 1], ['E5', 2]],
+        g: [['G4', 2], ['F4', 1], ['E4', 1]],
+        h: [['A4', 3], [null, 1]],
+      },
+      seq: 'dabcdabefgehdabh',
+    },
+    bass: { voice: { type: 'triangle', gain: 0.42, legato: 0.9 },
+      pat: {
+        p: [['A2', 2], ['E2', 2]],
+        q: [['F2', 2], ['C3', 2]],
+        r: [['D2', 2], ['G2', 2]],
+        s: [['E2', 2], ['B2', 2]],
+      },
+      seq: 'ppqrppqsqrsppqrs',
+    },
+    perc: { gain: 0.5,
+      pat: { x: '........', y: '....h...', z: 'h...h...' },
+      seq: 'xxxyxxxyxxyzxxyz',
+    },
   },
+
+  // ---- town: warm and bouncy, G major -------------------------------------
   town: {
-    bpm: 118, div: 2, wave: 'square', gain: 0.42,
-    lead: ['G4', 'A4', 'B4', 'D5', 'B4', 'A4', 'G4', 'E4', 'G4', 'A4', 'B4', 'A4', 'G4', null, 'D4', null,
-           'C5', 'B4', 'A4', 'G4', 'A4', 'B4', 'G4', 'E4', 'D4', 'E4', 'G4', 'A4', 'G4', null, null, null],
-    bass: ['G2', null, 'D3', null, 'C3', null, 'G2', null, 'E2', null, 'B2', null, 'D3', null, 'D2', null],
-    drum: [1, 0, 0, 2, 1, 0, 2, 0],
+    tempo: 132,
+    lead: { voice: { type: 'square', duty: 0.5, gain: 0.26, legato: 0.86 },
+      pat: {
+        a: [['D5', 0.5], ['G5', 0.5], ['F#5', 0.5], ['G5', 0.5], ['A5', 1], ['G5', 1]],
+        b: [['B4', 0.5], ['D5', 0.5], ['G5', 1], ['F#5', 1], ['D5', 1]],
+        c: [['E5', 0.5], ['D5', 0.5], ['C5', 1], ['B4', 1], ['A4', 1]],
+        d: [['G4', 0.5], ['A4', 0.5], ['B4', 0.5], ['C5', 0.5], ['D5', 2]],
+        e: [['A5', 0.5], ['G5', 0.5], ['E5', 1], ['D5', 1], ['B4', 1]],
+        f: [['C5', 1], ['E5', 1], ['D5', 1], ['B4', 0.5], ['G4', 0.5]],
+        g: [['G5', 2], [null, 0.5], ['D5', 0.5], ['E5', 1]],
+        h: [['D5', 0.5], ['E5', 0.5], ['D5', 0.5], ['B4', 0.5], ['G4', 2]],
+      },
+      seq: 'abcdabefghcdabgh',
+    },
+    bass: { voice: { type: 'triangle', gain: 0.40, legato: 0.7 },
+      pat: {
+        p: bounce('G2', 'D3', 'B2'),
+        q: bounce('C3', 'G3', 'E3'),
+        r: bounce('D3', 'A3', 'F#3'),
+        s: bounce('E3', 'B3', 'G3'),
+      },
+      seq: 'pprqppsrqspppqrp',
+    },
+    perc: { gain: 0.8,
+      pat: { y: 'k.h.s.h.', z: 'k.h.s.hh', w: 'k.hks.h.' },
+      seq: 'yyyzyywzyyyzyywz',
+    },
   },
+
+  // ---- overworld: bright marching, D major --------------------------------
   overworld: {
-    bpm: 138, div: 2, wave: 'square', gain: 0.4,
-    lead: ['C4', 'E4', 'G4', 'C5', 'B4', 'G4', 'E4', 'G4', 'A4', 'C5', 'A4', 'F4', 'G4', 'E4', 'C4', null,
-           'D4', 'F4', 'A4', 'D5', 'C5', 'A4', 'F4', 'A4', 'G4', 'B4', 'G4', 'E4', 'C4', null, null, null],
-    bass: ['C2', 'C2', 'G2', null, 'F2', 'F2', 'C3', null, 'A2', 'A2', 'E3', null, 'G2', 'G2', 'D3', null],
-    drum: [1, 0, 2, 0, 1, 0, 2, 2],
+    tempo: 148,
+    lead: { voice: { type: 'square', duty: 0.25, gain: 0.26, legato: 0.88 },
+      pat: {
+        a: [['D5', 1], ['F#5', 0.5], ['A5', 0.5], ['D6', 1], ['A5', 1]],
+        b: [['B5', 1], ['A5', 0.5], ['F#5', 0.5], ['E5', 1], ['D5', 1]],
+        c: [['E5', 0.5], ['F#5', 0.5], ['G5', 1], ['F#5', 1], ['E5', 1]],
+        d: [['A5', 2], ['F#5', 1], ['D5', 1]],
+        e: [['G5', 1], ['A5', 0.5], ['B5', 0.5], ['A5', 1], ['F#5', 1]],
+        f: [['D5', 0.5], ['E5', 0.5], ['F#5', 0.5], ['G5', 0.5], ['A5', 2]],
+        g: [['C#5', 1], ['D5', 1], ['E5', 1], ['F#5', 1]],
+        h: [['D5', 2.5], [null, 1.5]],
+      },
+      seq: 'abcdabefgcebabdh',
+    },
+    bass: { voice: { type: 'triangle', gain: 0.42, legato: 0.6 },
+      pat: {
+        p: [['D2', 1], ['A2', 1], ['D3', 1], ['A2', 1]],
+        q: [['G2', 1], ['D3', 1], ['G3', 1], ['D3', 1]],
+        r: [['A2', 1], ['E3', 1], ['A3', 1], ['E3', 1]],
+        s: [['B2', 1], ['F#3', 1], ['B3', 1], ['F#3', 1]],
+      },
+      seq: 'ppqrppsqrqsrpprp',
+    },
+    perc: { gain: 0.85,
+      pat: { y: 'k.s.k.s.', z: 'k.s.k.ss', w: 'kks.k.s.' },
+      seq: 'yyyzyywzyyyzyyzz',
+    },
   },
+
+  // ---- cave: sparse and low, D minor --------------------------------------
   cave: {
-    bpm: 76, div: 1, wave: 'triangle', gain: 0.45,
-    lead: ['A3', null, null, 'C4', null, null, 'E4', null, 'D4', null, null, 'C4', null, null, null, null],
-    bass: ['A1', null, null, null, 'F1', null, null, null, 'G1', null, null, null, 'E1', null, null, null],
-    drum: [0, 0, 0, 0, 1, 0, 0, 0],
+    tempo: 84,
+    lead: { voice: { type: 'square', duty: 0.125, gain: 0.22, legato: 0.95 },
+      pat: {
+        a: [['D4', 2], [null, 1], ['F4', 1]],
+        b: [['A4', 3], [null, 1]],
+        c: [[null, 1], ['C4', 1], ['D4', 2]],
+        d: [['E4', 2], ['D4', 2]],
+        e: [[null, 4]],
+        f: [['G4', 1.5], ['F4', 0.5], ['E4', 2]],
+        g: [['A3', 2], ['D4', 2]],
+        h: [['F4', 1], ['E4', 1], ['D4', 2]],
+      },
+      seq: 'aebecdefgebeahee',
+    },
+    bass: { voice: { type: 'triangle', gain: 0.46, legato: 0.98 },
+      pat: {
+        p: [['D2', 4]],
+        q: [['A1', 4]],
+        r: [['Bb1', 4]],
+        s: [['G1', 4]],
+      },
+      seq: 'ppqprrsqppqprsqq',
+    },
+    perc: { gain: 0.55,
+      pat: { x: '........', y: '....h...', z: 'k.......' },
+      seq: 'xxyxxzxyxxyxzxyx',
+    },
   },
+
+  // ---- battle: fast and driving, E minor ----------------------------------
   battle: {
-    bpm: 166, div: 2, wave: 'square', gain: 0.44,
-    lead: ['E4', 'E4', 'B4', 'E4', 'G4', 'E4', 'B4', 'D5', 'C5', 'B4', 'A4', 'G4', 'A4', 'B4', 'E4', null,
-           'F4', 'F4', 'C5', 'F4', 'A4', 'F4', 'C5', 'E5', 'D5', 'C5', 'B4', 'A4', 'G4', null, 'E4', null],
-    bass: ['E2', 'E2', 'E2', 'B1', 'G2', 'G2', 'D2', 'D2'],
-    drum: [1, 2, 1, 2, 1, 2, 1, 3],
+    tempo: 168,
+    lead: { voice: { type: 'square', duty: 0.5, gain: 0.26, legato: 0.82 },
+      pat: {
+        a: [['E5', 0.5], ['E5', 0.5], ['G5', 0.5], ['B5', 0.5], ['A5', 1], ['G5', 1]],
+        b: [['F#5', 0.5], ['E5', 0.5], ['D5', 0.5], ['E5', 0.5], ['B4', 2]],
+        c: [['G5', 0.5], ['A5', 0.5], ['B5', 0.5], ['C6', 0.5], ['B5', 1], ['A5', 1]],
+        d: [['E5', 0.25], ['F#5', 0.25], ['G5', 0.5], ['A5', 0.5], ['B5', 0.5], ['E6', 2]],
+        e: [['D5', 0.5], ['E5', 0.5], ['F#5', 0.5], ['G5', 0.5], ['A5', 0.5], ['B5', 0.5], ['A5', 1]],
+        f: [['B5', 1], ['A5', 0.5], ['G5', 0.5], ['F#5', 1], ['E5', 1]],
+        g: [['C6', 0.5], ['B5', 0.5], ['A5', 0.5], ['G5', 0.5], ['F#5', 2]],
+        h: [['E5', 0.5], ['B4', 0.5], ['E5', 0.5], ['G5', 0.5], ['B5', 2]],
+      },
+      seq: 'abcdabefghcdabfh',
+    },
+    bass: { voice: { type: 'triangle', gain: 0.44, legato: 0.62 },
+      pat: {
+        p: pulse8('E2', 'E3'),
+        q: pulse8('G2', 'G3'),
+        r: pulse8('A2', 'A3'),
+        s: pulse8('B2', 'B3'),
+      },
+      seq: 'ppqrppsqrqsspprs',
+    },
+    perc: { gain: 0.9,
+      pat: { y: 'khshkhsh', z: 'khshkhss', w: 'khskkhsh' },
+      seq: 'yyyzyywzyyyzyyzz',
+    },
   },
+
+  // ---- victory: short fanfare, C major, plays once ------------------------
   victory: {
-    bpm: 150, div: 2, wave: 'square', gain: 0.5, once: true,
-    lead: ['C5', 'C5', 'C5', 'C5', 'G4', 'A4', 'C5', null, 'A4', 'C5', null, null, null, null, null, null],
-    bass: ['C3', null, 'C3', null, 'G2', null, 'C3', null, 'F2', 'C3', null, null, null, null, null, null],
-    drum: [1, 0, 1, 0, 1, 1, 1, 0],
+    tempo: 150,
+    once: true,
+    lead: { voice: { type: 'square', duty: 0.5, gain: 0.30, legato: 0.9 },
+      pat: {
+        a: [['G4', 0.5], ['G4', 0.5], ['G4', 0.5], ['C5', 1.5], [null, 1]],
+        b: [['E5', 0.5], ['D5', 0.5], ['E5', 0.5], ['G5', 1.5], [null, 1]],
+        c: [['F5', 0.5], ['E5', 0.5], ['D5', 1], ['E5', 2]],
+        d: [['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['C6', 2.5]],
+        z: [[null, 4]],
+      },
+      seq: 'abcdz',
+    },
+    bass: { voice: { type: 'triangle', gain: 0.44, legato: 0.7 },
+      pat: {
+        p: [['C2', 1], ['G2', 1], ['C3', 1], ['G2', 1]],
+        q: [['G2', 1], ['D3', 1], ['G3', 1], ['D3', 1]],
+        r: [['F2', 1], ['C3', 1], ['F3', 1], ['C3', 1]],
+        s: [['C2', 2], ['C3', 2]],
+        z: [[null, 4]],
+      },
+      seq: 'pqrsz',
+    },
+    perc: { gain: 0.9,
+      pat: { y: 'k.s.k.s.', w: 'ksksksks', z: '........' },
+      seq: 'yyywz',
+    },
   },
 };
 
-// ---------------------------------------------------------------- core
-let noiseBuffer = null;
+// Map names other modules may hand us onto real tracks.
+const TRACK_ALIAS = { wild: 'battle', fight: 'battle', map: 'overworld', world: 'overworld' };
 
-function makeNoise() {
-  if (noiseBuffer || !ctx) return noiseBuffer;
-  const len = Math.floor(ctx.sampleRate * 0.4);
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-  noiseBuffer = buf;
-  return buf;
-}
+const DRUMS = {
+  k: { type: 'triangle', freq: 155, freq2: 46, dur: 0.14, gain: 0.90, hold: 0.25 },
+  s: { type: 'noise', filter: 'highpass', cutoff: 1400, dur: 0.12, gain: 0.42, hold: 0.15 },
+  h: { type: 'noise', filter: 'highpass', cutoff: 7200, dur: 0.035, gain: 0.16, hold: 0.2 },
+};
 
-export function initAudio() {
-  if (ready || ctx) return isAudioReady();
-  try {
-    const AC = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
-    if (!AC) return false;
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0.25;                 // deliberately quiet
-    master.connect(ctx.destination);
-    musicGain = ctx.createGain();
-    musicGain.gain.value = musicOn ? 1 : 0;
-    musicGain.connect(master);
-    sfxGain = ctx.createGain();
-    sfxGain.gain.value = sfxOn ? 1 : 0;
-    sfxGain.connect(master);
-    makeNoise();
-    ready = true;
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    return true;
-  } catch (_) {
-    ctx = null; ready = false;
-    return false;
+// ---------------------------------------------------------------------------
+// sound effects — short envelopes on the same three voices
+// ---------------------------------------------------------------------------
+
+const SFX = {
+  select:    [{ type: 'square', duty: 0.5, freq: 880, freq2: 1320, dur: 0.08, gain: 0.5 }],
+  cancel:    [{ type: 'square', duty: 0.5, freq: 520, freq2: 260, dur: 0.10, gain: 0.45 }],
+  bump:      [{ type: 'noise', filter: 'lowpass', cutoff: 420, dur: 0.09, gain: 0.5 },
+              { type: 'triangle', freq: 96, freq2: 60, dur: 0.10, gain: 0.5 }],
+  hit:       [{ type: 'noise', filter: 'highpass', cutoff: 900, dur: 0.12, gain: 0.45 },
+              { type: 'square', duty: 0.25, freq: 320, freq2: 120, dur: 0.13, gain: 0.35 }],
+  crit:      [{ type: 'noise', filter: 'highpass', cutoff: 1600, dur: 0.20, gain: 0.55 },
+              { type: 'square', duty: 0.5, freq: 540, freq2: 90, dur: 0.22, gain: 0.40 },
+              { type: 'square', duty: 0.25, freq: 800, freq2: 140, dur: 0.20, gain: 0.28, delay: 0.03 }],
+  faint:     [{ type: 'square', duty: 0.25, freq: 660, freq2: 78, dur: 0.55, gain: 0.42 },
+              { type: 'triangle', freq: 330, freq2: 60, dur: 0.55, gain: 0.30, delay: 0.02 }],
+  catch:     [{ type: 'square', duty: 0.5, freq: 523, dur: 0.07, gain: 0.42 },
+              { type: 'square', duty: 0.5, freq: 659, dur: 0.07, gain: 0.42, delay: 0.09 },
+              { type: 'square', duty: 0.5, freq: 880, dur: 0.16, gain: 0.42, delay: 0.18 }],
+  heal:      [{ type: 'triangle', freq: 660, dur: 0.11, gain: 0.45 },
+              { type: 'triangle', freq: 880, dur: 0.11, gain: 0.45, delay: 0.10 },
+              { type: 'triangle', freq: 1100, dur: 0.22, gain: 0.42, delay: 0.20 }],
+  levelup:   [{ type: 'square', duty: 0.25, freq: 523, dur: 0.09, gain: 0.42 },
+              { type: 'square', duty: 0.25, freq: 659, dur: 0.09, gain: 0.42, delay: 0.09 },
+              { type: 'square', duty: 0.25, freq: 784, dur: 0.09, gain: 0.42, delay: 0.18 },
+              { type: 'square', duty: 0.5, freq: 1046, dur: 0.26, gain: 0.45, delay: 0.27 }],
+  encounter: [{ type: 'square', duty: 0.25, freq: 180, freq2: 900, dur: 0.30, gain: 0.40 },
+              { type: 'noise', filter: 'highpass', cutoff: 2200, dur: 0.22, gain: 0.28, delay: 0.28 },
+              { type: 'square', duty: 0.5, freq: 900, freq2: 200, dur: 0.24, gain: 0.34, delay: 0.30 }],
+  shake:     [{ type: 'square', duty: 0.125, freq: 300, freq2: 400, dur: 0.06, gain: 0.35 },
+              { type: 'square', duty: 0.125, freq: 400, freq2: 300, dur: 0.06, gain: 0.35, delay: 0.07 }],
+  open:      [{ type: 'noise', filter: 'highpass', cutoff: 1000, dur: 0.07, gain: 0.30 },
+              { type: 'square', duty: 0.5, freq: 300, freq2: 720, dur: 0.09, gain: 0.30 }],
+  error:     [{ type: 'square', duty: 0.5, freq: 200, dur: 0.15, gain: 0.45 },
+              { type: 'square', duty: 0.5, freq: 150, dur: 0.20, gain: 0.45, delay: 0.15 }],
+};
+
+// ---------------------------------------------------------------------------
+// track compilation: patterns -> a flat, time-sorted event list
+// ---------------------------------------------------------------------------
+
+function addMelodic(chan, out, spb) {
+  if (!chan || !chan.pat || typeof chan.seq !== 'string') return;
+  const v = chan.voice || {};
+  for (let bar = 0; bar < chan.seq.length; bar++) {
+    const pat = chan.pat[chan.seq.charAt(bar)];
+    if (!pat) continue;
+    let beat = bar * 4;
+    for (let i = 0; i < pat.length; i++) {
+      const p = pat[i], dur = (p && p[1]) || 0;
+      const f = noteFreq(p && p[0]);
+      if (f > 0 && dur > 0) {
+        out.push({
+          t: beat * spb,
+          type: v.type || 'square',
+          duty: v.duty,
+          freq: f,
+          dur: Math.max(0.03, dur * spb * (v.legato || 0.9)),
+          gain: v.gain || 0.25,
+        });
+      }
+      beat += dur;
+    }
   }
 }
 
-export function isAudioReady() { return !!(ready && ctx && ctx.state !== 'closed'); }
-
-function tone(when, f, dur, wave, gain, dest) {
-  if (!f || !isAudioReady()) return;
-  try {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = wave || 'square';
-    o.frequency.setValueAtTime(f, when);
-    g.gain.setValueAtTime(0, when);
-    g.gain.linearRampToValueAtTime(gain, when + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0008, when + dur);
-    o.connect(g); g.connect(dest || musicGain);
-    o.start(when);
-    o.stop(when + dur + 0.03);
-  } catch (_) { /* a dropped note must never break the game */ }
+function addPercussion(chan, out, spb) {
+  if (!chan || !chan.pat || typeof chan.seq !== 'string') return;
+  const scale = chan.gain == null ? 1 : chan.gain;
+  for (let bar = 0; bar < chan.seq.length; bar++) {
+    const pat = chan.pat[chan.seq.charAt(bar)];
+    if (!pat || !pat.length) continue;
+    const stepBeats = 4 / pat.length;
+    for (let i = 0; i < pat.length; i++) {
+      const d = DRUMS[pat.charAt(i)];
+      if (!d) continue;
+      out.push({
+        t: (bar * 4 + i * stepBeats) * spb,
+        type: d.type, freq: d.freq, freq2: d.freq2,
+        filter: d.filter, cutoff: d.cutoff,
+        dur: d.dur, hold: d.hold, gain: d.gain * scale,
+      });
+    }
+  }
 }
 
-function noise(when, dur, gain, dest, hp) {
-  if (!isAudioReady()) return;
-  try {
-    const src = ctx.createBufferSource();
-    src.buffer = makeNoise();
-    const g = ctx.createGain();
-    const f = ctx.createBiquadFilter();
-    f.type = 'highpass';
-    f.frequency.value = hp || 1200;
-    g.gain.setValueAtTime(gain, when);
-    g.gain.exponentialRampToValueAtTime(0.0008, when + dur);
-    src.connect(f); f.connect(g); g.connect(dest || musicGain);
-    src.start(when);
-    src.stop(when + dur + 0.02);
-  } catch (_) { /* ignore */ }
+function compileTrack(name) {
+  const def = TRACKS[name];
+  if (!def) return null;
+  if (!A.compiled) A.compiled = Object.create(null);
+  if (A.compiled[name]) return A.compiled[name];
+  const spb = 60 / (def.tempo || 120);
+  const events = [];
+  addMelodic(def.lead, events, spb);
+  addMelodic(def.bass, events, spb);
+  addPercussion(def.perc, events, spb);
+  events.sort((x, y) => x.t - y.t);
+  let bars = 0;
+  if (def.lead && def.lead.seq) bars = Math.max(bars, def.lead.seq.length);
+  if (def.bass && def.bass.seq) bars = Math.max(bars, def.bass.seq.length);
+  if (def.perc && def.perc.seq) bars = Math.max(bars, def.perc.seq.length);
+  const out = { events, loopLen: Math.max(0.5, bars * 4 * spb), once: !!def.once };
+  A.compiled[name] = out;
+  return out;
 }
 
-// ---------------------------------------------------------------- scheduler
-function scheduler() {
-  if (!isAudioReady() || !current) return;
-  const track = TRACKS[current];
-  if (!track) return;
-  const stepDur = 60 / track.bpm / track.div;
+// ---------------------------------------------------------------------------
+// audio graph
+// ---------------------------------------------------------------------------
 
-  while (nextNoteTime < ctx.currentTime + SCHEDULE_AHEAD) {
-    const t = nextNoteTime;
+function pulseWave(duty) {
+  // Fourier series of a rectangular pulse of the given duty cycle.
+  const d = Math.min(0.49, Math.max(0.02, duty || 0.5));
+  const key = d.toFixed(3);
+  if (A.waves[key]) return A.waves[key];
+  const N = 24;
+  const real = new Float32Array(N + 1);
+  const imag = new Float32Array(N + 1);
+  for (let n = 1; n <= N; n++) real[n] = (2 / (n * Math.PI)) * Math.sin(Math.PI * n * d);
+  const w = A.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+  A.waves[key] = w;
+  return w;
+}
 
-    if (track.lead && track.lead.length) {
-      const n = track.lead[step % track.lead.length];
-      if (n) tone(t, freq(n), stepDur * 0.9, track.wave, (track.gain || 0.4) * 0.5);
+function makeNoiseBuffer(ctx) {
+  const len = Math.floor(ctx.sampleRate * 2);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  let s = 0x1234abcd;
+  for (let i = 0; i < len; i++) {
+    // xorshift keeps the noise deterministic and cheap
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5; s |= 0;
+    data[i] = (s / 0x7fffffff) % 1;
+  }
+  return buf;
+}
+
+/**
+ * Schedule one voice: oscillator (or noise) -> envelope gain -> dest.
+ * Every argument is optional except dest/time.
+ */
+function scheduleVoice(dest, ev, time) {
+  const ctx = A.ctx;
+  if (!ctx || !dest) return;
+  const dur = Math.max(0.02, ev.dur || 0.1);
+  const peak = Math.max(0.001, ev.gain == null ? 0.25 : ev.gain);
+  const env = ctx.createGain();
+  env.gain.value = 0.0001;
+  env.connect(dest);
+
+  let src;
+  if (ev.type === 'noise') {
+    src = ctx.createBufferSource();
+    src.buffer = A.noiseBuf;
+    src.loop = true;
+    if (ev.filter) {
+      const f = ctx.createBiquadFilter();
+      f.type = ev.filter;
+      f.frequency.value = ev.cutoff || 1000;
+      src.connect(f);
+      f.connect(env);
+    } else {
+      src.connect(env);
     }
-    if (track.bass && track.bass.length) {
-      const n = track.bass[step % track.bass.length];
-      if (n) tone(t, freq(n), stepDur * 1.5, 'triangle', (track.gain || 0.4) * 0.7);
+  } else {
+    src = ctx.createOscillator();
+    if (ev.type === 'triangle' || ev.type === 'sine' || ev.type === 'sawtooth') src.type = ev.type;
+    else src.setPeriodicWave(pulseWave(ev.duty));
+    const f0 = Math.max(20, ev.freq || 440);
+    src.frequency.setValueAtTime(f0, time);
+    if (ev.freq2) {
+      src.frequency.exponentialRampToValueAtTime(
+        Math.max(20, ev.freq2), time + dur * (ev.slide || 0.9));
     }
-    if (track.drum && track.drum.length) {
-      const d = track.drum[step % track.drum.length];
-      if (d === 1) noise(t, 0.06, 0.30, musicGain, 900);
-      else if (d === 2) noise(t, 0.035, 0.16, musicGain, 3800);
-      else if (d === 3) noise(t, 0.12, 0.26, musicGain, 2400);
+    src.connect(env);
+  }
+
+  const atk = Math.min(0.008, dur * 0.25);
+  const holdFrac = ev.hold == null ? 0.55 : ev.hold;
+  const sustain = Math.max(0.001, peak * 0.62);
+  env.gain.setValueAtTime(0.0001, time);
+  env.gain.linearRampToValueAtTime(peak, time + atk);
+  env.gain.exponentialRampToValueAtTime(sustain, time + atk + Math.max(0.005, dur * holdFrac));
+  env.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+
+  src.start(time);
+  src.stop(time + dur + 0.02);
+  src.onended = function () {
+    try { src.disconnect(); } catch (_) { /* ignore */ }
+    try { env.disconnect(); } catch (_) { /* ignore */ }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// lookahead scheduler
+// ---------------------------------------------------------------------------
+
+function tick() {
+  if (!A.ok || !A.ctx) return;
+  const now = A.ctx.currentTime;
+  const horizon = now + SCHEDULE_AHEAD;
+
+  // hand back to the previous track shortly before a fanfare finishes
+  if (A.pending && now >= A.pending.at - FADE * 0.75) {
+    const back = A.pending.name;
+    A.pending = null;
+    if (back) playBgm(back);
+    else stopBgm();
+  }
+
+  for (let i = A.players.length - 1; i >= 0; i--) {
+    const p = A.players[i];
+    if (p.killAt != null && now > p.killAt) {
+      try { p.gain.disconnect(); } catch (_) { /* ignore */ }
+      A.players.splice(i, 1);
+      continue;
     }
-
-    step++;
-    nextNoteTime += stepDur;
-
-    if (track.once) {
-      const len = Math.max(track.lead.length, track.bass.length);
-      if (step >= len) {
-        const back = queuedAfter;
-        queuedAfter = null;
-        stopBgm();
-        if (back) setTimeout(() => playBgm(back), 60);
-        return;
+    if (p.fading || p.finished) continue;
+    const ev = p.comp.events;
+    if (!ev.length) { p.finished = true; continue; }
+    let guard = 0;
+    while (p.base + ev[p.ptr].t < horizon && guard++ < 512) {
+      scheduleVoice(p.gain, ev[p.ptr], Math.max(now, p.base + ev[p.ptr].t));
+      p.ptr++;
+      if (p.ptr >= ev.length) {
+        p.ptr = 0;
+        p.base += p.comp.loopLen;
+        if (p.comp.once) {
+          p.finished = true;
+          p.killAt = p.base + 0.5;
+          if (!A.pending) A.pending = { name: p.prev, at: p.base };
+          break;
+        }
       }
     }
   }
 }
 
+function startScheduler() {
+  if (A.timer != null || !A.ok) return;
+  try {
+    A.timer = setInterval(tick, LOOKAHEAD_MS);
+    if (A.timer && typeof A.timer.unref === 'function') A.timer.unref();
+  } catch (_) { A.timer = null; }
+}
+
+function fadePlayerOut(p, now) {
+  p.fading = true;
+  p.killAt = now + FADE + 0.25;
+  try {
+    p.gain.gain.cancelScheduledValues(now);
+    p.gain.gain.setValueAtTime(p.gain.gain.value, now);
+    p.gain.gain.linearRampToValueAtTime(0.0001, now + FADE);
+  } catch (_) { /* ignore */ }
+}
+
+function activePlayer() {
+  for (let i = A.players.length - 1; i >= 0; i--) {
+    if (!A.players[i].fading) return A.players[i];
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// exports
+// ---------------------------------------------------------------------------
+
+/**
+ * Create the AudioContext. Must be called from a user gesture. Safe to call
+ * repeatedly; safe to call where WebAudio does not exist (Node, old browsers).
+ */
+export function initAudio() {
+  try {
+    if (A.ok) {
+      // A context can be auto-suspended; a later gesture resumes it.
+      if (A.ctx.state === 'suspended' && A.ctx.resume) A.ctx.resume().catch(function () {});
+      return true;
+    }
+    if (A.dead) return false;
+    const g = (typeof globalThis !== 'undefined') ? globalThis : null;
+    const Ctor = g && (g.AudioContext || g.webkitAudioContext);
+    if (!Ctor) { A.dead = true; return false; }
+
+    const ctx = new Ctor();
+    const master = ctx.createGain();
+    master.gain.value = MASTER_GAIN;
+    master.connect(ctx.destination);
+
+    const music = ctx.createGain();
+    music.gain.value = A.musicOn ? 1 : 0;
+    music.connect(master);
+
+    const sfxg = ctx.createGain();
+    sfxg.gain.value = A.sfxOn ? 1 : 0;
+    sfxg.connect(master);
+
+    A.ctx = ctx;
+    A.master = master;
+    A.musicGain = music;
+    A.sfxGain = sfxg;
+    A.waves = Object.create(null);
+    A.noiseBuf = makeNoiseBuffer(ctx);
+    A.ok = true;
+
+    if (ctx.state === 'suspended' && ctx.resume) ctx.resume().catch(function () {});
+    startScheduler();
+    return true;
+  } catch (_) {
+    A.dead = true;
+    A.ok = false;
+    return false;
+  }
+}
+
+/** Cross-fade to a looping track. No-op if it is already the active track. */
 export function playBgm(name) {
-  if (!TRACKS[name]) return;
-  if (!isAudioReady()) { current = null; return; }
-  if (current === name) return;
-
-  const track = TRACKS[name];
-  if (track.once && current && !TRACKS[current].once) queuedAfter = current;
-
-  stopTimer();
-  current = name;
-  step = 0;
-  nextNoteTime = ctx.currentTime + 0.06;
   try {
-    musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    musicGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    musicGain.gain.linearRampToValueAtTime(musicOn ? 1 : 0, ctx.currentTime + 0.4);
-  } catch (_) { /* ignore */ }
-  timer = setInterval(scheduler, LOOKAHEAD_MS);
-  scheduler();
+    if (!A.ok) return;
+    let key = String(name || '');
+    if (TRACK_ALIAS[key]) key = TRACK_ALIAS[key];
+    const comp = compileTrack(key);
+    if (!comp) return;
+
+    const cur = activePlayer();
+    if (cur && cur.name === key && !cur.finished) return;
+
+    const now = A.ctx.currentTime;
+    const prevName = cur ? cur.name : null;
+    for (let i = 0; i < A.players.length; i++) {
+      if (!A.players[i].fading) fadePlayerOut(A.players[i], now);
+    }
+    if (!comp.once) A.pending = null;
+
+    const gain = A.ctx.createGain();
+    gain.gain.value = 0.0001;
+    gain.connect(A.musicGain);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(1, now + (A.players.length ? FADE : 0.08));
+
+    A.players.push({
+      name: key,
+      comp: comp,
+      ptr: 0,
+      base: now + 0.06,
+      gain: gain,
+      fading: false,
+      finished: false,
+      killAt: null,
+      prev: comp.once ? (prevName && prevName !== key ? prevName : null) : null,
+    });
+    startScheduler();
+    tick();
+  } catch (_) { /* audio must never break the game */ }
 }
 
-function stopTimer() {
-  if (timer !== null) { clearInterval(timer); timer = null; }
-}
-
+/** Fade the music out. */
 export function stopBgm() {
-  stopTimer();
-  current = null;
-  if (!isAudioReady()) return;
   try {
-    musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
-    musicGain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+    if (!A.ok) return;
+    const now = A.ctx.currentTime;
+    A.pending = null;
+    for (let i = 0; i < A.players.length; i++) {
+      if (!A.players[i].fading) fadePlayerOut(A.players[i], now);
+    }
   } catch (_) { /* ignore */ }
 }
 
-export function currentBgm() { return current; }
-
-// ---------------------------------------------------------------- sfx
-const SFX = {
-  select:    (t) => { tone(t, 880, 0.06, 'square', 0.32, sfxGain); },
-  cancel:    (t) => { tone(t, 440, 0.07, 'square', 0.28, sfxGain); tone(t + 0.05, 300, 0.07, 'square', 0.22, sfxGain); },
-  bump:      (t) => { noise(t, 0.05, 0.22, sfxGain, 500); tone(t, 150, 0.07, 'triangle', 0.22, sfxGain); },
-  hit:       (t) => { noise(t, 0.09, 0.34, sfxGain, 800); tone(t, 220, 0.09, 'square', 0.20, sfxGain); },
-  crit:      (t) => { noise(t, 0.14, 0.40, sfxGain, 600); tone(t, 320, 0.13, 'square', 0.26, sfxGain); tone(t + 0.06, 480, 0.12, 'square', 0.22, sfxGain); },
-  faint:     (t) => { for (let i = 0; i < 6; i++) tone(t + i * 0.05, 500 - i * 62, 0.09, 'triangle', 0.26, sfxGain); },
-  catch:     (t) => { tone(t, 700, 0.08, 'square', 0.26, sfxGain); tone(t + 0.07, 520, 0.10, 'square', 0.22, sfxGain); },
-  shake:     (t) => { tone(t, 420, 0.05, 'square', 0.20, sfxGain); noise(t, 0.03, 0.10, sfxGain, 2000); },
-  heal:      (t) => { ['C5', 'E5', 'G5'].forEach((n, i) => tone(t + i * 0.07, freq(n), 0.16, 'triangle', 0.24, sfxGain)); },
-  levelup:   (t) => { ['C5', 'E5', 'G5', 'C6'].forEach((n, i) => tone(t + i * 0.075, freq(n), 0.20, 'square', 0.26, sfxGain)); },
-  encounter: (t) => { for (let i = 0; i < 5; i++) { tone(t + i * 0.06, i % 2 ? 300 : 660, 0.05, 'square', 0.28, sfxGain); } },
-  open:      (t) => { tone(t, 300, 0.05, 'square', 0.20, sfxGain); tone(t + 0.05, 520, 0.07, 'square', 0.20, sfxGain); },
-  error:     (t) => { tone(t, 180, 0.16, 'square', 0.28, sfxGain); },
-};
-
+/** Play a short sound effect by name. */
 export function sfx(name) {
-  if (!sfxOn || !isAudioReady()) return;
-  const fn = SFX[name];
-  if (!fn) return;
-  try { fn(ctx.currentTime + 0.005); } catch (_) { /* ignore */ }
-}
-
-// ---------------------------------------------------------------- toggles
-export function setMusicEnabled(v) {
-  musicOn = !!v;
-  if (!isAudioReady()) return;
   try {
-    musicGain.gain.cancelScheduledValues(ctx.currentTime);
-    musicGain.gain.linearRampToValueAtTime(musicOn ? 1 : 0, ctx.currentTime + 0.15);
+    if (!A.ok || !A.sfxOn) return;
+    const layers = SFX[String(name || '')];
+    if (!layers) return;
+    const now = A.ctx.currentTime + 0.005;
+    for (let i = 0; i < layers.length; i++) {
+      const L = layers[i];
+      scheduleVoice(A.sfxGain, L, now + (L.delay || 0));
+    }
   } catch (_) { /* ignore */ }
 }
 
-export function setSfxEnabled(v) {
-  sfxOn = !!v;
-  if (!isAudioReady()) return;
-  try { sfxGain.gain.setValueAtTime(sfxOn ? 1 : 0, ctx.currentTime); } catch (_) { /* ignore */ }
+/** Toggle music independently of sound effects. */
+export function setMusicEnabled(v) {
+  try {
+    A.musicOn = !!v;
+    if (!A.ok) return;
+    const now = A.ctx.currentTime;
+    const g = A.musicGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(A.musicOn ? 1 : 0.0001, now + 0.12);
+  } catch (_) { /* ignore */ }
 }
 
-export function isMusicEnabled() { return musicOn; }
-export function isSfxEnabled() { return sfxOn; }
+/** Toggle sound effects independently of music. */
+export function setSfxEnabled(v) {
+  try {
+    A.sfxOn = !!v;
+    if (!A.ok) return;
+    const now = A.ctx.currentTime;
+    const g = A.sfxGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(A.sfxOn ? 1 : 0.0001, now + 0.05);
+  } catch (_) { /* ignore */ }
+}
 
-export function suspendAudio() { try { if (ctx && ctx.state === 'running') ctx.suspend(); } catch (_) {} }
-export function resumeAudio() { try { if (ctx && ctx.state === 'suspended') ctx.resume(); } catch (_) {} }
+/** True once a usable, running AudioContext exists. */
+export function isAudioReady() {
+  try {
+    return !!(A.ok && A.ctx && A.ctx.state !== 'closed');
+  } catch (_) {
+    return false;
+  }
+}
