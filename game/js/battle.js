@@ -46,6 +46,11 @@ const B = {
   hideFoe: false, hideMe: false,
   faintMe: 0, faintFoe: 0,
   bg: null,
+  // --- game feel ---
+  hitstop: 0,               // freezes the whole battle briefly on impact
+  popups: [],               // floating damage / effect numbers
+  recoil: { me: 0, foe: 0 },// per-sprite knockback, decays
+  lowHpWarned: false,
 };
 
 function combatant(inst, side) {
@@ -95,6 +100,32 @@ function tweenHp(who, from, to, dur = 0.6) {
 // ---------------------------------------------------------------- update
 B.update = function (dt) {
   B.t += dt;
+
+  // Hit-stop: a few frozen frames on impact. This is the cheapest way to make a
+  // hit feel like it connected — everything stops, including animations and the
+  // coroutine, so the frame of impact actually registers.
+  if (B.hitstop > 0) {
+    B.hitstop -= dt;
+    for (const p of B.popups) p.t += dt * 0.35;   // popups still drift, slowly
+    return;
+  }
+
+  for (let i = B.popups.length - 1; i >= 0; i--) {
+    const p = B.popups[i];
+    p.t += dt;
+    if (p.t >= p.life) B.popups.splice(i, 1);
+  }
+  B.recoil.me = Math.max(0, B.recoil.me - dt * 6);
+  B.recoil.foe = Math.max(0, B.recoil.foe - dt * 6);
+
+  // Low-HP warning: fires once per drop below 20%, so it reads as an alarm
+  // rather than a constant nag.
+  if (B.me && B.me.inst) {
+    const f = B.me.inst.hp / Math.max(1, maxHp(B.me.inst));
+    if (f > 0 && f <= 0.2 && !B.lowHpWarned) { B.lowHpWarned = true; sfx('error'); }
+    if (f > 0.2) B.lowHpWarned = false;
+  }
+
   if (B.intro > 0) B.intro = Math.max(0, B.intro - dt * 1.8);
   if (B.flash > 0) B.flash = Math.max(0, B.flash - dt * 4);
   if (B.shake.t > 0) B.shake.t = Math.max(0, B.shake.t - dt);
@@ -223,8 +254,9 @@ B.render = function (ctx) {
     const key = getSpecies(B.foe.inst.species).sprite;
     const sz = spriteSize(key);
     const scale = 2;
-    const fx = 224 - (sz.w * scale) / 2 + introOff;
-    const fy = 92 - sz.h * scale + 10 - Math.round(Math.sin(B.t * 2) * 1.5);
+    const kick = Math.round(B.recoil.foe * 6);
+    const fx = 224 - (sz.w * scale) / 2 + introOff + kick;
+    const fy = 92 - sz.h * scale + 10 - Math.round(Math.sin(B.t * 2) * 1.5) - Math.round(B.recoil.foe * 3);
     ctx.save();
     if (B.faintFoe > 0) { ctx.globalAlpha = Math.max(0, 1 - B.faintFoe); ctx.translate(0, B.faintFoe * 26); }
     drawSprite(ctx, key, fx, fy, { scale, silhouette: B.flash > 0.5, tint: '#ffffff' });
@@ -236,8 +268,9 @@ B.render = function (ctx) {
     const key = getSpecies(B.me.inst.species).sprite;
     const sz = spriteSize(key);
     const scale = 2.6;
-    const mx = 82 - (sz.w * scale) / 2 - introOff;
-    const my = 156 - sz.h * scale + 14;
+    const kick = Math.round(B.recoil.me * 6);
+    const mx = 82 - (sz.w * scale) / 2 - introOff - kick;
+    const my = 156 - sz.h * scale + 14 + Math.round(B.recoil.me * 3);
     ctx.save();
     if (B.faintMe > 0) { ctx.globalAlpha = Math.max(0, 1 - B.faintMe); ctx.translate(0, B.faintMe * 30); }
     drawSprite(ctx, key, mx, my, { scale, flip: true });
@@ -248,6 +281,24 @@ B.render = function (ctx) {
   if (B.ballAnim) {
     const a = B.ballAnim;
     drawSprite(ctx, a.key || 'ball_orb', a.x - 6, a.y - 6, {});
+  }
+
+  // floating damage numbers, drawn above the creatures but under the HUD
+  for (const p of B.popups) {
+    const k = Math.min(1, p.t / p.life);
+    const rise = -Math.round(k * 22);
+    const pop = k < 0.18 ? 1 + (0.18 - k) * 2.2 : 1;   // brief punch-out on spawn
+    ctx.save();
+    ctx.globalAlpha = k > 0.7 ? Math.max(0, 1 - (k - 0.7) / 0.3) : 1;
+    const px = Math.round(p.x), py = Math.round(p.y + rise);
+    if (p.big && pop > 1) {
+      ctx.translate(px, py);
+      ctx.scale(pop, pop);
+      drawTextCentered(ctx, p.text, 0, 0, { color: p.color, shadow: '#101820' });
+    } else {
+      drawTextCentered(ctx, p.text, px, py, { color: p.color, shadow: '#101820' });
+    }
+    ctx.restore();
   }
 
   if (B.foe) drawInfoBox(ctx, B.foe, 8, 12, false);
@@ -326,15 +377,34 @@ const nameOf = (c) => (c.side === 'foe' && !B.isTrainer ? 'The wild ' + displayN
 
 function setHpShown(who, c) { B.hpShown[who] = maxHp(c.inst) > 0 ? c.inst.hp / maxHp(c.inst) : 0; }
 
-async function applyDamage(target, amount) {
+// meta: { crit, mult } — drives how hard the hit reads.
+async function applyDamage(target, amount, meta = {}) {
   const who = target.side === 'foe' ? 'foe' : 'me';
   const mx = maxHp(target.inst);
   const before = mx > 0 ? target.inst.hp / mx : 0;
-  target.inst.hp = Math.max(0, target.inst.hp - Math.max(0, amount | 0));
+  const dealt = Math.max(0, amount | 0);
+  target.inst.hp = Math.max(0, target.inst.hp - dealt);
   const after = mx > 0 ? target.inst.hp / mx : 0;
-  B.shake.mag = Math.min(5, 2 + amount / Math.max(1, mx) * 10);
-  B.shake.t = 0.22;
-  await tweenHp(who, before, after, 0.5);
+
+  const frac = dealt / Math.max(1, mx);
+  const big = !!meta.crit || (meta.mult || 1) > 1 || frac > 0.35;
+
+  B.shake.mag = Math.min(7, 2 + frac * 12 + (meta.crit ? 2 : 0));
+  B.shake.t = big ? 0.3 : 0.2;
+  B.hitstop = meta.crit ? 0.16 : big ? 0.11 : 0.06;
+  B.recoil[who] = 1;
+
+  const anchor = who === 'foe' ? { x: 224, y: 62 } : { x: 82, y: 122 };
+  B.popups.push({
+    text: '-' + dealt,
+    x: anchor.x + (Math.random() * 16 - 8),
+    y: anchor.y,
+    t: 0, life: 0.85,
+    color: meta.crit ? '#ffd23c' : (meta.mult || 1) > 1 ? '#ff8a3c' : '#ffffff',
+    big,
+  });
+
+  await tweenHp(who, before, after, big ? 0.6 : 0.42);
 }
 
 async function applyHeal(target, amount) {
@@ -472,9 +542,9 @@ async function performMove(attacker, defender, moveSlot) {
     }
     if (r.crit) anyCrit = true;
     total += r.dmg;
-    B.flash = 0.8;
+    B.flash = r.crit ? 1 : 0.7;
     sfx(r.crit ? 'crit' : 'hit');
-    await applyDamage(defender, r.dmg);
+    await applyDamage(defender, r.dmg, { crit: r.crit, mult: r.mult });
   }
 
   if (hits > 1) await msg('Hit ' + hits + ' time' + (hits > 1 ? 's' : '') + '!', false);
@@ -820,6 +890,10 @@ B.enter = function (params) {
   B.ballAnim = null;
   B.runAttempts = 0;
   B.flash = 0;
+  B.hitstop = 0;
+  B.popups = [];
+  B.recoil = { me: 0, foe: 0 };
+  B.lowHpWarned = false;
   B.shake = { mag: 0, t: 0 };
   B.bg = params.bg || null;
 
