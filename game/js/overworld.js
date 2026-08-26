@@ -47,6 +47,8 @@ const O = {
   t: 0,
   stepsSinceEncounter: 0,
   pendingWatcher: null,
+  grassSteps: 0,
+  encounterRolls: 0,
   returnPoint: null,    // where to drop the player when leaving an interior
   turnHold: 0,
 };
@@ -228,6 +230,7 @@ function rollEncounter() {
   const rate = map.encounterRateAt ? map.encounterRateAt(player.x, player.y) : 0.12;
   // A short grace period after a battle so you can walk out of a patch.
   if (O.stepsSinceEncounter < 3) return null;
+  O.encounterRolls++;
   if (!rand.chance(rate)) return null;
 
   let table = [];
@@ -241,10 +244,17 @@ function rollEncounter() {
   for (const e of table) { r -= (e.weight || 1); if (r <= 0) { pick = e; break; } }
   if (!pick || !pick.species) return null;
 
+  // Difficulty comes from DISTANCE, not from the biome table. The table's level range
+  // says where a species sits relative to its peers; `base` (levelAt) says how dangerous
+  // THIS spot is. Rolling the table range straight would put level-23 tundra wilds next
+  // to the start town, which kills the whole "walk any direction, danger scales" premise.
   const base = wildLevelHere();
   const lo = pick.minLvl !== undefined ? pick.minLvl : Math.max(2, base - 2);
   const hi = pick.maxLvl !== undefined ? pick.maxLvl : base + 1;
-  const level = Math.max(2, Math.min(100, rand.range(Math.min(lo, hi), Math.max(lo, hi))));
+  const roll = rand.range(Math.min(lo, hi), Math.max(lo, hi));
+  const floor = Math.max(2, base - 3);
+  const ceil = Math.max(floor, base + 4);
+  const level = Math.max(2, Math.min(100, Math.max(floor, Math.min(ceil, roll))));
   return makeCreature(pick.species, level, { where: currentBiome().toLowerCase() });
 }
 
@@ -252,7 +262,11 @@ async function doWildBattle(wild) {
   O.busy = true;
   sfx('encounter');
   await fade('out', 0.35, '#000');
-  const result = await startBattle({ wild });
+  // startBattle pushes the battle scene synchronously, so fade back IN over it.
+  // Without this the screen stays under a full-alpha black overlay for the whole battle.
+  const battle = startBattle({ wild });
+  await fade('in', 0.3);
+  const result = await battle;
   await afterBattle(result);
   O.busy = false;
 }
@@ -268,7 +282,10 @@ async function afterBattle(result) {
     playBgm(O.map && O.map.data && O.map.data.bgm ? O.map.data.bgm : 'overworld');
     return;
   }
-  await fade('in', 0.35);
+  // The battle scene has popped and the overworld is visible again; a short dip
+  // covers the swap rather than snapping.
+  await fade('out', 0.18, '#000');
+  await fade('in', 0.28);
   playBgm(S.mapId === 'world' ? 'overworld' : (String(S.mapId).startsWith('cave') ? 'cave' : 'town'));
 }
 
@@ -361,7 +378,9 @@ async function startTrainerBattle(e) {
   sfx('encounter');
   await say((e.name ? e.name + ': ' : '') + (e.challenge || "Let's battle!"));
   await fade('out', 0.35, '#000');
-  const result = await startBattle({ trainer: e });
+  const battle = startBattle({ trainer: e });
+  await fade('in', 0.3);
+  const result = await battle;
   if (result === 'win' && e.flag) setFlag(e.flag, true);
   e.defeated = result === 'win';
   await afterBattle(result);
@@ -459,6 +478,7 @@ function onStepComplete() {
   S.player.x = player.x; S.player.y = player.y; S.player.dir = player.dir;
   S.player.steps++;
   O.stepsSinceEncounter++;
+  if (O.map && O.map.grassAt && O.map.grassAt(player.x, player.y)) O.grassSteps++;
   if (S.repelSteps > 0) S.repelSteps--;
 
   const map = O.map;

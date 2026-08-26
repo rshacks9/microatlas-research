@@ -13,6 +13,7 @@ import { Overworld, enterMap, player } from './overworld.js';
 import { say, ask } from './dialogue.js';
 import { initAudio, playBgm, sfx, setMusicEnabled, setSfxEnabled } from './audio.js';
 import { hasSave, loadGame, slotSummary } from './save.js';
+import * as tilesRef from './tiles.js';
 
 const FIXED = 1 / 60;
 const MAX_FRAME = 0.25;
@@ -332,12 +333,17 @@ function boot() {
       map: S.mapId,
       x: S.player.x, y: S.player.y,
       steps: S.player.steps,
+      grassSteps: Overworld.grassSteps,
+      encounterRolls: Overworld.encounterRolls,
       dexSeen: Object.keys(S.dex.seen).length,
       started: S.started,
       worldReady: !!(S.world && S.world.map),
     };
   };
-  window.__game = { Game, S, enterMap, startNewGame };
+  window.__game = { Game, S, enterMap, startNewGame,
+    isSolidTile: tilesRef.isSolid,
+    overlayBlocksTile: tilesRef.overlayBlocks,
+    isGrassTile: tilesRef.isGrass };
 }
 
 if (document.readyState === 'loading') {

@@ -23,6 +23,7 @@ const STATUS_COLOR = { brn:'#e07038', psn:'#a050a8', par:'#e0c040', slp:'#8898a8
 // ---------------------------------------------------------------- scene
 const B = {
   opaque: true,
+  isBattle: true,   // lets the test probe identify this scene
   active: false,
   me: null, foe: null,
   isTrainer: false, trainerSpec: null, foeTeam: null, foeIndex: 0,

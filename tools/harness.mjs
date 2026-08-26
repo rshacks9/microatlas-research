@@ -114,15 +114,37 @@ if (SCRIPT !== 'boot') {
   const afterIntro = await probe('after-intro');
   if (afterIntro && afterIntro.party === 0) note('flow', 'player has no party after the intro sequence');
 
-  // Walk around looking for an encounter.
+  // Walk OUT of the start town looking for tall grass. Rotating directions every
+  // burst just oscillates in place, so commit to a heading and only change it when
+  // the player stops making progress (blocked by a building or the shoreline).
+  const HEADINGS = ['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'];
+  let hi = 0;
   let encountered = false;
-  for (let i = 0; i < 14 && !encountered; i++) {
-    await hold(['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'][i % 4], 700);
+  let prev = await probe('walk-start');
+  let stuckRuns = 0;
+
+  for (let i = 0; i < 40 && !encountered; i++) {
+    await hold(HEADINGS[hi], 900);
     const st = await probe('walk' + i);
     if (st && st.scene === 'battle') { encountered = true; break; }
+    if (st && prev) {
+      const moved = Math.abs(st.x - prev.x) + Math.abs(st.y - prev.y);
+      if (moved < 2) {
+        stuckRuns++;
+        hi = (hi + 1) % HEADINGS.length;   // blocked: try a different heading
+      } else {
+        stuckRuns = 0;
+      }
+    }
+    prev = st;
+    if (stuckRuns >= 4) { note('flow', 'player appears boxed in at ' + (st ? st.x + ',' + st.y : '?')); break; }
   }
   await shot('05-walk');
-  if (!encountered) note('flow', 'no wild encounter after 14 walk bursts in/around the start area');
+  const walked = prev && afterIntro ? Math.abs(prev.x - afterIntro.x) + Math.abs(prev.y - afterIntro.y) : 0;
+  if (!encountered) {
+    note('flow', 'no wild encounter after 40 walk bursts (moved ' + walked +
+                 ' tiles from spawn, ' + (prev ? prev.steps : 0) + ' steps)');
+  }
 
   if (encountered) {
     await shot('06-battle');
