@@ -682,7 +682,10 @@ function onStepComplete() {
   O.stepsSinceEncounter++;
   if (O.map && O.map.grassAt && O.map.grassAt(player.x, player.y)) {
     O.grassSteps++;
-    addEffect('rustle', player.x, player.y);
+    // Tuft rustle only where there is actually tall growth — a green tuft on a
+    // snow drift or a scree slope reads wrong; those get running dust instead.
+    if (O.map.isTallAt && O.map.isTallAt(player.x, player.y)) addEffect('rustle', player.x, player.y);
+    else if (O.lastRunning) addEffect('dust', player.fromX, player.fromY);
   } else if (O.lastRunning) {
     addEffect('dust', player.fromX, player.fromY);
   }

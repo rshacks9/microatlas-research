@@ -724,7 +724,9 @@ function buildCave(rng, index) {
       for (let dx = -rad; dx <= rad; dx++) {
         const gx = c.x + dx, gy = c.y + dy;
         if (get(data, gx, gy) !== T.FLOOR_CAVE) continue;
-        put(data, gx, gy, rng.chance(0.45) ? T.TALLGRASS_DARK : T.GRAVEL);
+        // CAVEMOSS is the underground encounter tile — TALLGRASS_DARK worked
+        // mechanically but rendered as bright surface grass in a cave.
+        put(data, gx, gy, rng.chance(0.45) ? T.CAVEMOSS : T.GRAVEL);
       }
     }
   }

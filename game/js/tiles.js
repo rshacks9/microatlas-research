@@ -11,9 +11,10 @@ export const T = {
   SIGN:36, FENCE:37, LEDGE_D:38, STAIRS:39, COUNTER:40, TABLE:41, SHELF:42,
   CARPET:43, WATER_EDGE:44, BRIDGE:45, PUDDLE:46, TALLGRASS_DARK:47, MUSHROOM:48,
   CRYSTAL:49, GRAVEL:50, SAVANNA:51, TUNDRA:52,
+  DUNEGRASS:53, BEACHTUFT:54, SCREE:55, SNOWDRIFT:56, CAVEMOSS:57,
 };
 
-export const TILE_COUNT = 53;
+export const TILE_COUNT = 58;
 
 // d(name, colors, opts) -> tile definition
 function d(name, colors, o = {}) {
@@ -86,6 +87,14 @@ TILE_DEFS[T.CRYSTAL]     = d('crystal',     ['#7a68c0','#5c4c9c','#a894e0'], { s
 TILE_DEFS[T.GRAVEL]      = d('gravel',      ['#8e8880','#726c64','#aaa49c'], { texture:'stone' });
 TILE_DEFS[T.SAVANNA]     = d('savanna',     ['#b4a45c','#9a8a48','#ccbc78'], { grass:true, enc:0.11, texture:'blade' });
 TILE_DEFS[T.TUNDRA]      = d('tundra',      ['#a8bcae','#8ea294','#c2d4c6'], { grass:true, enc:0.10, texture:'blade' });
+// Encounter terrain for the biomes that had NONE — four surface biomes plus caves
+// were measured at 0.0% encounter tiles, which silently made ~12 species
+// (both PEAK legendaries included) uncatchable in practice.
+TILE_DEFS[T.DUNEGRASS]   = d('dune grass',  ['#cbb478','#a8925c','#e2d097'], { grass:true, enc:0.11, texture:'blade' });
+TILE_DEFS[T.BEACHTUFT]   = d('beach tufts', ['#d5c98e','#b2a86e','#a4c084'], { grass:true, enc:0.09, texture:'blade' });
+TILE_DEFS[T.SCREE]       = d('scree',       ['#7e786a','#5f5a50','#9c968a'], { grass:true, enc:0.11, texture:'stone' });
+TILE_DEFS[T.SNOWDRIFT]   = d('snow drift',  ['#dbe6ee','#b8c8d6','#f4f8fc'], { grass:true, enc:0.10, texture:'grain' });
+TILE_DEFS[T.CAVEMOSS]    = d('cave moss',   ['#4e6858','#3a5044','#6a8a72'], { grass:true, enc:0.13, texture:'blade' });
 
 for (let i = 0; i < TILE_COUNT; i++) {
   if (!TILE_DEFS[i]) TILE_DEFS[i] = d('unused', ['#ff00ff','#aa00aa','#ff88ff'], { solid:true });

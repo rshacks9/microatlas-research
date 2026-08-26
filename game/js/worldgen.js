@@ -282,9 +282,16 @@ PATCH_FOR_BIOME[B_MEADOW]  = T.TALLGRASS;
 PATCH_FOR_BIOME[B_FOREST]  = T.TALLGRASS;
 PATCH_FOR_BIOME[B_JUNGLE]  = T.JUNGLE;
 PATCH_FOR_BIOME[B_SWAMP]   = T.MARSH;
-PATCH_FOR_BIOME[B_DESERT]  = 0;
 PATCH_FOR_BIOME[B_SAVANNA] = T.SAVANNA;
 PATCH_FOR_BIOME[B_TUNDRA]  = T.TUNDRA;
+// The four biomes below had NO patch tile, so their ground (sand, gravel, snow)
+// could never roll an encounter — measured at 0.0% encounter coverage, which
+// made every species that only spawns there uncatchable in practice, both PEAK
+// legendaries included.
+PATCH_FOR_BIOME[B_BEACH]    = T.BEACHTUFT;
+PATCH_FOR_BIOME[B_DESERT]   = T.DUNEGRASS;
+PATCH_FOR_BIOME[B_MOUNTAIN] = T.SCREE;
+PATCH_FOR_BIOME[B_PEAK]     = T.SNOWDRIFT;
 
 function paintTiles(seed, elev, moist, temp, biome, river, ground, overlay) {
   const W = WORLD_W, H = WORLD_H;
