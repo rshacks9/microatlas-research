@@ -136,7 +136,9 @@ export function say(lines, opts = {}) {
         }
         if (this._fresh) { this._fresh = false; return; }
 
-        if (consume('a') || consume('start')) {
+        // B advances too: a tapper leaning on B read wait-for-A boxes as a
+        // frozen game, and a plain message has nothing for B to cancel.
+        if (consume('a') || consume('start') || consume('b')) {
           if (this._revealed < this._total) {
             this._revealed = this._total;      // stage 1: finish the page
             return;

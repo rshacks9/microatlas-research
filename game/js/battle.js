@@ -201,14 +201,16 @@ B.update = function (dt) {
     if (!B.textDone) {
       B.textShown += textSpeed() * dt;
       if (B.textShown >= B.text.length) { B.textShown = B.text.length; B.textDone = true; wr.t = 0; }
-      if (consume('a')) { B.textShown = B.text.length; B.textDone = true; wr.t = 0; }
+      if (consume('a') || consume('b')) { B.textShown = B.text.length; B.textDone = true; wr.t = 0; }
       return;
     }
     wr.t += dt;
     if (wr.kind === 'msgauto') {
       if (wr.t > (Keys.a ? 0.08 : 0.5)) { B.waiting = null; wr.resolve(); }
       else if (consume('a') && wr.t > 0.12) { B.waiting = null; wr.resolve(); }
-    } else if (consume('a') && wr.t > 0.06) {
+    } else if ((consume('a') || consume('b')) && wr.t > 0.06) {
+      // B advances too: a tapper leaning on B read the wait-for-A box as a
+      // frozen game. B has nothing else to do while a message holds.
       sfx('select');
       B.waiting = null; wr.resolve();
     }
@@ -449,11 +451,11 @@ function renderMenu(ctx, m) {
     const sel = m.items[m.index];
     if (sel && sel.move) {
       const mv = sel.move;
-      drawWindow(ctx, W - 96, H - 106, 92, 50);
-      drawTypeBadge(ctx, mv.type, W - 90, H - 100);
-      drawText(ctx, 'PP ' + sel.pp + '/' + sel.ppMax, W - 90, H - 88, { color: PAL.ink });
-      drawText(ctx, mv.power ? 'PWR ' + mv.power : 'STATUS', W - 90, H - 78, { color: PAL.ink });
-      drawText(ctx, mv.accuracy ? 'ACC ' + mv.accuracy : 'ACC --', W - 90, H - 68, { color: PAL.ink });
+      const bx = 240;
+      drawTypeBadge(ctx, mv.type, bx, H - 50);
+      drawText(ctx, 'PP ' + sel.pp + '/' + sel.ppMax, bx, H - 38, { color: PAL.ink });
+      drawText(ctx, mv.power ? 'PWR ' + mv.power : 'STATUS', bx, H - 27, { color: PAL.ink });
+      drawText(ctx, mv.accuracy ? 'ACC ' + mv.accuracy : 'ACC --', bx, H - 16, { color: PAL.ink });
     }
     return;
   }
@@ -818,7 +820,7 @@ async function throwBall(itemId) {
   const item = getItem(itemId);
   const rate = (item.effect && item.effect.rate) || 1;
   removeItem(itemId, 1);
-  await msg(S.player.name + ' threw a ' + item.name + '!', false);
+  await msg(S.player.name + ' threw ' + (/^[aeiou]/i.test(item.name) ? 'an ' : 'a ') + item.name + '!', false);
 
   const key = 'ball_' + itemId;
   B.ballAnim = { x: 90, y: 150, key: getSprite(key).width ? key : 'ball_orb' };
@@ -962,7 +964,11 @@ async function runBattle() {
         playerAction = { kind: 'switch', index: list[pi].index };
       } else {
         if (B.isTrainer) {
-          await msg("You can't run from a trainer battle!", false);
+          // 'Forfeit' was a label over a refusal. Conceding is a real choice
+          // with the real cost of losing.
+          const conf = await menuSelect([{ label: 'Concede' }, { label: 'Keep fighting' }],
+            { kind: 'list', title: 'Forfeit the match?', cancelable: true });
+          if (conf === 0) { await msg('You conceded the match.', false); return 'lose'; }
           continue;
         }
         B.runAttempts++;

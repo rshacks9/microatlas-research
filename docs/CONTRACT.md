@@ -198,6 +198,12 @@ export function matchupText(mult);                 // -> '' | 'It barely registe
 ```
 
 ### EntitySpec (entities.js)
+
+The `Entity` wrapper carries EVERY spec field through — fields it does not
+model explicitly are copied verbatim (specs come from our own generators,
+never from saves). A field the wrapper drops is a feature that silently never
+fires; the Warden Seal award shipped dead exactly this way.
+
 ```js
 {
   kind: 'npc'|'trainer'|'sign'|'item'|'heal'|'shop'|'door',
@@ -311,6 +317,12 @@ export const TOWN_NAMES = ['Willowmere', ...];
 ```
 
 ## tilemap.js
+
+**Liveness rule (`isLive`)**: a set `flag` spends one-shot entities (pickups, gift
+NPCs, doors) — `entityAt`/`entityList` hide them. Beaten trainers and stilled
+shrines REMAIN: present, blocking, interactable with their after-lines. All
+filters must go through `isLive`; never re-implement `flag && getFlag(flag)`.
+
 ```js
 export class GameMap {
   constructor(data);              // data = MapData

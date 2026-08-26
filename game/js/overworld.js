@@ -19,7 +19,10 @@ import { playBgm, sfx } from './audio.js';
 import { drawText, drawWindow, PAL } from './ui.js';
 
 // Every settlement has exactly one Warden, so the Seal target is the town count.
-export const TOTAL_WARDENS = 10;
+export const TOTAL_WARDENS = 10;   // fallback; the live goal is the generated town count
+function sealGoal() {
+  return (S.world && S.world.towns && S.world.towns.length) ? S.world.towns.length : TOTAL_WARDENS;
+}
 
 const WALK_DUR = 0.16;
 const RUN_DUR = 0.09;
@@ -337,7 +340,10 @@ function rollEncounter() {
   const hi = pick.maxLvl !== undefined ? pick.maxLvl : base + 1;
   const roll = rand.range(Math.min(lo, hi), Math.max(lo, hi));
   const floor = Math.max(2, base - 3);
-  const ceil = Math.max(floor, base + 4);
+  // Near the start (base <= 4) the table's own minLvl could push rolls to
+  // base+4 — L6-7 wilds flattening a fresh L5 starter on its literal first
+  // battle, three playtest personas hit it. The doorstep stays a doorstep.
+  const ceil = Math.max(floor, base + (base <= 4 ? 2 : 4));
   const level = Math.max(2, Math.min(100, Math.max(floor, Math.min(ceil, roll))));
   return makeCreature(pick.species, level, { where: currentBiome().toLowerCase() });
 }
@@ -386,24 +392,30 @@ async function doWildBattle(wild) {
 async function afterBattle(result) {
   O.stepsSinceEncounter = 0;
   if (result === 'lose' || partyWiped()) {
-    await fade('out', 0.4, '#000');
     // Losing used to cost nothing at all, which also meant winning carried no
-    // relief. The cost is deliberately mild: a slice of your credits, capped, and
-    // never enough to leave you unable to restock.
+    // relief. The cost is deliberately mild — and gentler before the second
+    // Seal: playtests showed two doorstep losses eating a third of starting
+    // money before a new player could even restock.
     const money = S.player.money | 0;
-    const fee = Math.min(Math.floor(money * 0.25), 400 + (S.badges | 0) * 250);
+    const rate = (S.badges | 0) >= 2 ? 0.25 : 0.1;
+    const fee = Math.min(Math.floor(money * rate), 400 + (S.badges | 0) * 250);
     if (fee > 0) S.player.money = money - fee;
 
+    // Teleport and heal happen UNDER the fade; the explanation plays over the
+    // town after fading back in. The message used to play under the black
+    // overlay — an invisible dialogue holding a seemingly frozen screen, which
+    // every playtester read as a crash.
     const where = nearestTown();
+    await fade('out', 0.4, '#000');
+    healParty();
+    enterMap('world', where.x, where.y, 'down');
+    playBgm('town');
+    await fade('in', 0.4);
     await say(fee > 0
       ? ['You have no creatures able to battle!',
          'You scrambled back to ' + where.name + ', dropping ' + fee + ' credits along the way.']
       : ['You have no creatures able to battle!',
          'You scrambled back to ' + where.name + '.']);
-    healParty();
-    enterMap('world', where.x, where.y, 'down');
-    await fade('in', 0.4);
-    playBgm('town');
     return;
   }
   // The battle scene has popped and the overworld is visible again; a short dip
@@ -541,7 +553,8 @@ async function talkTo(e) {
       addItem(id, 1);
       if (e.flag) setFlag(e.flag, true);
       sfx('heal');
-      await say('You found a ' + getItem(id).name + '!');
+      const nm = getItem(id).name;
+      await say('You found ' + (/^[aeiou]/i.test(nm) ? 'an ' : 'a ') + nm + '!');
       return;
     }
     if (e.kind === 'shrine') {
@@ -648,7 +661,7 @@ async function startTrainerBattle(e) {
     sfx('levelup');
     await say([
       e.seal ? 'You received the ' + e.seal + '!' : 'The Warden hands you a Seal.',
-      'Seals: ' + S.badges + ' of ' + TOTAL_WARDENS + '.  Every settlement out there has one.',
+      'Seals: ' + S.badges + ' of ' + sealGoal() + '.  Every settlement out there has one.',
     ]);
     await grantStarterMilestone();
   }
