@@ -2,7 +2,7 @@
 // No DOM. Node-importable.
 import { getSpecies } from './creatures.js';
 import { getMove } from './moves.js';
-import { statsFor, maxHp, expForLevel, levelForExp, clampLevel, MAX_LEVEL } from './battlecalc.js';
+import { statsFor, maxHp, expForLevel, levelForExp, clampLevel, expToNext, MAX_LEVEL } from './battlecalc.js';
 import { S, PARTY_MAX, BOX_MAX, catchSpecies, seeSpecies } from './state.js';
 import { rand } from './rng.js';
 
@@ -232,6 +232,20 @@ export function hasUsableMove(inst) {
 }
 
 // ---- helpers used by the UI --------------------------------------------
+// What is this creature about to do? Surfacing "2 levels from evolving" is the
+// cheapest possible "one more battle" hook — the player can see the payoff coming.
+export function nextMilestone(inst) {
+  if (!inst) return { kind: 'max', level: 0, expLeft: 0 };
+  const sp = getSpecies(inst.species);
+  const e = expToNext(inst);
+  if (inst.level >= MAX_LEVEL) return { kind: 'max', level: MAX_LEVEL, expLeft: 0 };
+  const expLeft = Math.max(0, e.need - e.have);
+  if (sp.evolve && sp.evolve.into && inst.level < sp.evolve.level) {
+    return { kind: 'evolve', level: sp.evolve.level, levelsAway: sp.evolve.level - inst.level, expLeft };
+  }
+  return { kind: 'level', level: inst.level + 1, levelsAway: 1, expLeft };
+}
+
 export function statsOf(inst) { return statsFor(inst); }
 export function hpFrac(inst) {
   const m = maxHp(inst);

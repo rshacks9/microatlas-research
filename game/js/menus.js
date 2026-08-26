@@ -8,7 +8,7 @@ import { getSpecies, allSpecies, DEX_COUNT } from './creatures.js';
 import { getMove } from './moves.js';
 import { getItem, useItem, shopStock, sellPrice } from './items.js';
 import { maxHp, statsFor, expToNext } from './battlecalc.js';
-import { displayName, isFainted, hpFrac, swapParty } from './party.js';
+import { displayName, isFainted, hpFrac, swapParty, nextMilestone } from './party.js';
 import { S, bagList, itemCount, removeItem, addItem, spendMoney, addMoney,
          dexSeenCount, dexCaughtCount, dexVariantCount, clockString, playtimeString } from './state.js';
 import { sfx } from './audio.js';
@@ -180,6 +180,16 @@ export function openParty(opts = {}) {
         drawHpBar(ctx, 74, y + 18, 90, c.hp, mx);
         drawTextRight(ctx, c.hp + '/' + mx, W - 16, y + 15, { color: isFainted(c) ? PAL.hpBad : PAL.ink });
         if (c.status) drawText(ctx, c.status.toUpperCase(), 44, y + 24, { color: PAL.hpWarn });
+        // EXP bar plus what this creature is working toward, so progress toward the
+        // next payoff is visible without opening a submenu.
+        const e = expToNext(c);
+        drawExpBar(ctx, 74, y + 26, 90, e.frac);
+        const ms = nextMilestone(c);
+        const tag = ms.kind === 'max' ? 'MAX'
+          : ms.kind === 'evolve' ? (ms.levelsAway <= 1 ? 'evolves next level!' : ms.levelsAway + ' to evolve')
+          : 'L' + ms.level + ' soon';
+        drawTextRight(ctx, tag, W - 16, y + 24,
+          { color: ms.kind === 'evolve' && ms.levelsAway <= 1 ? PAL.gold : PAL.dim });
         if (sel) drawCursor(ctx, 0, y + 12, self.t);
       }
       drawText(ctx, 'A: select    B: back', 8, H - 12, { color: '#98a4b4' });

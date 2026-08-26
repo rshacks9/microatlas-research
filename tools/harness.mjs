@@ -143,7 +143,6 @@ if (SCRIPT !== 'boot') {
   };
 
   // Returns the first direction to walk toward the nearest reachable grass tile.
-  const blocked = [];   // 'x,y' tiles we bumped into (NPCs the BFS cannot see)
 
   // Pick the goal ONCE. Re-planning the GOAL every step made the walker oscillate
   // between two equidistant grass patches in opposite directions and never arrive;
@@ -176,10 +175,9 @@ if (SCRIPT !== 'boot') {
   });
 
   // First step of the shortest path to that fixed goal, avoiding known blockers.
-  const nextDir = () => page.evaluate(([gx, gy, blockedList]) => {
+  const nextDir = () => page.evaluate(([gx, gy]) => {
     const g = window.__game;
     if (!g || !g.S || !g.S.world) return null;
-    const blockedSet = new Set(blockedList);
     const m = g.S.world.map;
     const sx = g.S.player.x, sy = g.S.player.y;
     if (g.isGrassTile(m.ground[sy * m.w + sx])) return 'here';
@@ -203,25 +201,24 @@ if (SCRIPT !== 'boot') {
         const j = ny * m.w + nx;
         if (dist[j] !== -1) continue;
         if (g.isSolidTile(m.ground[j]) || g.overlayBlocksTile(m.overlay[j])) continue;
-        if (blockedSet.has(nx + ',' + ny)) continue;
         dist[j] = dist[i] + 1;
         first[j] = dist[i] === 0 ? d : first[i];
         q[tail++] = j;
       }
     }
     return null;
-  }, [goal ? goal.x : 0, goal ? goal.y : 0, blocked]);
+  }, [goal ? goal.x : 0, goal ? goal.y : 0]);
 
   let encountered = false;
   let prev = await probe('walk-start');
   let noPath = false;
+  let stuck = 0;
 
   for (let i = 0; i < 160 && !encountered; i++) {
     const st = await probe('nav' + i);
     if (!st) break;
     prev = st;
     if (st.scene === 'battle') { encountered = true; break; }
-    if (i % 15 === 14) blocked.length = 0;   // let stale blocks go entirely
 
     // The walker can stroll through a door. Once inside, the world-map BFS is
     // meaningless because the player's coordinates are interior coordinates, so
@@ -236,8 +233,7 @@ if (SCRIPT !== 'boot') {
     let dir = await nextDir();
     if (process.env.NAV_DEBUG && i < 24) {
       console.log('  nav ' + i + ' at ' + st.x + ',' + st.y + ' map=' + st.map +
-                  ' dir=' + dir + ' steps=' + st.steps + ' goal=' + (goal ? goal.x + ',' + goal.y + ' d' + goal.d : 'NULL') +
-                  ' blocked=' + blocked.length);
+                  ' dir=' + dir + ' steps=' + st.steps + ' goal=' + (goal ? goal.x + ',' + goal.y + ' d' + goal.d : 'NULL'));
     }
     if (dir === null) { noPath = true; break; }
     // Already standing in grass: pace back and forth until an encounter rolls.
@@ -248,15 +244,15 @@ if (SCRIPT !== 'boot') {
     if (!grazing) {
       const after = await probe('bump' + i);
       if (after && after.steps === before) {
-        // Could not enter that tile — almost always a wandering NPC. Remember it
-        // and let the next re-plan route around.
-        const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
-        // Blocks must EXPIRE. The obstacles here are wandering NPCs, so a tile that
-        // was impassable ten steps ago is usually clear now — and permanently
-        // blocking them eventually walled the walker into a dead end and made the
-        // BFS report 'no reachable grass' on a world with 57,000 reachable tiles.
-        if (d) blocked.push((st.x + d[0]) + ',' + (st.y + d[1]));
-        while (blocked.length > 6) blocked.shift();
+        // The only thing that blocks a walkable tile out here is a wandering NPC,
+        // and they move on their own. Wait a beat, then sidestep. Remembering
+        // 'blocked' tiles instead let the walker wall itself into a dead end and
+        // report 'no reachable grass' on a world with 57,000 reachable tiles.
+        stuck++;
+        await page.waitForTimeout(450);
+        if (stuck >= 3) { await stepKey(stuck % 2 ? 'up' : 'down'); stuck = 0; }
+      } else {
+        stuck = 0;
       }
     }
   }
