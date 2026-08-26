@@ -505,13 +505,18 @@ async function talkTo(e) {
 // sixth Seal, which closes the gap and turns the milestone into a real reward.
 async function grantStarterMilestone() {
   const seals = S.badges | 0;
-  const slot = seals === 3 ? 0 : seals === 6 ? 1 : -1;
-  if (slot < 0) return;
-
   const unchosen = STARTERS.filter((id) => !getFlag('starter_' + id));
-  const already = unchosen.filter((id) => getFlag('granted_' + id));
   const remaining = unchosen.filter((id) => !getFlag('granted_' + id));
   if (!remaining.length) return;
+
+  // How many of these the player has EARNED by now: one at 3 Seals, one at 6.
+  // This was an exact-equality check, so a grant that failed because the party and
+  // boxes were both full at that exact Seal could never be retried — and the two
+  // starter lines are the only way the dex reaches 34, so it silently capped again.
+  const earned = (seals >= 6 ? 2 : seals >= 3 ? 1 : 0);
+  const granted = unchosen.length - remaining.length;
+  if (granted >= earned) return;
+
   const giveId = remaining[0];
 
   // Match the player's current team so the gift is usable, not a museum piece.
@@ -521,13 +526,13 @@ async function grantStarterMilestone() {
 
   const gift = makeCreature(giveId, lvl, { where: 'a Warden' });
   const dest = addToParty(gift);
-  setFlag('granted_' + giveId, true);
-  sfx('levelup');
   if (dest === 'full') {
-    await say('The Warden offers you a companion, but you have nowhere to put it.');
-    setFlag('granted_' + giveId, false);
+    // Do NOT burn the grant. It will be offered again after the next Warden.
+    await say('The Warden offers you a companion, but you have nowhere to put it. Come back with room.');
     return;
   }
+  setFlag('granted_' + giveId, true);
+  sfx('levelup');
   await say([
     'The Warden says: a keeper of Seals should know the whole frontier.',
     'You received ' + displayName(gift) + '!' + (dest === 'box' ? ' It went to storage.' : ''),

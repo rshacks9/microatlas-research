@@ -134,9 +134,20 @@ export function healthyCount() { return S.party.filter((c) => !isFainted(c)).len
 
 export function addToParty(inst) {
   if (!inst) return 'full';
-  catchSpecies(inst.species, inst.variant);
-  if (S.party.length < PARTY_MAX) { S.party.push(inst); return 'party'; }
-  if (S.boxes.length < BOX_MAX) { S.boxes.push(inst); return 'box'; }
+  // Mark the dex only once the creature is actually STORED. Marking first meant a
+  // catch with a full party and full boxes still recorded a caught species the
+  // player does not own, quietly corrupting the completion counter.
+  if (S.party.length < PARTY_MAX) {
+    S.party.push(inst);
+    catchSpecies(inst.species, inst.variant);
+    return 'party';
+  }
+  if (S.boxes.length < BOX_MAX) {
+    S.boxes.push(inst);
+    catchSpecies(inst.species, inst.variant);
+    return 'box';
+  }
+  seeSpecies(inst.species);   // you did meet it, you just could not keep it
   return 'full';
 }
 

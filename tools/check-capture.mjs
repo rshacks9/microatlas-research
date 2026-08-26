@@ -76,6 +76,26 @@ for (const rarity of ['common', 'uncommon', 'rare', 'legendary']) {
   if (rarity === 'legendary' && slp > 0.35) { fails++; console.log('    FAIL legendaries are too easy'); }
 }
 
+t('a failed store does NOT mark the dex as caught', () => {
+  resetState(4242, 'Tester');
+  for (let i = 0; i < 6; i++) addToParty(makeCreature('mottlemouse', 5, {}));
+  for (let i = 0; i < 60; i++) addToParty(makeCreature('zapkit', 5, {}));
+  const before = Object.keys(S.dex.caught).length;
+  const dest = addToParty(makeCreature('aurorix', 40, {}));
+  return dest === 'full'
+      && S.dex.caught.aurorix === undefined
+      && S.dex.seen.aurorix === true
+      && Object.keys(S.dex.caught).length === before;
+});
+
+t('a variant is only recorded when it is actually kept', () => {
+  resetState(99, 'Tester');
+  for (let i = 0; i < 6; i++) addToParty(makeCreature('mottlemouse', 5, {}));
+  for (let i = 0; i < 60; i++) addToParty(makeCreature('zapkit', 5, {}));
+  addToParty(makeCreature('rimewolf', 30, { variant: true }));
+  return !(S.dex.variant && S.dex.variant.rimewolf);
+});
+
 // The shake animation must agree with the outcome.
 t('four shakes always means caught, fewer never does', () => {
   const rng = mulberry32(42);
@@ -87,6 +107,34 @@ t('four shakes always means caught, fewer never does', () => {
   }
   return true;
 });
+
+// The dex counter promises n/34, so that promise must be keepable.
+{
+  const { encounterTableFor, BIOMES } = await import('../game/js/worldgen.js');
+  const { STARTERS, getSpecies } = await import('../game/js/creatures.js');
+  const obtainable = new Set();
+  for (const b of BIOMES) for (const e of (encounterTableFor(b) || [])) obtainable.add(e.species);
+  for (let pass = 0; pass < 4; pass++) {
+    for (const sp of allSpecies()) if (obtainable.has(sp.id) && sp.evolve) obtainable.add(sp.evolve.into);
+  }
+  // Every starter line is reachable: one by choosing it, the other two as Seal
+  // milestones at the third and sixth Warden (overworld.grantStarterMilestone),
+  // which retries rather than burning the grant if storage was full.
+  for (const st of STARTERS) {
+    obtainable.add(st);
+    const sp = getSpecies(st);
+    if (sp.evolve) obtainable.add(sp.evolve.into);
+  }
+  const missing = allSpecies().filter((sp) => !obtainable.has(sp.id)).map((sp) => sp.id);
+  console.log('\n=== DEX COMPLETABILITY ===');
+  console.log('  obtainable: ' + obtainable.size + ' / ' + allSpecies().length);
+  if (missing.length) {
+    fails++;
+    console.log('  FAIL unobtainable, so the dex can never be completed: ' + missing.join(', '));
+  } else {
+    console.log('  every species is obtainable in a single playthrough');
+  }
+}
 
 console.log('\n' + (fails ? 'CAPTURE: ' + fails + ' FAILURES' : 'CAPTURE: catching keeps the creature and the odds behave'));
 process.exit(fails ? 1 : 0);
