@@ -101,4 +101,9 @@ export function ledgeDir(id)      { return def(id).ledge; }
 export function isCounter(id)     { return def(id).counter; }
 export function encounterRate(id) { return def(id).encounterRate; }
 export function isAutotile(id)    { return def(id).autotile; }
+
+// Overlay 0 means "no overlay", but tile id 0 is VOID which IS solid. Any code that
+// tests the overlay layer must special-case 0 or the entire map reads as blocked.
+export function overlayBlocks(id) { return id !== T.VOID && def(id).solid; }
+export function overlayEmpty(id)  { return id === T.VOID; }
 export function tileName(id)      { return def(id).name; }

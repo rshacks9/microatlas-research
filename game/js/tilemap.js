@@ -10,8 +10,7 @@
 import {
   TILE, T, TILE_DEFS,
   isSolid, isGrass, isWater, isTall, isAutotile, isCounter,
-  ledgeDir, encounterRate,
-} from './tiles.js';
+  ledgeDir, encounterRate, overlayBlocks} from './tiles.js';
 import { W as VIEW_W, H as VIEW_H } from './game.js';
 import { getFlag } from './state.js';
 
@@ -199,6 +198,10 @@ export class GameMap {
 
   solidAt(x, y) {
     if (isSolid(this.at(x, y))) return true;
+    // Trees, rocks and bushes live on the overlay layer. overlayBlocks() exists because
+    // an empty overlay is 0, which is T.VOID, which is itself solid — testing isSolid()
+    // directly here would mark every tile on the map impassable.
+    if (overlayBlocks(this.overlayAt(x, y))) return true;
     const e = this.entityAt(x, y);
     return e ? this._entityBlocks(e) : false;
   }
