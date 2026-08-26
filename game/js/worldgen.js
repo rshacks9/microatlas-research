@@ -60,8 +60,8 @@ const TOWN_MIN        = 8;
 const TOWN_SEP        = 55;
 const TOWN_CLEAR      = 6;    // half-size of the flattened clearing (13x13)
 
-const CAVE_TARGET     = 7;    // 5..8
 const CAVE_MIN        = 5;
+const CAVE_MAX        = 8;
 const CAVE_SEP        = 26;
 
 const MIN_REGION_KEEP = 12;   // smaller orphan pockets are filled, not bridged
@@ -325,7 +325,7 @@ function paintTiles(seed, elev, moist, temp, biome, river, ground, overlay) {
 
         if (patch && wide > 0.455 && fine > 0.520) g = patch;
         if (b === B_FOREST && canopy > 0.600 && fine > 0.470) g = T.TALLGRASS_DARK;
-        if (b === B_JUNGLE && (wide > 0.40 || fine > 0.46)) g = T.JUNGLE;
+        if (b === B_JUNGLE && wide > 0.42 && fine > 0.44) g = T.JUNGLE;
 
         // ---- overlay scatter (trees etc. NEVER go on the ground layer) ---
         const r1 = hashUnit(scatterS, x, y);
@@ -728,15 +728,15 @@ function nearestWalkable(x, y, ground, overlay, maxR) {
   return null;
 }
 
-function pickCaveSites(rng, elev, biome, ground, overlay, comp, mainId, towns) {
+function pickCaveSites(rng, elev, biome, ground, overlay, comp, mainId, towns, target) {
   const W = WORLD_W, H = WORLD_H;
   const sites = [];
   const sepPhases = [CAVE_SEP, CAVE_SEP, 18, 12, 8];
 
-  for (let phase = 0; phase < sepPhases.length && sites.length < CAVE_TARGET; phase++) {
+  for (let phase = 0; phase < sepPhases.length && sites.length < target; phase++) {
     const sep2 = sepPhases[phase] * sepPhases[phase];
     const allowHighland = phase >= 3;
-    for (let tries = 0; tries < 12000 && sites.length < CAVE_TARGET; tries++) {
+    for (let tries = 0; tries < 12000 && sites.length < target; tries++) {
       const x = 6 + rng.int(W - 12);
       const y = 6 + rng.int(H - 12);
       const i = y * W + x;
@@ -820,12 +820,19 @@ export function generateWorld(seed) {
   }
   if (cn > 0) { cx /= cn; cy /= cn; } else { cx = W / 2; cy = H / 2; }
 
-  let startTownIndex = 0, bestD = Infinity;
+  // Prefer a gentle starting biome so the first route is a level 2-4 route,
+  // then fall back to whichever site sits closest to the middle.
+  let startTownIndex = 0, bestD = Infinity, bestGentleD = Infinity, gentleIndex = -1;
   for (let s = 0; s < sites.length; s++) {
     const dx = sites[s].x - cx, dy = sites[s].y - cy;
     const d = dx * dx + dy * dy;
     if (d < bestD) { bestD = d; startTownIndex = s; }
+    const sb = biome[sites[s].y * W + sites[s].x];
+    if ((sb === B_MEADOW || sb === B_FOREST || sb === B_BEACH) && d < bestGentleD) {
+      bestGentleD = d; gentleIndex = s;
+    }
   }
+  if (gentleIndex >= 0) startTownIndex = gentleIndex;
 
   const towns = [];
   const warps = [];
@@ -927,7 +934,8 @@ export function generateWorld(seed) {
     }
   }
 
-  const caveSites = pickCaveSites(rng, elevation, biome, ground, overlay, buf.comp, mainId, towns);
+  const caveTarget = CAVE_MIN + rng.int(CAVE_MAX - CAVE_MIN + 1);
+  const caveSites = pickCaveSites(rng, elevation, biome, ground, overlay, buf.comp, mainId, towns, caveTarget);
   const caves = [];
   for (let c = 0; c < caveSites.length; c++) {
     const cs = caveSites[c];
