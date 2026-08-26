@@ -32,7 +32,12 @@ function setupCanvas() {
     const availW = Math.max(160, window.innerWidth - 16);
     const availH = Math.max(120, window.innerHeight - padH);
     let scale = Math.min(availW / W, availH / H);
-    scale = scale >= 1 ? Math.max(1, Math.floor(scale)) : scale;   // integer scale when we can
+    // Integer scaling keeps pixels perfectly crisp, but only once there is room
+    // for 2x or more. On a phone the width-limited scale is often ~1.2, and
+    // flooring that to 1 threw away a fifth of the screen and left a dead gap.
+    // Below 2x we take the fractional scale and let image-rendering:pixelated
+    // keep it blocky.
+    scale = scale >= 2 ? Math.floor(scale) : Math.max(0.5, scale)
     Game.scale = scale;
     canvas.style.width = Math.round(W * scale) + 'px';
     canvas.style.height = Math.round(H * scale) + 'px';

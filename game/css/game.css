@@ -163,9 +163,16 @@ body {
 .btn.held { filter: brightness(1.55); }
 
 @media (pointer: coarse) {
-  #touch { display: flex; }
+  #touch {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
   #hint { display: none; }
-  #shell { justify-content: space-between; padding-top: 6px; }
+  /* Centre the screen in the space above the pinned controls rather than
+     pinning it to the top, which left a large dead gap on tall phones. */
+  #shell { justify-content: center; padding-bottom: 200px; }
 }
 
 @media (max-width: 420px) {

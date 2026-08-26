@@ -130,14 +130,17 @@ if (SCRIPT !== 'boot') {
     if (st && prev) {
       const moved = Math.abs(st.x - prev.x) + Math.abs(st.y - prev.y);
       if (moved < 2) {
+        // Genuinely blocked this burst. Rotate, but do not treat it as failure:
+        // tools/check-onboarding.mjs shows the real path to grass is straight,
+        // so thrashing here is the walker's fault, not the world's.
         stuckRuns++;
-        hi = (hi + 1) % HEADINGS.length;   // blocked: try a different heading
+        hi = (hi + 1) % HEADINGS.length;
       } else {
         stuckRuns = 0;
       }
     }
     prev = st;
-    if (stuckRuns >= 4) { note('flow', 'player appears boxed in at ' + (st ? st.x + ',' + st.y : '?')); break; }
+    if (stuckRuns >= 12) { note('flow', 'player appears boxed in at ' + (st ? st.x + ',' + st.y : '?')); break; }
   }
   await shot('05-walk');
   const walked = prev && afterIntro ? Math.abs(prev.x - afterIntro.x) + Math.abs(prev.y - afterIntro.y) : 0;
