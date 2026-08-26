@@ -36,10 +36,20 @@ Touch controls appear automatically on touch devices.
   stat variation, and a full effectiveness chart.
 - **Turn-based battles** — physical/special split, stat stages, five status conditions,
   confusion and flinch, priority moves, critical hits, and a capture system with four ball tiers.
-- **The usual RPG loop** — a party of six plus storage, an item bag, shops, recovery centres,
-  roaming trainers with line-of-sight, a field dex, and a region map.
+- **The usual RPG loop** — a party of six plus a storage screen, an item bag, tiered shops with
+  permanent-stat tonics, recovery centres, trainer archetypes with line-of-sight, a field dex
+  with habitat lines, and a fog-of-war region map that charts as you explore.
+- **Ten named Wardens** — each with a type specialty their team expresses, a named Seal, and a
+  truthful pre-battle tell. Distance decides difficulty, so any Seal order works.
+- **An actual ending** — hold every Seal and the Wardens' Circle convenes the Verdant Trial:
+  three Keepers, back to back, no healing between rounds. Legendaries live at fixed, Seal-gated
+  shrines at the far reaches of their biomes, marked on the chart once you find them.
+- **A meta across journeys** — the Frontier Record keeps lifetime stats on your device outside
+  any save slot, and finishing the Trial unlocks New Journey+: a fresh seed where your field
+  notes (dex sightings) travel with you.
 - **Saving** — three slots in `localStorage`. Saves store the seed rather than the map, so they
-  stay tiny; the world is rebuilt deterministically on load.
+  stay tiny; the world is rebuilt deterministically on load. Old save versions migrate rather
+  than vanish.
 
 ## Architecture
 
@@ -66,18 +76,39 @@ Modules that must stay **DOM-free** (they are imported by the headless Node tool
 - **Battle flow is a coroutine.** `battle.js` reads top-to-bottom as an `async` function that
   awaits `msg()` / `anim()` / `menuSelect()`; the fixed-timestep `update()` resolves those
   promises. This keeps a long, branchy turn sequence readable instead of a state-machine soup.
-- **Damage constants are measured, not guessed.** `DAMAGE_DIVISOR` in `battlecalc.js` is 80
-  rather than the classic 50 because `tools/simulate.mjs` showed 50 produced 2.1-turn battles
-  with 28% of them ending on a single hit. See the comment there before changing it.
+- **Damage constants are measured, not guessed.** `damageDivisor(level)` in `battlecalc.js` is
+  level-scaled (`70 + level*0.55`) rather than the classic flat 50 because `tools/simulate.mjs`
+  showed a flat divisor cannot hold pacing across levels — 50 produced 2.1-turn battles with 28%
+  one-shots. See the comment there before changing it.
+- **Entities carry every spec field.** The `Entity` wrapper passes unknown generator fields
+  through verbatim; a whitelist once silently dropped `warden`/`seal`, which meant Seals never
+  incremented while every spec-level checker stayed green. `tools/check-entities.mjs` asserts on
+  the wrapped side now.
+- **Town content forks its rng.** `stampTown` draws exactly one value from the world's shared
+  stream and forks a private generator, so adding town content can never reshuffle later towns
+  or cave mouths for an existing seed (enforced in `tools/check-world.mjs`).
 
 ## Tools
 
 ```sh
 node tools/simulate.mjs 500     # headless battle balance report
-node tools/attack-save.mjs      # adversarial tests against save deserialization
+node tools/attack-save.mjs      # adversarial tests against save deserialization (36 cases)
 node tools/harness.mjs --shots  # headless Chromium play-test, screenshots to .harness/
 node tools/harness.mjs --script=mobile
 ```
+
+Twelve deterministic checkers cover the invariants that have actually broken during
+development — run them all with:
+
+```sh
+for c in graph movesets capture evolution curve firstwalk entitylock world \
+         onboarding huntable entities; do node tools/check-$c.mjs || break; done
+```
+
+Each checker's header comment names the shipped bug that motivated it; `check-huntable`
+(species reachable in the world, not merely present in tables) and `check-entities`
+(fields survive the Entity wrapper) exist because table-level checks stayed green through
+both of those bugs.
 
 `harness.mjs` drives a real playthrough in Chromium, fails on any console error or unhandled
 rejection, and checks framerate and mobile layout.
