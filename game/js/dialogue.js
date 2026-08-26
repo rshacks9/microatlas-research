@@ -84,6 +84,7 @@ function drawMoreArrow(ctx, t) {
 }
 
 function drawPage(ctx, page, revealed) {
+  if (!page || !page.length) return;
   let left = revealed;
   for (let i = 0; i < page.length; i++) {
     const line = page[i];
@@ -149,7 +150,8 @@ export function say(lines, opts = {}) {
       render(ctx) {
         drawWindow(ctx, BOX_X, BOX_Y, BOX_W, BOX_H, {});
         drawSpeakerPlate(ctx, options.speaker);
-        drawPage(ctx, this._pages[this._page], this._revealed);
+        const idx = Math.min(this._page, this._pages.length - 1);
+        drawPage(ctx, this._pages[idx], this._revealed);
         const done = this._revealed >= this._total;
         if (done) drawMoreArrow(ctx, this._t);
       },
@@ -237,7 +239,9 @@ export function ask(prompt, choices, opts = {}) {
       },
       render(ctx) {
         drawWindow(ctx, BOX_X, BOX_Y, BOX_W, BOX_H, {});
-        if (this._pages.length) drawPage(ctx, this._pages[this._page], this._revealed);
+        if (this._pages.length) {
+          drawPage(ctx, this._pages[Math.min(this._page, this._pages.length - 1)], this._revealed);
+        }
         if (!this._promptDone()) {
           if (this._revealed >= this._total) drawMoreArrow(ctx, this._t);
           return;
