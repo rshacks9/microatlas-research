@@ -27,6 +27,9 @@ function makeListScene(cfg) {
     enter(params) {
       this.t = 0;
       this.index = Math.max(0, Math.min(this.items.length - 1, this.index));
+      // A non-zero starting index (e.g. the bag's sticky cursor) must be scrolled into view.
+      const rows = cfg.rows || 8;
+      if (this.index >= this.scroll + rows) this.scroll = Math.max(0, this.index - rows + 1);
       this.resolve = params && params.resolve;
     },
     update(dt) {
@@ -268,6 +271,10 @@ function openSummary(index) {
 }
 
 // ------------------------------------------------------------------ bag
+// Sticky cursor: remember the last selected bag index for this session so
+// healing three creatures in a row does not restart from the top of the list.
+let bagLastIndex = 0;
+
 export function openBag(opts = {}) {
   const context = opts.context || 'field';
   const build = () => bagList()
@@ -283,6 +290,7 @@ export function openBag(opts = {}) {
   const sc = makeListScene({
     items,
     rows: 8,
+    index: Math.max(0, Math.min(items.length - 1, bagLastIndex)),
     async onPick(i, self) {
       const entry = self.items[i];
       if (!entry) return;
@@ -340,6 +348,8 @@ export function openBag(opts = {}) {
       drawText(ctx, 'A: use    B: back', 8, H - 12, { color: '#98a4b4' });
     },
   });
+  const baseClose = sc.close;
+  sc.close = function (result) { bagLastIndex = this.index; baseClose.call(this, result); };
   return new Promise((resolve) => pushScene(sc, { resolve }));
 }
 
@@ -435,9 +445,70 @@ function buildRegionMap(world, size) {
     }
   }
   g.putImageData(img, 0, 0);
+  // Danger rings are seed-static (levelAt only depends on world.start), so they
+  // are baked into the same cached canvas instead of redrawn every frame.
+  drawDangerRings(g, world, size, mw, mh);
   regionMapCache = c;
   regionMapKey = key;
   return c;
+}
+
+// Level thresholds for the danger contours drawn on the region map.
+const DANGER_LEVELS = [10, 20, 35, 50];
+
+// Overlay translucent level-contour rings from worldgen's levelAt, each tagged
+// 'L10' etc., so a player can see where danger rises before walking into it.
+function drawDangerRings(g, world, size, mw, mh) {
+  const lv = new Uint8Array(size * size);
+  for (let py = 0; py < size; py++) {
+    const ty = Math.min(mh - 1, Math.floor((py / size) * mh));
+    for (let px = 0; px < size; px++) {
+      const tx = Math.min(mw - 1, Math.floor((px / size) * mw));
+      lv[py * size + px] = levelAt(world, tx, ty);
+    }
+  }
+  // Contour pixels: at or past the threshold with a 4-neighbour below it.
+  for (let b = 0; b < DANGER_LEVELS.length; b++) {
+    const thr = DANGER_LEVELS[b];
+    g.fillStyle = 'rgba(240,200,120,' + (0.22 + b * 0.06).toFixed(2) + ')';
+    for (let py = 0; py < size; py++) {
+      for (let px = 0; px < size; px++) {
+        if (lv[py * size + px] < thr) continue;
+        const edge =
+          (px > 0 && lv[py * size + px - 1] < thr) ||
+          (px < size - 1 && lv[py * size + px + 1] < thr) ||
+          (py > 0 && lv[(py - 1) * size + px] < thr) ||
+          (py < size - 1 && lv[(py + 1) * size + px] < thr);
+        if (edge) g.fillRect(px, py, 1, 1);
+      }
+    }
+  }
+  // Tags: walk outward from the start town along whichever direction has the
+  // most room, labelling the first pixel at or past each band.
+  const start = (world && world.start) || { x: mw >> 1, y: mh >> 1 };
+  const spx = Math.max(0, Math.min(size - 1, Math.floor((start.x / mw) * size)));
+  const spy = Math.max(0, Math.min(size - 1, Math.floor((start.y / mh) * size)));
+  const dirs = [
+    { dx: 0, dy: 1, room: size - 1 - spy },
+    { dx: 0, dy: -1, room: spy },
+    { dx: 1, dy: 0, room: size - 1 - spx },
+    { dx: -1, dy: 0, room: spx },
+  ].sort((a, b) => b.room - a.room);
+  const dir = dirs[0];
+  for (const thr of DANGER_LEVELS) {
+    for (let k = 0; k <= dir.room; k++) {
+      const px = spx + dir.dx * k, py = spy + dir.dy * k;
+      if (lv[py * size + px] < thr) continue;
+      const tag = 'L' + thr;
+      const tw = textWidth(tag);
+      const lx = Math.max(1, Math.min(size - tw - 2, px - (tw >> 1)));
+      const ly = Math.max(1, Math.min(size - 10, py - 3));
+      g.fillStyle = 'rgba(16,24,32,0.55)';
+      g.fillRect(lx - 1, ly - 1, tw + 2, 9);
+      drawText(g, tag, lx, ly, { color: '#f8dc8a' });
+      break;
+    }
+  }
 }
 
 export function openWorldMap(world) {
@@ -478,6 +549,22 @@ export function openWorldMap(world) {
         ctx.fillStyle = '#f0e070';
         ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 3, 3);
       }
+      // shrines — optional; worldgen may not provide them yet
+      const shrines = (world.shrines || (S.world && S.world.shrines));
+      if (Array.isArray(shrines)) {
+        ctx.fillStyle = PAL.gold || '#f0c020';
+        for (const s of shrines) {
+          if (!s) continue;
+          const px = Math.round(ox + (s.x / mw) * size), py = Math.round(oy + (s.y / mh) * size);
+          ctx.beginPath();
+          ctx.moveTo(px, py - 3);
+          ctx.lineTo(px + 3, py);
+          ctx.lineTo(px, py + 3);
+          ctx.lineTo(px - 3, py);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
       // player
       const ppx = ox + (S.player.x / mw) * size, ppy = oy + (S.player.y / mh) * size;
       if (Math.sin(this.t * 6) > -0.3) {
@@ -488,6 +575,9 @@ export function openWorldMap(world) {
       }
       drawText(ctx, 'You are here', 8, H - 24, { color: '#e04038' });
       drawText(ctx, 'Settlements', 8, H - 14, { color: '#f0e070' });
+      if (Array.isArray(shrines) && shrines.length) {
+        drawTextRight(ctx, 'Shrines', W - 8, H - 24, { color: PAL.gold || '#f0c020' });
+      }
       drawTextRight(ctx, 'B: back', W - 8, H - 14, { color: '#98a4b4' });
     },
   };
@@ -496,6 +586,7 @@ export function openWorldMap(world) {
 
 // worldgen is imported lazily so menus.js stays importable without a world
 import * as worldgenRef from './worldgen.js';
+import { levelAt } from './worldgen.js';
 
 // ------------------------------------------------------------------ shop
 export async function openShop(tier) {
@@ -509,6 +600,39 @@ export async function openShop(tier) {
   }
 }
 
+// Quantity row over the shop list: Left/Right adjusts 1..max (max already
+// clamped by affordability or stock), A confirms, B cancels. Resolves the
+// chosen quantity, or 0 on cancel. Total price updates live.
+function openQuantity(cfg) {
+  const max = Math.max(1, Math.min(9, cfg.max | 0));
+  const sc = {
+    opaque: false, t: 0, qty: 1, resolve: null,
+    enter(p) { this.resolve = p && p.resolve; },
+    update(dt) {
+      this.t += dt;
+      if (consume('left') || repeatEdge('left', dt)) {
+        if (this.qty > 1) { this.qty--; sfx('select'); }
+      }
+      if (consume('right') || repeatEdge('right', dt)) {
+        if (this.qty < max) { this.qty++; sfx('select'); }
+      }
+      if (consume('a')) { sfx('select'); this.close(this.qty); return; }
+      if (consume('b')) { sfx('cancel'); this.close(0); }
+    },
+    render(ctx) {
+      const wq = 180, hq = 46;
+      const x = (W - wq) / 2, y = H - hq - 26;
+      drawWindow(ctx, x, y, wq, hq);
+      drawText(ctx, cfg.label, x + 10, y + 7, { color: PAL.ink });
+      drawTextCentered(ctx, '< x' + this.qty + ' >', x + wq / 2, y + 19, { color: PAL.accent });
+      drawTextRight(ctx, (cfg.unitPrice * this.qty) + ' cr', x + wq - 10, y + 32, { color: PAL.gold });
+      drawText(ctx, 'A: ok   B: cancel', x + 10, y + 32, { color: PAL.shadow });
+    },
+    close(r) { const res = this.resolve; this.resolve = null; popScene(r); if (res) res(r); },
+  };
+  return new Promise((resolve) => pushScene(sc, { resolve }));
+}
+
 function openBuy(stock) {
   const sc = makeListScene({
     items: stock.map((id) => ({ id, label: getItem(id).name })),
@@ -518,12 +642,16 @@ function openBuy(stock) {
       const it = getItem(id);
       if (it.price <= 0) { await say('That one is not for sale.'); return; }
       if (S.player.money < it.price) { sfx('error'); await say('You cannot afford that.'); return; }
-      const yes = await ask(it.name + ' — ' + it.price + ' cr. Buy one?', ['Yes', 'No']);
-      if (yes !== 0) return;
-      if (!spendMoney(it.price)) { await say('You cannot afford that.'); return; }
-      addItem(id, 1);
+      const qty = await openQuantity({
+        label: it.name,
+        unitPrice: it.price,
+        max: Math.floor(S.player.money / it.price),
+      });
+      if (qty <= 0) return;
+      if (!spendMoney(it.price * qty)) { await say('You cannot afford that.'); return; }
+      addItem(id, qty);
       sfx('select');
-      await say('Here you go — one ' + it.name + '.');
+      // No receipt line: the money counter updating is the feedback.
     },
     render(ctx, self) {
       ctx.fillStyle = '#243040';
@@ -566,12 +694,15 @@ function openSell() {
       const entry = self.items[i];
       if (!entry) return;
       const price = sellPrice(entry.id);
-      const yes = await ask('Sell one ' + getItem(entry.id).name + ' for ' + price + ' cr?', ['Yes', 'No']);
-      if (yes !== 0) return;
-      if (!removeItem(entry.id, 1)) return;
-      addMoney(price);
+      const qty = await openQuantity({
+        label: getItem(entry.id).name,
+        unitPrice: price,
+        max: itemCount(entry.id),
+      });
+      if (qty <= 0) return;
+      if (!removeItem(entry.id, qty)) return;
+      addMoney(price * qty);
       sfx('select');
-      await say('Thanks — here is ' + price + ' cr.');
       self.items = build();
       if (self.index >= self.items.length) self.index = Math.max(0, self.items.length - 1);
     },

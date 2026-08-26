@@ -21,6 +21,7 @@ const A = {
   dead: false,          // construction failed once; never retry
   master: null,
   musicGain: null,
+  duckGain: null,       // musicGain -> duckGain -> master; battle danger ducking
   sfxGain: null,
   noiseBuf: null,
   waves: null,          // duty -> PeriodicWave cache
@@ -30,12 +31,15 @@ const A = {
   pending: null,        // { name, at } resume after a one-shot fanfare
   musicOn: true,
   sfxOn: true,
+  duck: false,          // remembered even before/without an AudioContext
 };
 
 const MASTER_GAIN = 0.25;   // deliberately quiet — must never startle
 const LOOKAHEAD_MS = 25;    // scheduler wake interval
 const SCHEDULE_AHEAD = 0.10; // seconds of notes queued in front of the clock
 const FADE = 0.4;           // crossfade seconds
+const DUCK_LEVEL = 0.35;    // music bus level while ducked
+const DUCK_TIME = 0.25;     // seconds to ramp into/out of the duck
 
 // ---------------------------------------------------------------------------
 // note names -> frequency
@@ -270,6 +274,29 @@ const TRACKS = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// derived tracks: reuse an existing track's note tables at a different
+// transposition (semitones) and tempo scale, so one melody buys several moods.
+// ---------------------------------------------------------------------------
+
+function deriveTrack(baseName, transpose, tempoScale) {
+  const base = TRACKS[baseName];
+  if (!base) return null;
+  return {
+    tempo: base.tempo,
+    once: !!base.once,
+    transpose: transpose,
+    tempoScale: tempoScale,
+    lead: base.lead,   // pattern tables are shared, never mutated
+    bass: base.bass,
+    perc: base.perc,
+  };
+}
+
+TRACKS.overworld2 = deriveTrack('overworld', -3, 0.94);   // duskier, easier stride
+TRACKS.cave2 = deriveTrack('cave', 2, 1.06);              // shallower, brighter cave
+TRACKS.battle_warden = deriveTrack('battle', -2, 1.1);    // heavier, faster boss fight
+
 // Map names other modules may hand us onto real tracks.
 const TRACK_ALIAS = { wild: 'battle', fight: 'battle', map: 'overworld', world: 'overworld' };
 
@@ -314,14 +341,34 @@ const SFX = {
               { type: 'square', duty: 0.5, freq: 300, freq2: 720, dur: 0.09, gain: 0.30 }],
   error:     [{ type: 'square', duty: 0.5, freq: 200, dur: 0.15, gain: 0.45 },
               { type: 'square', duty: 0.5, freq: 150, dur: 0.20, gain: 0.45, delay: 0.15 }],
+  // not-very-effective hit: dull lowpassed thud, no bright content at all
+  hit_weak:  [{ type: 'noise', filter: 'lowpass', cutoff: 480, dur: 0.11, gain: 0.42 },
+              { type: 'triangle', freq: 170, freq2: 68, dur: 0.13, gain: 0.40 }],
+  // super-effective hit: short bright layered crack (snappier + higher than crit)
+  hit_super: [{ type: 'noise', filter: 'highpass', cutoff: 2800, dur: 0.09, gain: 0.50 },
+              { type: 'square', duty: 0.25, freq: 1500, freq2: 320, dur: 0.11, gain: 0.38 },
+              { type: 'square', duty: 0.5, freq: 720, freq2: 180, dur: 0.13, gain: 0.28, delay: 0.015 }],
+  // the capture CLICK: one short high tick, instant decay
+  lock:      [{ type: 'square', duty: 0.125, freq: 2200, dur: 0.045, gain: 0.50, hold: 0.04 }],
+  // EXP bar tick: single 30ms blip around 1.2kHz
+  tick:      [{ type: 'square', duty: 0.25, freq: 1200, dur: 0.03, gain: 0.28, hold: 0.2 }],
+  // catch jingle: ~1s, four rising-then-resolving notes (D5 A5 G5 D6),
+  // deliberately not the C-major ladder that levelup uses
+  fanfare_catch: [
+              { type: 'square', duty: 0.5, freq: 587, dur: 0.14, gain: 0.42 },
+              { type: 'square', duty: 0.5, freq: 880, dur: 0.14, gain: 0.42, delay: 0.16 },
+              { type: 'square', duty: 0.5, freq: 784, dur: 0.16, gain: 0.42, delay: 0.32 },
+              { type: 'square', duty: 0.25, freq: 1175, dur: 0.48, gain: 0.46, delay: 0.50 },
+              { type: 'triangle', freq: 294, dur: 0.50, gain: 0.34, delay: 0.50 }],
 };
 
 // ---------------------------------------------------------------------------
 // track compilation: patterns -> a flat, time-sorted event list
 // ---------------------------------------------------------------------------
 
-function addMelodic(chan, out, spb) {
+function addMelodic(chan, out, spb, freqMul) {
   if (!chan || !chan.pat || typeof chan.seq !== 'string') return;
+  const mul = (freqMul > 0) ? freqMul : 1;
   const v = chan.voice || {};
   for (let bar = 0; bar < chan.seq.length; bar++) {
     const pat = chan.pat[chan.seq.charAt(bar)];
@@ -335,7 +382,7 @@ function addMelodic(chan, out, spb) {
           t: beat * spb,
           type: v.type || 'square',
           duty: v.duty,
-          freq: f,
+          freq: f * mul,
           dur: Math.max(0.03, dur * spb * (v.legato || 0.9)),
           gain: v.gain || 0.25,
         });
@@ -370,10 +417,14 @@ function compileTrack(name) {
   if (!def) return null;
   if (!A.compiled) A.compiled = Object.create(null);
   if (A.compiled[name]) return A.compiled[name];
-  const spb = 60 / (def.tempo || 120);
+  // tempoScale stretches/compresses the whole track; transpose (in semitones)
+  // shifts every melodic voice while leaving percussion tuning alone.
+  const scale = (def.tempoScale > 0) ? def.tempoScale : 1;
+  const spb = 60 / ((def.tempo || 120) * scale);
+  const freqMul = def.transpose ? Math.pow(2, def.transpose / 12) : 1;
   const events = [];
-  addMelodic(def.lead, events, spb);
-  addMelodic(def.bass, events, spb);
+  addMelodic(def.lead, events, spb, freqMul);
+  addMelodic(def.bass, events, spb, freqMul);
   addPercussion(def.perc, events, spb);
   events.sort((x, y) => x.t - y.t);
   let bars = 0;
@@ -569,7 +620,10 @@ export function initAudio() {
 
     const music = ctx.createGain();
     music.gain.value = A.musicOn ? 1 : 0;
-    music.connect(master);
+    const duck = ctx.createGain();
+    duck.gain.value = A.duck ? DUCK_LEVEL : 1;
+    music.connect(duck);
+    duck.connect(master);
 
     const sfxg = ctx.createGain();
     sfxg.gain.value = A.sfxOn ? 1 : 0;
@@ -578,6 +632,7 @@ export function initAudio() {
     A.ctx = ctx;
     A.master = master;
     A.musicGain = music;
+    A.duckGain = duck;
     A.sfxGain = sfxg;
     A.waves = Object.create(null);
     A.noiseBuf = makeNoiseBuffer(ctx);
@@ -670,6 +725,25 @@ export function setMusicEnabled(v) {
     g.cancelScheduledValues(now);
     g.setValueAtTime(g.value, now);
     g.linearRampToValueAtTime(A.musicOn ? 1 : 0.0001, now + 0.12);
+  } catch (_) { /* ignore */ }
+}
+
+/**
+ * Duck the music bus while the player's creature is in danger.
+ * v truthy: smoothly lower the music bus to DUCK_LEVEL (~35%) over ~0.25s;
+ * v falsy: restore it over the same ramp. Independent of setMusicEnabled and
+ * always a safe no-op when no AudioContext exists — the choice is remembered
+ * and applied when the graph is built.
+ */
+export function setMusicDuck(v) {
+  try {
+    A.duck = !!v;
+    if (!A.ok || !A.duckGain) return;
+    const now = A.ctx.currentTime;
+    const g = A.duckGain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(Math.max(0.0001, g.value), now);
+    g.linearRampToValueAtTime(A.duck ? DUCK_LEVEL : 1, now + DUCK_TIME);
   } catch (_) { /* ignore */ }
 }
 

@@ -110,10 +110,15 @@ t('four shakes always means caught, fewer never does', () => {
 
 // The dex counter promises n/34, so that promise must be keepable.
 {
-  const { encounterTableFor, BIOMES } = await import('../game/js/worldgen.js');
+  const { encounterTableFor, BIOMES, generateWorld } = await import('../game/js/worldgen.js');
   const { STARTERS, getSpecies } = await import('../game/js/creatures.js');
   const obtainable = new Set();
   for (const b of BIOMES) for (const e of (encounterTableFor(b) || [])) obtainable.add(e.species);
+  // Legendaries left the encounter lottery for fixed shrines. Count them
+  // obtainable only if a generated world actually places their shrine —
+  // an outcome check, not a rarity whitelist. (check-huntable asserts this
+  // across seeds; here one world guards the completability claim.)
+  for (const sh of (generateWorld(60601).shrines || [])) obtainable.add(sh.species);
   for (let pass = 0; pass < 4; pass++) {
     for (const sp of allSpecies()) if (obtainable.has(sp.id) && sp.evolve) obtainable.add(sp.evolve.into);
   }

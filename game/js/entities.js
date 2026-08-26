@@ -49,7 +49,9 @@ export class Entity {
   // their post-match line. Only pickups and one-shot events truly disappear.
   get hidden() {
     if (!this.flag || !getFlag(this.flag)) return false;
-    return this.kind !== 'trainer';
+    // Beaten trainers stay and acknowledge it; stilled shrines stay as quiet
+    // monuments. Only one-shot pickups truly disappear.
+    return this.kind !== 'trainer' && this.kind !== 'shrine';
   }
 
   get beaten() { return !!(this.flag && getFlag(this.flag) && this.kind === 'trainer'); }

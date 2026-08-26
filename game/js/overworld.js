@@ -96,7 +96,17 @@ function buildMapData(mapId) {
 
   let data = null;
   try {
-    data = buildInterior(kind, interiorSeed(mapId), index);
+    // Caves inherit their surface surroundings: theme and danger come from where
+    // the mouth sits, so a peak cave and a desert cave stop being identical.
+    let hint;
+    if (kind === 'cave' && S.world && S.world.caves && S.world.caves[index]) {
+      const mouth = S.world.caves[index];
+      hint = {
+        biome: biomeAt(S.world, mouth.x, mouth.y),
+        level: levelAt(S.world, mouth.x, mouth.y),
+      };
+    }
+    data = buildInterior(kind, interiorSeed(mapId), index, hint);
   } catch (e) {
     try { console.error('buildInterior failed for ' + mapId, e); } catch (_) {}
   }
@@ -255,7 +265,13 @@ function currentBiome() {
 
 function wildLevelHere() {
   if (S.mapId === 'world' && S.world) return levelAt(S.world, player.x, player.y);
-  if (String(S.mapId).startsWith('cave')) return Math.max(4, Math.min(45, 8 + ((S.seed % 7) | 0)));
+  if (String(S.mapId).startsWith('cave')) {
+    // The cave is as dangerous as the ground above it.
+    const idx = parseInt(String(S.mapId).split(':')[1], 10) || 0;
+    const mouth = S.world && S.world.caves && S.world.caves[idx];
+    if (mouth) return Math.max(4, levelAt(S.world, mouth.x, mouth.y) + 2);
+    return 8;
+  }
   return 3;
 }
 
@@ -491,6 +507,35 @@ async function talkTo(e) {
       if (e.flag) setFlag(e.flag, true);
       sfx('heal');
       await say('You found a ' + getItem(id).name + '!');
+      return;
+    }
+    if (e.kind === 'shrine') {
+      const SEALS_NEEDED = 5;
+      if (getFlag('shrine_' + e.species)) {
+        await say('The shrine is quiet now. Whatever lived here travels with you.');
+        return;
+      }
+      await say([
+        'A weathered shrine, older than any settlement.',
+        'Something vast is watching from just out of sight.',
+      ]);
+      if ((S.badges | 0) < SEALS_NEEDED) {
+        await say('It does not consider you worthy yet. (' + (S.badges | 0) + '/' + SEALS_NEEDED + ' Seals — return stronger.)');
+        return;
+      }
+      const yes = await ask('Call it forth?', ['Challenge', 'Not yet']);
+      if (yes !== 0) return;
+      sfx('encounter');
+      const legend = makeCreature(e.species, e.level || 50, { where: 'its shrine' });
+      await encounterWipe();
+      const battle = startBattle({ wild: legend, bg: ['#403858', '#584870', '#302848'] });
+      await fade('in', 0.3);
+      const result = await battle;
+      // Catching it stills the shrine forever. Merely defeating it lets you
+      // return and try again — a KO must not permanently break the dex.
+      if (result === 'caught') setFlag('shrine_' + e.species, true);
+      await afterBattle(result);
+      if (result === 'win') await say('It scatters like smoke. The shrine waits for you to try again.');
       return;
     }
     if (e.kind === 'trainer') {

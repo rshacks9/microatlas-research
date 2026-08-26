@@ -998,10 +998,63 @@ export function generateWorld(seed) {
     warps.push({ x: cs.x, y: cs.y, to: id, dir: 'down' });
   }
 
+  // --- legendary shrines ---------------------------------------------------
+  // One fixed shrine per legendary, pushed to the far reaches of its biome. The
+  // shrine is an entity the player walks to and challenges — gated on Seals by
+  // the overworld — and a marker on the region map, so the endgame is a visible
+  // destination instead of an invisible dice roll.
+  const shrines = [];
+  {
+    const SHRINE_SPECS = [
+      { species: 'aurorix', wants: [B_PEAK, B_TUNDRA], level: 52 },
+      { species: 'magmaroth', wants: [B_PEAK, B_MOUNTAIN], level: 52 },
+      { species: 'verdilith', wants: [B_JUNGLE, B_FOREST], level: 50 },
+    ];
+    for (const spec of SHRINE_SPECS) {
+      let best = -1, bestScore = -1;
+      // Deterministic scan: the farthest walkable tile of the wanted biome.
+      for (let i = 0; i < W * H; i += 3) {
+        const b = biome[i];
+        if (b !== spec.wants[0] && b !== spec.wants[1]) continue;
+        if (isSolid(ground[i]) || isWater(ground[i])) continue;
+        const x = i % W, y = (i / W) | 0;
+        const d = Math.max(Math.abs(x - start.x), Math.abs(y - start.y));
+        // Keep shrines apart from each other.
+        let clash = false;
+        for (const sh of shrines) {
+          if (Math.max(Math.abs(sh.x - x), Math.abs(sh.y - y)) < 60) { clash = true; break; }
+        }
+        if (clash) continue;
+        if (d > bestScore) { bestScore = d; best = i; }
+      }
+      if (best < 0) continue;
+      const sx2 = best % W, sy2 = (best / W) | 0;
+      // Clear a small apron so the shrine is approachable from below.
+      for (let dy = -1; dy <= 2; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = sx2 + dx, ny = sy2 + dy;
+          if (!inBounds(nx, ny)) continue;
+          const ni = ny * W + nx;
+          overlay[ni] = 0;
+          if (isSolid(ground[ni]) || isWater(ground[ni])) ground[ni] = T.GRAVEL;
+        }
+      }
+      ground[best] = T.STAIRS;
+      entities.push({
+        kind: 'shrine', x: sx2, y: sy2, dir: 'down', blocking: true,
+        sprite: 'npc_elder', name: 'Ancient Shrine',
+        species: spec.species, level: spec.level,
+        flag: 'shrine_' + spec.species,
+      });
+      shrines.push({ x: sx2, y: sy2, species: spec.species });
+    }
+  }
+
   // --- connectivity: the load-bearing invariant ---------------------------
   const protectedIdx = [startIdx];
   for (const t of towns) protectedIdx.push(t.y * W + t.x);
   for (const c of caves) protectedIdx.push(c.y * W + c.x);
+  for (const sh of shrines) protectedIdx.push(sh.y * W + sh.x);
 
   repairConnectivity(startIdx, protectedIdx, ground, overlay, biome, buf);
 
@@ -1064,10 +1117,68 @@ export function generateWorld(seed) {
     }
   }
 
+  // --- roadside signposts ---------------------------------------------------
+  // Direction and danger, posted where the player actually decides which way
+  // to walk: just outside each town, naming the nearest settlements and how
+  // hard the wilds between them run. Leaving town becomes an informed choice.
+  {
+    // atan2 octant → compass word. Screen coords: +x east, +y south.
+    const OCT = ['east', 'south-east', 'south', 'south-west', 'west',
+                 'north-west', 'north', 'north-east'];
+    const compass = (dx, dy) =>
+      OCT[((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8];
+    const occupied = new Set();
+    for (const e2 of entities) occupied.add(e2.x + ',' + e2.y);
+    for (const e2 of map.entities) occupied.add(e2.x + ',' + e2.y);
+
+    for (const t of towns) {
+      // Two nearest other towns, by straight-line distance.
+      const others = towns.filter((o) => o !== t)
+        .map((o) => ({ o, d: Math.max(Math.abs(o.x - t.x), Math.abs(o.y - t.y)) }))
+        .sort((a2, b2) => a2.d - b2.d).slice(0, 2);
+      if (!others.length) continue;
+
+      // Stand the post a few tiles out of town toward the nearest neighbour,
+      // snapped to the closest clear walkable tile that is actually reachable.
+      const lead = others[0].o;
+      const ux = lead.x - t.x, uy = lead.y - t.y;
+      const um = Math.max(1, Math.max(Math.abs(ux), Math.abs(uy)));
+      const px = t.x + Math.round((ux / um) * (TOWN_CLEAR + 3));
+      const py = t.y + Math.round((uy / um) * (TOWN_CLEAR + 3));
+      let sx3 = -1, sy3 = -1, bestD2 = Infinity;
+      for (let dy = -4; dy <= 4; dy++) {
+        for (let dx = -4; dx <= 4; dx++) {
+          const nx = px + dx, ny = py + dy;
+          if (!inBounds(nx, ny)) continue;
+          const ni = ny * W + nx;
+          if (isSolid(ground[ni]) || isWater(ground[ni]) || overlay[ni] !== 0) continue;
+          if (buf.comp[ni] !== buf.comp[startIdx]) continue;
+          if (occupied.has(nx + ',' + ny)) continue;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestD2) { bestD2 = d2; sx3 = nx; sy3 = ny; }
+        }
+      }
+      if (sx3 < 0) continue;
+
+      const lines = others.map(({ o, d }) =>
+        o.name + ': ' + d + ' tiles ' + compass(o.x - t.x, o.y - t.y) + '.');
+      // Route danger: the wilds midway to the nearest neighbour, which is
+      // where a player following this sign will actually be walking.
+      const midLvl = levelAt({ start }, (t.x + lead.x) >> 1, (t.y + lead.y) >> 1);
+      lines.push('Wild creatures along the way run to about L' + midLvl + '.');
+      map.entities.push({
+        kind: 'sign', x: sx3, y: sy3, dir: 'down', blocking: false,
+        sprite: 'sign', name: 'Signpost', lines,
+      });
+      occupied.add(sx3 + ',' + sy3);
+    }
+  }
+
   const world = {
     map,
     towns,
     caves,
+    shrines,
     start,
     startTown: towns.length ? towns[Math.min(startTownIndex, towns.length - 1)] : null,
     elevation,
@@ -1119,7 +1230,9 @@ export function levelAt(world, x, y) {
 // Species ids are hardcoded strings on purpose: worldgen must stay independent
 // of creatures.js. Every id below is from docs/ROSTER.md and respects that
 // species' listed biomes. Starters never appear. Legendaries are weight 1 and
-// only in PEAK (aurorix, magmaroth) / JUNGLE (verdilith).
+// Legendaries are NOT in these tables: an invisible 1-weight lottery roll is a
+// hook nobody can feel. They live at fixed, map-marked shrines instead (see
+// placeShrines), which turns a 0.9%-per-encounter accident into a hunt you plan.
 
 const e = (species, weight, minLvl, maxLvl) => ({ species, weight, minLvl, maxLvl });
 
@@ -1151,7 +1264,6 @@ const ENCOUNTERS = {
     e('glimmoth', 34, 14, 24),
     e('sporecap', 30, 14, 24),
     e('lumibud', 25, 16, 27),
-    e('verdilith', 1, 45, 52),
   ],
 
   SWAMP: [
@@ -1197,8 +1309,6 @@ const ENCOUNTERS = {
     e('rimewolf', 18, 30, 44),
     e('cragfang', 16, 32, 46),
     e('ironclad', 16, 34, 48),
-    e('aurorix', 1, 50, 58),
-    e('magmaroth', 1, 50, 58),
   ],
 };
 

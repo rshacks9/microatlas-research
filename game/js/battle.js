@@ -15,7 +15,15 @@ import { displayName, isFainted, giveExp, tryEvolve, evolveInto, learnMove, know
          hasUsableMove, MOVE_SLOTS, buildTeam, firstHealthy, addToParty, partyWiped } from './party.js';
 import { S, seeSpecies, addMoney, removeItem, itemCount, bagList, dexCaughtCount } from './state.js';
 import { sfx, playBgm } from './audio.js';
+import * as AudioX from './audio.js';
 import { rand } from './rng.js';
+
+// setMusicDuck ships from a parallel audio workstream; battle must not hard-bind
+// to it. Namespace access keeps this a no-op until the export exists.
+function duckMusic(v) {
+  const f = AudioX.setMusicDuck;
+  if (typeof f === 'function') { try { f(v); } catch (_) { /* ignore */ } }
+}
 
 const STATUS_LABEL = { brn:'BRN', psn:'PSN', par:'PAR', slp:'SLP', frz:'FRZ' };
 const STATUS_COLOR = { brn:'#e07038', psn:'#a050a8', par:'#e0c040', slp:'#8898a8', frz:'#78c8e0' };
@@ -50,6 +58,9 @@ const B = {
   hitstop: 0,               // freezes the whole battle briefly on impact
   popups: [],               // floating damage / effect numbers
   recoil: { me: 0, foe: 0 },// per-sprite knockback, decays
+  lunge: { me: 0, foe: 0 }, // attacker push toward the target, decays
+  bursts: [],               // type-coloured impact particles
+  expShown: null,           // null = draw live EXP; a number while tweening
   lowHpWarned: false,
   danger: false,
   dangerBeat: 0,
@@ -102,6 +113,17 @@ function tweenHp(who, from, to, dur = 0.6) {
   return anim(dur, (p) => { B.hpShown[who] = from + (to - from) * p; });
 }
 
+// EXP bar fill with a tick sounding as it rises — earning should be audible.
+function tweenExp(from, to) {
+  const dur = Math.max(0.28, Math.min(0.9, Math.abs(to - from) * 1.2));
+  let lastTick = -1;
+  return anim(dur, (p) => {
+    B.expShown = from + (to - from) * p;
+    const tick = Math.floor(p * 7);
+    if (tick !== lastTick) { lastTick = tick; sfx('tick'); }
+  });
+}
+
 // ---------------------------------------------------------------- update
 B.update = function (dt) {
   B.t += dt;
@@ -120,7 +142,7 @@ B.update = function (dt) {
   if (B.hitstop > 0) {
     B.hitstop -= dt;
     for (const p of B.popups) p.t += dt * 0.35;   // popups still drift, slowly
-    return;
+    return;   // bursts freeze too — the impact frame holds, then they scatter
   }
 
   for (let i = B.popups.length - 1; i >= 0; i--) {
@@ -128,14 +150,27 @@ B.update = function (dt) {
     p.t += dt;
     if (p.t >= p.life) B.popups.splice(i, 1);
   }
+  for (let i = B.bursts.length - 1; i >= 0; i--) {
+    const q = B.bursts[i];
+    q.t += dt;
+    if (q.t >= q.life) { B.bursts.splice(i, 1); continue; }
+    q.x += q.vx * dt; q.y += q.vy * dt;
+    q.vy += 70 * dt;
+  }
   B.recoil.me = Math.max(0, B.recoil.me - dt * 6);
   B.recoil.foe = Math.max(0, B.recoil.foe - dt * 6);
+  B.lunge.me = Math.max(0, B.lunge.me - dt * 7);
+  B.lunge.foe = Math.max(0, B.lunge.foe - dt * 7);
 
   // Low-HP warning: fires once per drop below 20%, so it reads as an alarm
   // rather than a constant nag.
   if (B.me && B.me.inst) {
     const f = B.me.inst.hp / Math.max(1, maxHp(B.me.inst));
+    const wasDanger = B.danger;
     B.danger = f > 0 && f <= 0.2;
+    // Ducked music under the danger beat: peril gets sonic space of its own.
+    if (B.danger && !wasDanger) duckMusic(0.4);
+    if (!B.danger && wasDanger) duckMusic(1);
     if (B.danger) {
       // A single beep then silence gave the danger state no ongoing presence, so
       // a near-death turn felt the same as a comfortable one. Beat steadily while
@@ -240,7 +275,7 @@ function drawInfoBox(ctx, c, x, y, isPlayer) {
   if (isPlayer) {
     drawTextRight(ctx, cur + '/' + mx, x + w - 6, y + 23, { color: PAL.ink });
     const e = expToNext(inst);
-    drawExpBar(ctx, x + 6, y + 30, w - 12, e.frac);
+    drawExpBar(ctx, x + 6, y + 30, w - 12, B.expShown !== null ? B.expShown : e.frac);
   }
   if (!isPlayer) {
     // Without this the player cannot make a type decision without having already
@@ -279,7 +314,8 @@ B.render = function (ctx) {
     const key = getSpecies(B.foe.inst.species).sprite;
     const sz = spriteSize(key);
     const scale = 2;
-    const kick = Math.round(B.recoil.foe * 6);
+    // recoil knocks away from the player; lunge drives toward them
+    const kick = Math.round(B.recoil.foe * 6) - Math.round(B.lunge.foe * 12);
     const fx = 224 - (sz.w * scale) / 2 + introOff + kick;
     const fy = 92 - sz.h * scale + 10 - Math.round(Math.sin(B.t * 2) * 1.5) - Math.round(B.recoil.foe * 3);
     ctx.save();
@@ -293,7 +329,8 @@ B.render = function (ctx) {
     const key = getSpecies(B.me.inst.species).sprite;
     const sz = spriteSize(key);
     const scale = 2.6;
-    const kick = Math.round(B.recoil.me * 6);
+    // recoil knocks away from the foe; lunge drives toward them
+    const kick = Math.round(B.recoil.me * 6) - Math.round(B.lunge.me * 14);
     const mx = 82 - (sz.w * scale) / 2 - introOff - kick;
     const my = 156 - sz.h * scale + 14 + Math.round(B.recoil.me * 3);
     ctx.save();
@@ -308,6 +345,16 @@ B.render = function (ctx) {
     const a = B.ballAnim;
     drawSprite(ctx, a.key || 'ball_orb', a.x - 6, a.y - 6, {});
   }
+
+  // type-coloured impact particles, under the damage numbers
+  for (const q of B.bursts) {
+    const k = 1 - q.t / q.life;
+    ctx.globalAlpha = Math.max(0, k);
+    ctx.fillStyle = q.color;
+    const s = k > 0.55 ? 2 : 1;
+    ctx.fillRect(Math.round(q.x), Math.round(q.y), s, s);
+  }
+  ctx.globalAlpha = 1;
 
   // floating damage numbers, drawn above the creatures but under the HUD
   for (const p of B.popups) {
@@ -446,6 +493,23 @@ async function applyDamage(target, amount, meta = {}) {
   B.recoil[who] = 1;
 
   const anchor = who === 'foe' ? { x: 224, y: 62 } : { x: 82, y: 122 };
+
+  // Impact burst in the attacking move's type colour — the hit carries its
+  // identity even before the matchup text lands.
+  if (meta.typeColor) {
+    const cy = who === 'foe' ? 78 : 138;
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2 + Math.random() * 0.6;
+      const spd = 24 + Math.random() * 38 + (big ? 14 : 0);
+      B.bursts.push({
+        x: anchor.x, y: cy,
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 14,
+        t: 0, life: 0.38 + Math.random() * 0.22,
+        color: meta.typeColor,
+      });
+    }
+  }
+
   B.popups.push({
     text: '-' + dealt,
     x: anchor.x + (Math.random() * 16 - 8),
@@ -583,6 +647,11 @@ async function performMove(attacker, defender, moveSlot) {
   const hits = (ef && ef.kind === 'multihit') ? rand.range(ef.min || 2, ef.max || 5) : 1;
   let total = 0, lastMult = 1, anyCrit = false;
 
+  // Wind up into the target; the hit lands at full extension, then the decay
+  // in update() pulls the attacker back on its own.
+  const atkWho = attacker.side === 'foe' ? 'foe' : 'me';
+  await anim(0.12, (p) => { B.lunge[atkWho] = p; });
+
   for (let i = 0; i < hits; i++) {
     if (defender.inst.hp <= 0) break;
     const r = damage(attacker, defender, mv);
@@ -594,8 +663,9 @@ async function performMove(attacker, defender, moveSlot) {
     if (r.crit) anyCrit = true;
     total += r.dmg;
     B.flash = r.crit ? 0.55 : (r.mult > 1 ? 0.4 : 0.26);
-    sfx(r.crit ? 'crit' : 'hit');
-    await applyDamage(defender, r.dmg, { crit: r.crit, mult: r.mult });
+    // Effectiveness is audible before the text confirms it.
+    sfx(r.crit ? 'crit' : r.mult > 1 ? 'hit_super' : r.mult < 1 ? 'hit_weak' : 'hit');
+    await applyDamage(defender, r.dmg, { crit: r.crit, mult: r.mult, typeColor: TYPE_COLORS[mv.type] });
   }
 
   if (hits > 1) await msg('Hit ' + hits + ' time' + (hits > 1 ? 's' : '') + '!', false);
@@ -663,13 +733,25 @@ async function handleFoeFaint() {
   }
   for (const c of S.party) {
     if (!c || isFainted(c) || !c.__participated) continue;
+    // Only the on-screen combatant owns the visible EXP bar; tween it through
+    // each level boundary so a level-up is watched arriving, not announced.
+    const onScreen = B.me && c === B.me.inst;
+    const beforeFrac = onScreen ? expToNext(c).frac : 0;
     const res = giveExp(c, gain);
     if (res.gained > 0) await msg(displayName(c) + ' gained ' + res.gained + ' EXP!', false);
+    let fillFrom = beforeFrac;
     for (const lv of res.leveled) {
+      if (onScreen) { await tweenExp(fillFrom, 1); fillFrom = 0; }
       sfx('levelup');
       setHpShown('me', B.me);
+      if (onScreen) {
+        B.flash = 0.35;
+        B.popups.push({ text: 'LEVEL UP!', x: 82, y: 108, t: 0, life: 1.1, color: '#ffd23c', big: true });
+      }
       await msg(displayName(c) + ' grew to level ' + lv + '!');
     }
+    if (onScreen && res.gained > 0) await tweenExp(fillFrom, expToNext(c).frac);
+    B.expShown = null;
     for (const l of res.learned) {
       if (knowsMove(c, l.moveId)) continue;
       const mv = getMove(l.moveId);
@@ -747,19 +829,25 @@ async function throwBall(itemId) {
   B.hideFoe = true;
   sfx('catch');
 
+  // Held breath: music drops away while the ball decides. Each wobble waits
+  // longer than the last — the pause is where the tension lives.
+  duckMusic(0.2);
   const res = catchChance(B.foe.inst, rate, B.foe.inst.status);
+  const gaps = [0.3, 0.55, 0.85];
   for (let i = 0; i < Math.min(3, res.shakes); i++) {
     sfx('shake');
     await anim(0.34, (p) => { B.ballAnim.x = 224 + Math.sin(p * Math.PI * 2) * 5; });
-    await pause(0.12);
+    await pause(gaps[i] || 0.3);
   }
 
   if (res.caught) {
-    await pause(0.25);
+    sfx('lock');            // the click — the sound of it being over
+    await pause(0.5);
+    duckMusic(1);
     const caughtInst = B.foe.inst;
     const name = displayName(caughtInst);
     const isNew = !S.dex.caught[caughtInst.species];
-    sfx('levelup');
+    sfx('fanfare_catch');
     await msg('Gotcha! ' + name + ' was caught!');
 
     // Actually keep it. Without this the ball is spent, the message plays, and
@@ -783,6 +871,7 @@ async function throwBall(itemId) {
     B.ballAnim = null;
     return true;
   }
+  duckMusic(1);
   await msg(['Oh no! It broke free!', 'Argh! So close!', 'It escaped the ' + item.name + '!'][Math.min(2, res.shakes)], false);
   B.ballAnim = null;
   B.hideFoe = false;
@@ -988,6 +1077,9 @@ B.enter = function (params) {
   B.hitstop = 0;
   B.popups = [];
   B.recoil = { me: 0, foe: 0 };
+  B.lunge = { me: 0, foe: 0 };
+  B.bursts = [];
+  B.expShown = null;
   B.lowHpWarned = false;
   B.danger = false;
   B.dangerBeat = 0;
@@ -1038,13 +1130,17 @@ B.enter = function (params) {
 
 function finish(result) {
   B.active = false;
+  duckMusic(1);   // never leave the overworld music ducked by battle state
   const r = B.resolve;
   B.resolve = null;
   popScene(result);
   if (r) r(result);
 }
 
-B.exit = function () { B.active = false; B.menu = null; B.waiting = null; B.anims = []; };
+B.exit = function () {
+  B.active = false; B.menu = null; B.waiting = null; B.anims = [];
+  duckMusic(1);
+};
 
 export function startBattle(opts) {
   // A battle with nobody able to fight must never construct a scene around

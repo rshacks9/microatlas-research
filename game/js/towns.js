@@ -601,6 +601,39 @@ function buildHouse(rng, index) {
 
 const DIRS4 = [[0, -1], [0, 1], [-1, 0], [1, 0]];
 
+// Per-biome cave dressing. Every id here exists in tiles.js; every `floor`,
+// `patch` and `enc` tile is walkable, every `wall`/`wallDecor` tile is solid,
+// and every `enc` tile has encounterRate > 0 — so swapping palettes can never
+// change connectivity or starve a cave of encounters.
+const CAVE_THEMES = {
+  classic: { wall: T.WALL_CAVE, floor: T.FLOOR_CAVE, patch: T.GRAVEL, enc: T.CAVEMOSS,
+             wallDecor: T.CRYSTAL, decorLo: 6, decorHi: 12, floorDecor: 0 },
+  // Dry sandstone hollows under the dunes: sand underfoot, cactus in the walls.
+  dry:     { wall: T.ROCK, floor: T.SAND, patch: T.GRAVEL, enc: T.DUNEGRASS,
+             wallDecor: T.CACTUS, decorLo: 4, decorHi: 8, floorDecor: 0 },
+  // Glacial caverns: snow floors, sheet-ice accents, heavy crystal growth.
+  ice:     { wall: T.WALL_CAVE, floor: T.SNOW, patch: T.ICE, enc: T.SNOWDRIFT,
+             wallDecor: T.CRYSTAL, decorLo: 10, decorHi: 16, floorDecor: 0 },
+  // High-country adits: loose scree beds between the gravel.
+  stone:   { wall: T.WALL_CAVE, floor: T.FLOOR_CAVE, patch: T.GRAVEL, enc: T.SCREE,
+             wallDecor: T.CRYSTAL, decorLo: 8, decorHi: 14, floorDecor: 0 },
+  // Damp root-caves under the green biomes: dirt, puddles, mushrooms.
+  lush:    { wall: T.WALL_CAVE, floor: T.DIRT, patch: T.PUDDLE, enc: T.CAVEMOSS,
+             wallDecor: T.CRYSTAL, decorLo: 4, decorHi: 8, floorDecor: T.MUSHROOM },
+};
+
+const CAVE_BIOME_FAMILY = {
+  DESERT: 'dry', SAVANNA: 'dry', BEACH: 'dry',
+  TUNDRA: 'ice', PEAK: 'ice',
+  MOUNTAIN: 'stone',
+  FOREST: 'lush', JUNGLE: 'lush', SWAMP: 'lush',
+};
+
+function caveThemeFor(hint) {
+  const biome = hint && typeof hint.biome === 'string' ? hint.biome.toUpperCase() : '';
+  return CAVE_THEMES[CAVE_BIOME_FAMILY[biome]] || CAVE_THEMES.classic;
+}
+
 /** Flood fill over non-solid tiles. -> Uint8Array mask of reachable tiles. */
 function floodFill(data, sx, sy) {
   const { w, h } = data;
@@ -625,10 +658,12 @@ function floodFill(data, sx, sy) {
   return seen;
 }
 
-function buildCave(rng, index) {
+function buildCave(rng, index, hint) {
+  const theme = caveThemeFor(hint);
+  const hintLevel = hint && Number.isFinite(Number(hint.level)) ? Number(hint.level) : 0;
   const size = 30 + rng.int(17);                 // 30..46 tiles square
-  const { ground, overlay } = blankRoom(size, size, T.WALL_CAVE, T.WALL_CAVE);
-  for (let i = 0; i < ground.length; i++) ground[i] = T.WALL_CAVE;
+  const { ground, overlay } = blankRoom(size, size, theme.wall, theme.wall);
+  for (let i = 0; i < ground.length; i++) ground[i] = theme.wall;
 
   const data = {
     id: 'cave:' + index, w: size, h: size, ground, overlay, biome: null,
@@ -644,8 +679,8 @@ function buildCave(rng, index) {
   function carve(x, y) {
     if (x < 1 || y < 1 || x > size - 2 || y > size - 2) return;
     const i = y * size + x;
-    if (ground[i] === T.FLOOR_CAVE) return;
-    ground[i] = T.FLOOR_CAVE;
+    if (ground[i] === theme.floor) return;
+    ground[i] = theme.floor;
     floors.push({ x, y });
   }
 
@@ -679,7 +714,7 @@ function buildCave(rng, index) {
 
   // Mouth of the cave: a stair tile punched through the bottom wall.
   ground[(size - 1) * size + ex] = T.STAIRS;
-  if (ground[entryY * size + ex] !== T.FLOOR_CAVE) carve(ex, entryY);
+  if (ground[entryY * size + ex] !== theme.floor) carve(ex, entryY);
   data.spawn = { x: ex, y: entryY };
   const exit = { x: ex, y: size - 1 };
   data.warps.push({ x: exit.x, y: exit.y, to: 'world', dir: 'down' });
@@ -704,18 +739,80 @@ function buildCave(rng, index) {
   {
     const seen = floodFill(data, exit.x, exit.y);
     for (let i = 0; i < ground.length; i++) {
-      if (!seen[i] && !isSolid(ground[i])) ground[i] = T.WALL_CAVE;
+      if (!seen[i] && !isSolid(ground[i])) ground[i] = theme.wall;
     }
   }
 
+  // ---- heart chamber -------------------------------------------------------
+  // BFS from the mouth finds the deepest tile in the cave; a small round
+  // chamber is cleared there and dressed as the reward for going all the way:
+  // dense encounter ground, twin crystals, and one guaranteed gift.
+  // Carving only ever turns wall into floor around an already-reachable tile
+  // (the disc is internally connected and contains the BFS tile), so the
+  // "every floor reaches the exit" invariant survives untouched.
+  const giftRoll = rng.chance(0.35);
+  const gift = (hintLevel >= 22 || giftRoll) ? 'ultraorb' : 'revive';
+  const dist = new Int32Array(size * size).fill(-1);
+  const queue = [data.spawn.y * size + data.spawn.x];
+  dist[queue[0]] = 0;
+  let heart = { x: data.spawn.x, y: data.spawn.y, d: 0 };
+  for (let qi = 0; qi < queue.length; qi++) {
+    const cur = queue[qi];
+    const cx = cur % size, cy = (cur / size) | 0;
+    for (const d of DIRS4) {
+      const nx = cx + d[0], ny = cy + d[1];
+      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+      const ni = ny * size + nx;
+      if (dist[ni] >= 0 || isSolid(ground[ni])) continue;
+      dist[ni] = dist[cur] + 1;
+      queue.push(ni);
+      if (ground[ni] === theme.floor && dist[ni] > heart.d) heart = { x: nx, y: ny, d: dist[ni] };
+    }
+  }
+  // Clamp by at most one tile, so the disc still covers the reachable BFS tile.
+  const hx = clamp(heart.x, 2, size - 3), hy = clamp(heart.y, 2, size - 3);
+  for (let dy = -2; dy <= 2; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      if (dx * dx + dy * dy > 5) continue;
+      carve(hx + dx, hy + dy);
+      // Everything in the chamber except the gift tile rolls encounters.
+      if ((dx || dy) && get(data, hx + dx, hy + dy) === theme.floor) put(data, hx + dx, hy + dy, theme.enc);
+    }
+  }
+  // Two crystals set into the nearest wall faces of the chamber. Crystal is as
+  // solid as the wall it replaces, so connectivity cannot change.
+  let heartCrystals = 0;
+  for (let rad = 1; rad <= 6 && heartCrystals < 2; rad++) {
+    for (let dy = -rad; dy <= rad && heartCrystals < 2; dy++) {
+      for (let dx = -rad; dx <= rad && heartCrystals < 2; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
+        const wx = hx + dx, wy = hy + dy;
+        if (wx < 1 || wy < 1 || wx > size - 2 || wy > size - 2) continue;
+        if (get(data, wx, wy) !== theme.wall) continue;
+        let touchesOpen = false;
+        for (const d of DIRS4) if (!isSolid(get(data, wx + d[0], wy + d[1]))) { touchesOpen = true; break; }
+        if (!touchesOpen) continue;
+        put(data, wx, wy, T.CRYSTAL);
+        heartCrystals++;
+      }
+    }
+  }
+  data.entities.push({
+    kind: 'item', x: hx, y: hy, dir: 'down',
+    sprite: 'ball_orb', name: 'Item',
+    itemId: gift,
+    flag: 'cavegift_' + index,
+    blocking: false,
+  });
+
   const open = [];
   for (let i = 0; i < ground.length; i++) {
-    if (ground[i] === T.FLOOR_CAVE) open.push({ x: i % size, y: (i / size) | 0 });
+    if (ground[i] === theme.floor) open.push({ x: i % size, y: (i / size) | 0 });
   }
 
-  // Gravel patches. GRAVEL itself carries no encounter rate in tiles.js, so the
-  // damp moss threaded through each patch is what actually rolls encounters —
-  // both tiles are walkable, so connectivity is untouched.
+  // Ground patches. The theme's `patch` tile is pure dressing (encounter rate
+  // 0), so the encounter tile threaded through each patch is what actually
+  // rolls encounters — both tiles are walkable, so connectivity is untouched.
   const patches = rng.range(4, 7);
   for (let p = 0; p < patches && open.length; p++) {
     const c = open[rng.int(open.length)];
@@ -723,29 +820,40 @@ function buildCave(rng, index) {
     for (let dy = -rad; dy <= rad; dy++) {
       for (let dx = -rad; dx <= rad; dx++) {
         const gx = c.x + dx, gy = c.y + dy;
-        if (get(data, gx, gy) !== T.FLOOR_CAVE) continue;
-        // CAVEMOSS is the underground encounter tile — TALLGRASS_DARK worked
-        // mechanically but rendered as bright surface grass in a cave.
-        put(data, gx, gy, rng.chance(0.45) ? T.CAVEMOSS : T.GRAVEL);
+        if (get(data, gx, gy) !== theme.floor) continue;
+        put(data, gx, gy, rng.chance(0.45) ? theme.enc : theme.patch);
       }
     }
   }
 
-  // Crystals grow out of the walls, never out of the floor, so they cannot
-  // seal a corridor. Candidates are collected first rather than rejection-
-  // sampled, so a sparse cave still gets its glitter.
-  const crystalSpots = [];
+  // Wall decor (crystals, or cactus in the dry family) grows out of the walls,
+  // never out of the floor, so it cannot seal a corridor. Candidates are
+  // collected first rather than rejection-sampled, so a sparse cave still gets
+  // its glitter.
+  const decorSpots = [];
   for (let cy3 = 1; cy3 <= size - 2; cy3++) {
     for (let cx3 = 1; cx3 <= size - 2; cx3++) {
-      if (get(data, cx3, cy3) !== T.WALL_CAVE) continue;
+      if (get(data, cx3, cy3) !== theme.wall) continue;
       for (const d of DIRS4) {
-        if (!isSolid(get(data, cx3 + d[0], cy3 + d[1]))) { crystalSpots.push({ x: cx3, y: cy3 }); break; }
+        if (!isSolid(get(data, cx3 + d[0], cy3 + d[1]))) { decorSpots.push({ x: cx3, y: cy3 }); break; }
       }
     }
   }
-  const crystals = Math.min(crystalSpots.length, rng.range(6, 12));
-  const shuffledSpots = rng.shuffle(crystalSpots);
-  for (let c = 0; c < crystals; c++) put(data, shuffledSpots[c].x, shuffledSpots[c].y, T.CRYSTAL);
+  const decorCount = Math.min(decorSpots.length, rng.range(theme.decorLo, theme.decorHi));
+  const shuffledSpots = rng.shuffle(decorSpots);
+  for (let c = 0; c < decorCount; c++) put(data, shuffledSpots[c].x, shuffledSpots[c].y, theme.wallDecor);
+
+  // Lush caves get a scatter of mushrooms on open ground — walkable, no
+  // encounter rate, pure dressing.
+  if (theme.floorDecor) {
+    const shrooms = rng.range(4, 8);
+    for (let m = 0; m < shrooms && open.length; m++) {
+      const p = open[rng.int(open.length)];
+      if (get(data, p.x, p.y) === theme.floor && !(p.x === data.spawn.x && p.y === data.spawn.y)) {
+        put(data, p.x, p.y, theme.floorDecor);
+      }
+    }
+  }
 
   // One or two pickups, placed well away from the mouth.
   const LOOT = ['potion', 'orb', 'superpotion', 'antidote', 'revive', 'greatorb'];
@@ -753,6 +861,7 @@ function buildCave(rng, index) {
   const pool = far.length ? far : open;
   const pickups = rng.range(1, 2);
   const used = Object.create(null);
+  used[hx + ',' + hy] = true;                     // heart-chamber gift lives there
   for (let i = 0; i < pickups && pool.length; i++) {
     const p = pool[rng.int(pool.length)];
     const k = p.x + ',' + p.y;
@@ -778,14 +887,17 @@ function buildCave(rng, index) {
  * @param {'heal'|'shop'|'house'|'cave'} kind
  * @param {number} seed  deterministic seed (overworld.js hashes the map id)
  * @param {number} index town or cave index
+ * @param {{biome?:string, level?:number}} [hint] optional surface context —
+ *        caves use it to pick their palette family and scale their loot.
+ *        Fully optional: omitting it keeps the classic grey cave.
  */
-export function buildInterior(kind, seed, index) {
+export function buildInterior(kind, seed, index, hint) {
   const rng = makeRng((Number(seed) >>> 0) || 1);
   const i = Math.max(0, Math.floor(Number(index) || 0));
   switch (kind) {
     case 'heal': return buildHeal(rng, i);
     case 'shop': return buildShop(rng, i);
-    case 'cave': return buildCave(rng, i);
+    case 'cave': return buildCave(rng, i, hint);
     case 'house':
     default: return buildHouse(rng, i);
   }

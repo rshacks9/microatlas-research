@@ -70,7 +70,7 @@ for (let s = 0; s < N; s++) {
   for (const sp of allSpecies()) {
     if (!sp.biomes || !sp.biomes.length) continue;      // starters: granted, not hunted
     const inTable = BIOMES.some((b) => (encounterTableFor(b) || []).some((e) => e.species === sp.id));
-    if (!inTable) continue;                             // stage-2s reached by evolution
+    if (!inTable) continue;                             // stage-2s (evolution) and legendaries (shrines)
     const ok = BIOMES.some((b) =>
       huntableBiomes.has(b) && (encounterTableFor(b) || []).some((e) => e.species === sp.id));
     if (!ok) misses.push(sp.id);
@@ -89,10 +89,41 @@ const alwaysMissing = perSeedMisses[0].misses.filter((id) =>
   perSeedMisses.every((r) => r.misses.includes(id)));
 for (const id of alwaysMissing) fail('species "' + id + '" has no huntable biome on ANY seed');
 
-for (const r of perSeedMisses) {
-  for (const id of r.misses) {
-    if (getSpecies(id).rarity === 'legendary') {
-      fail('legendary "' + id + '" is unhuntable on seed ' + r.seed + ' — that save can never complete its dex');
+// Legendaries hunt through fixed shrines, not encounter tables — assert every
+// seed places all three, each reachable, each with a valid species and flag.
+{
+  const LEGENDARIES = allSpecies().filter((sp) => sp.rarity === 'legendary').map((sp) => sp.id);
+  for (let s2 = 0; s2 < N; s2++) {
+    const seed = 60601 + s2 * 5227;
+    const w = generateWorld(seed);
+    const placed = (w.shrines || []).map((sh) => sh.species);
+    for (const id of LEGENDARIES) {
+      if (!placed.includes(id)) {
+        fail('seed ' + seed + ' placed no shrine for legendary "' + id + '" — that save cannot complete its dex');
+      }
+    }
+    // Each shrine must be reachable (terrain flood fill, 2-tile tolerance).
+    const m = w.map;
+    const seen = new Uint8Array(m.w * m.h);
+    const st = [w.start.y * m.w + w.start.x]; seen[st[0]] = 1;
+    while (st.length) {
+      const i = st.pop();
+      const x = i % m.w, y = (i / m.w) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h) continue;
+        const j = ny * m.w + nx;
+        if (seen[j] || isSolid(m.ground[j]) || overlayBlocks(m.overlay[j])) continue;
+        seen[j] = 1; st.push(j);
+      }
+    }
+    for (const sh of (w.shrines || [])) {
+      let ok = false;
+      for (let dy = -2; dy <= 2 && !ok; dy++) for (let dx = -2; dx <= 2 && !ok; dx++) {
+        const nx = sh.x + dx, ny = sh.y + dy;
+        if (nx >= 0 && ny >= 0 && nx < m.w && ny < m.h && seen[ny * m.w + nx]) ok = true;
+      }
+      if (!ok) fail('seed ' + seed + ': shrine for ' + sh.species + ' at ' + sh.x + ',' + sh.y + ' is UNREACHABLE');
     }
   }
 }

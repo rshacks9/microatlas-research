@@ -32,7 +32,7 @@ export const ITEMS = {
   ultraorb: item('ultraorb', 'Ultra Orb', 'ball', 1200,
     'A finely crafted orb with a very high capture rate.',
     true, false, { kind: 'ball', rate: 2.0, name: 'Ultra Orb' }),
-  duskorb: item('duskorb', 'Dusk Orb', 'ball', 0,
+  duskorb: item('duskorb', 'Dusk Orb', 'ball', 2600,
     'A rare orb of smoked glass that almost never fails.',
     true, false, { kind: 'ball', rate: 3.0, name: 'Dusk Orb' }),
 
@@ -86,6 +86,23 @@ export const ITEMS = {
     'Keeps weaker wild creatures away for 250 steps.',
     false, true, { kind: 'repel', steps: 250 }),
 
+  // ---- Tonics: permanent, repeatable IV training (money sink) -------------
+  ironbrew: item('ironbrew', 'Ironbrew', 'tonic', 2200,
+    'A bitter iron draught that permanently hones a creature\'s Attack.',
+    false, true, { kind: 'tonic', stat: 'atk', amount: 4 }),
+  stonehide: item('stonehide', 'Stonehide', 'tonic', 2200,
+    'A mineral paste that permanently toughens a creature\'s Defense.',
+    false, true, { kind: 'tonic', stat: 'def', amount: 4 }),
+  quickstep: item('quickstep', 'Quickstep', 'tonic', 2200,
+    'A fizzing cordial that permanently quickens a creature\'s Speed.',
+    false, true, { kind: 'tonic', stat: 'spe', amount: 4 }),
+  clearmind: item('clearmind', 'Clearmind', 'tonic', 2200,
+    'A clarifying infusion that permanently sharpens a creature\'s Sp. Attack.',
+    false, true, { kind: 'tonic', stat: 'spa', amount: 4 }),
+  stoutheart: item('stoutheart', 'Stoutheart', 'tonic', 2200,
+    'A hearty brew that permanently bolsters a creature\'s HP.',
+    false, true, { kind: 'tonic', stat: 'hp', amount: 4 }),
+
   // ---- Key items ----------------------------------------------------------
   runningshoes: item('runningshoes', 'Running Shoes', 'key', 0,
     'Well-worn shoes. Hold the run key to move at double pace.',
@@ -118,6 +135,11 @@ function fail(message) { return { ok: false, message, consumed: false }; }
 function done(message) { return { ok: true, message, consumed: true }; }
 
 function isFaintedInst(inst) { return !inst || (inst.hp | 0) <= 0; }
+
+const IV_CAP = 31;
+const TONIC_STATS = {
+  hp: 'HP', atk: 'Attack', def: 'Defense', spa: 'Sp. Attack', spd: 'Sp. Defense', spe: 'Speed',
+};
 
 function statusLabel(st) { return STATUS_NAMES[st] || 'condition'; }
 
@@ -225,6 +247,34 @@ export function useItem(id, targetInst, context) {
     return done(msg);
   }
 
+  // ---- Tonics: permanent +IV, capped at 31 --------------------------------
+  if (eff.kind === 'tonic') {
+    if (isFaintedInst(targetInst)) {
+      return fail(`${who} has fainted and cannot keep a tonic down.`);
+    }
+    if (!targetInst.ivs || typeof targetInst.ivs !== 'object') {
+      targetInst.ivs = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    }
+    const stat = TONIC_STATS[eff.stat] ? eff.stat : null;
+    if (!stat) return fail('Nothing happens.');
+    const curIv = Math.max(0, Math.min(IV_CAP, Math.floor(Number(targetInst.ivs[stat]) || 0)));
+    if (curIv >= IV_CAP) {
+      return fail(`${who} can grow no further that way.`);
+    }
+    const amount = Math.max(1, Math.floor(Number(eff.amount) || 0)) || 1;
+    const nextIv = Math.min(IV_CAP, curIv + amount);
+    if (stat === 'hp') {
+      const before = max;
+      targetInst.ivs.hp = nextIv;
+      const after = Math.max(1, Math.floor(maxHp(targetInst)) || 1);
+      // Keep the same amount of missing HP so the gain is felt immediately.
+      targetInst.hp = Math.max(1, Math.min(after, cur + Math.max(0, after - before)));
+      return done(`${who} drinks the ${it.name}. Max HP grew from ${before} to ${after} — for good!`);
+    }
+    targetInst.ivs[stat] = nextIv;
+    return done(`${who} drinks the ${it.name}. Its ${TONIC_STATS[stat]} grew — for good!`);
+  }
+
   // ---- Temporary stat boosts (battle only by design) ----------------------
   if (eff.kind === 'boost') {
     if (isFaintedInst(targetInst)) {
@@ -236,15 +286,18 @@ export function useItem(id, targetInst, context) {
   return fail('Nothing happens.');
 }
 
-// Shop stock grows with tier; each tier is a superset of the one before it.
+// Shop stock grows with tier; each tier is a superset of the one before it,
+// plus one specialty item per tier so towns feel different:
+//   tier 2 -> superrepel, tier 3 -> cureall + revive, tier 4 -> duskorb + ironbrew.
 const SHOP_TIERS = [
   ['orb', 'potion', 'antidote'],
-  ['orb', 'greatorb', 'potion', 'superpotion', 'antidote', 'burnsalve', 'wakebell', 'repel'],
+  ['orb', 'greatorb', 'potion', 'superpotion', 'antidote', 'burnsalve', 'wakebell', 'repel',
+    'superrepel'],
   ['orb', 'greatorb', 'potion', 'superpotion', 'antidote', 'burnsalve', 'icemelt',
-    'wakebell', 'sparkdrop', 'revive', 'repel', 'superrepel'],
-  ['orb', 'greatorb', 'ultraorb', 'potion', 'superpotion', 'hyperpotion', 'fullrestore',
-    'antidote', 'burnsalve', 'icemelt', 'wakebell', 'sparkdrop', 'cureall',
-    'revive', 'fullrevive', 'repel', 'superrepel'],
+    'wakebell', 'sparkdrop', 'cureall', 'revive', 'repel', 'superrepel'],
+  ['orb', 'greatorb', 'ultraorb', 'duskorb', 'potion', 'superpotion', 'hyperpotion',
+    'fullrestore', 'antidote', 'burnsalve', 'icemelt', 'wakebell', 'sparkdrop', 'cureall',
+    'revive', 'fullrevive', 'repel', 'superrepel', 'ironbrew'],
 ];
 
 /** @returns {string[]} item ids sold at this tier (1..4). */
@@ -261,7 +314,8 @@ export function itemPrice(id) {
 
 export function isSellable(id) {
   const it = getItem(id);
-  return it.kind !== 'key' && it.price > 0;
+  // Tonics are a pure money sink: never resellable, so no buy/sell arbitrage.
+  return it.kind !== 'key' && it.kind !== 'tonic' && it.price > 0;
 }
 
 /** Resale value: half the shop price, rounded down. */
