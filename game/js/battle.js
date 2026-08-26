@@ -51,6 +51,8 @@ const B = {
   popups: [],               // floating damage / effect numbers
   recoil: { me: 0, foe: 0 },// per-sprite knockback, decays
   lowHpWarned: false,
+  danger: false,
+  dangerBeat: 0,
 };
 
 function combatant(inst, side) {
@@ -133,8 +135,16 @@ B.update = function (dt) {
   // rather than a constant nag.
   if (B.me && B.me.inst) {
     const f = B.me.inst.hp / Math.max(1, maxHp(B.me.inst));
-    if (f > 0 && f <= 0.2 && !B.lowHpWarned) { B.lowHpWarned = true; sfx('error'); }
-    if (f > 0.2) B.lowHpWarned = false;
+    B.danger = f > 0 && f <= 0.2;
+    if (B.danger) {
+      // A single beep then silence gave the danger state no ongoing presence, so
+      // a near-death turn felt the same as a comfortable one. Beat steadily while
+      // it lasts, faster the closer to zero it gets.
+      B.dangerBeat -= dt;
+      if (B.dangerBeat <= 0) { sfx('error'); B.dangerBeat = 0.45 + f * 1.6; }
+    } else {
+      B.dangerBeat = 0;
+    }
   }
 
   if (B.intro > 0) B.intro = Math.max(0, B.intro - dt * 1.8);
@@ -333,6 +343,17 @@ B.render = function (ctx) {
 
   // menus
   if (B.menu) renderMenu(ctx, B.menu);
+
+  if (B.danger) {
+    // A red edge vignette, pulsing, so peril is visible and not only audible.
+    const pulse = 0.16 + Math.abs(Math.sin(B.t * 5)) * 0.16;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#e04038';
+    ctx.fillRect(0, 0, W, 3); ctx.fillRect(0, H - 3, W, 3);
+    ctx.fillRect(0, 0, 3, H); ctx.fillRect(W - 3, 0, 3, H);
+    ctx.restore();
+  }
 
   if (B.flash > 0) {
     // Hard-capped: the screen must never go fully white, or the moment of impact
@@ -968,6 +989,8 @@ B.enter = function (params) {
   B.popups = [];
   B.recoil = { me: 0, foe: 0 };
   B.lowHpWarned = false;
+  B.danger = false;
+  B.dangerBeat = 0;
   B.shake = { mag: 0, t: 0 };
   B.bg = params.bg || null;
 
