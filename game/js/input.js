@@ -93,6 +93,21 @@ function bindTouch(root) {
   });
 }
 
+// Held-direction auto-repeat. Without this every list in the game costs one tap
+// per row, which is the single highest-frequency tax in the UI.
+const holdT = Object.create(null);
+
+export function repeatEdge(name, dt, delay = 0.30, rate = 0.07) {
+  if (!Keys[name]) { holdT[name] = 0; return false; }
+  const prev = holdT[name] || 0;
+  const now = prev + (dt || 0);
+  holdT[name] = now;
+  if (prev === 0) return false;                 // the initial press is an edge
+  if (prev < delay && now >= delay) return true;
+  if (prev < delay) return false;
+  return Math.floor((prev - delay) / rate) !== Math.floor((now - delay) / rate);
+}
+
 export function pressed(name) { return !!edges[name]; }
 
 export function consume(name) {

@@ -136,6 +136,7 @@ function snapshot() {
       textSpeed: S.options.textSpeed | 0,
       music: !!S.options.music,
       sfx: !!S.options.sfx,
+      autoRun: !!S.options.autoRun,
     },
   };
 }
@@ -221,6 +222,7 @@ export function loadGame(slot) {
     S.options.textSpeed = num(o.textSpeed, 0, 3, 2);
     S.options.music = o.music !== false;
     S.options.sfx = o.sfx !== false;
+    S.options.autoRun = !!o.autoRun;
 
     // A save with no usable party would softlock the overworld. Refuse it.
     if (!S.party.length) return false;

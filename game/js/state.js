@@ -14,7 +14,7 @@ export const S = {
   flags: Object.create(null),
   time: 480,            // in-game minutes, 0..1439
   playtime: 0,          // real seconds
-  options: { textSpeed: 2, music: true, sfx: true },
+  options: { textSpeed: 2, music: true, sfx: true, autoRun: false },
   repelSteps: 0,
   badges: 0,
   started: false,

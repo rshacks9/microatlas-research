@@ -221,6 +221,7 @@ if (SCRIPT !== 'boot') {
     if (!st) break;
     prev = st;
     if (st.scene === 'battle') { encountered = true; break; }
+    if (i % 15 === 14) blocked.length = 0;   // let stale blocks go entirely
 
     // The walker can stroll through a door. Once inside, the world-map BFS is
     // meaningless because the player's coordinates are interior coordinates, so
@@ -250,8 +251,12 @@ if (SCRIPT !== 'boot') {
         // Could not enter that tile — almost always a wandering NPC. Remember it
         // and let the next re-plan route around.
         const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
+        // Blocks must EXPIRE. The obstacles here are wandering NPCs, so a tile that
+        // was impassable ten steps ago is usually clear now — and permanently
+        // blocking them eventually walled the walker into a dead end and made the
+        // BFS report 'no reachable grass' on a world with 57,000 reachable tiles.
         if (d) blocked.push((st.x + d[0]) + ',' + (st.y + d[1]));
-        if (blocked.length > 60) blocked.shift();
+        while (blocked.length > 6) blocked.shift();
       }
     }
   }

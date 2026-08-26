@@ -649,7 +649,9 @@ function handleInput(dt) {
     return;
   }
   O.turnHold = 0;
-  startStep(dir, Keys.run);
+  // With autoRun on, Shift becomes a WALK key instead of a held run key.
+  const running = S.options.autoRun ? !Keys.run : Keys.run;
+  startStep(dir, running);
 }
 
 function onStepComplete() {

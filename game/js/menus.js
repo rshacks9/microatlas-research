@@ -2,7 +2,7 @@
 import { Game, W, H, pushScene, popScene, topScene } from './game.js';
 import { drawWindow, drawText, drawTextRight, drawTextCentered, drawCursor, drawHpBar,
          drawExpBar, drawTypeBadge, wrapText, PAL, textWidth } from './ui.js';
-import { consume, Keys } from './input.js';
+import { consume, Keys, repeatEdge } from './input.js';
 import { drawSprite, hasSprite } from './sprites.js';
 import { getSpecies, allSpecies, DEX_COUNT } from './creatures.js';
 import { getMove } from './moves.js';
@@ -37,11 +37,12 @@ function makeListScene(cfg) {
         return;
       }
       let moved = false;
-      if (consume('up')) { this.index = (this.index - 1 + n) % n; moved = true; }
-      if (consume('down')) { this.index = (this.index + 1) % n; moved = true; }
+      // Edge OR auto-repeat, so holding a direction scrolls the list.
+      if (consume('up') || repeatEdge('up', dt)) { this.index = (this.index - 1 + n) % n; moved = true; }
+      if (consume('down') || repeatEdge('down', dt)) { this.index = (this.index + 1) % n; moved = true; }
       if (cfg.cols > 1) {
-        if (consume('left')) { this.index = (this.index - 1 + n) % n; moved = true; }
-        if (consume('right')) { this.index = (this.index + 1) % n; moved = true; }
+        if (consume('left') || repeatEdge('left', dt)) { this.index = (this.index - 1 + n) % n; moved = true; }
+        if (consume('right') || repeatEdge('right', dt)) { this.index = (this.index + 1) % n; moved = true; }
       }
       if (moved) {
         sfx('select');
@@ -599,6 +600,7 @@ export async function openOptions() {
     { label: 'Text speed: ' + ['Slow', 'Normal', 'Fast', 'Instant'][S.options.textSpeed] },
     { label: 'Music: ' + (S.options.music ? 'On' : 'Off') },
     { label: 'Sound: ' + (S.options.sfx ? 'On' : 'Off') },
+    { label: 'Run: ' + (S.options.autoRun ? 'Always' : 'Hold Shift') },
     { label: 'Back' },
   ];
   const sc = makeListScene({
@@ -608,6 +610,7 @@ export async function openOptions() {
       if (i === 0) S.options.textSpeed = (S.options.textSpeed + 1) % 4;
       else if (i === 1) { S.options.music = !S.options.music; audio.setMusicEnabled(S.options.music); }
       else if (i === 2) { S.options.sfx = !S.options.sfx; audio.setSfxEnabled(S.options.sfx); }
+      else if (i === 3) { S.options.autoRun = !S.options.autoRun; }
       else { self.close(-1); return; }
       self.items = rows();
     },
