@@ -60,7 +60,7 @@ const Title = {
     for (let i = 0; i < 3; i++) {
       if (hasSave(i)) {
         const s = slotSummary(i);
-        this.items.push({ label: 'Continue — ' + s.name + '  ' + s.playtime, act: 'load', slot: i });
+        this.items.push({ label: 'Continue — ' + s.name + '  ' + s.playtime, act: 'load', slot: i, sum: s });
       }
     }
     this.index = this.items.length > 1 ? 1 : 0;
@@ -106,6 +106,29 @@ const Title = {
       const y = by + 8 + i * 15;
       drawText(ctx, this.items[i].label, bx + 20, y, { color: PAL.ink });
       if (i === this.index) drawCursor(ctx, bx + 8, y, this.t);
+    }
+    // Show what the highlighted save actually contains. "Continue — Rowan 0:12"
+    // gave a returning player nothing to reconnect to.
+    const cur = this.items[this.index];
+    if (cur && cur.sum) {
+      const s = cur.sum;
+      const cw = 190, cx = (W - cw) / 2, cy = by + 16 + this.items.length * 15 + 6;
+      drawWindow(ctx, cx, cy, cw, 44);
+      drawText(ctx, 'Seals ' + s.badges + '/10', cx + 8, cy + 6, { color: PAL.gold });
+      drawTextRight(ctx, 'Dex ' + s.dexCaught + '/34', cx + cw - 8, cy + 6, { color: PAL.accent });
+      drawText(ctx, s.money + ' cr', cx + 8, cy + 16, { color: PAL.shadow });
+      let px = cx + 8;
+      for (const m of s.party.slice(0, 6)) {
+        const sp = getSpecies(m.species);
+        if (hasSprite(sp.sprite)) {
+          ctx.save();
+          ctx.beginPath(); ctx.rect(px, cy + 26, 14, 14); ctx.clip();
+          drawSprite(ctx, sp.sprite, px - 9, cy + 17, { scale: 0.44, variant: !!m.variant });
+          ctx.restore();
+        }
+        drawText(ctx, String(m.level), px + 1, cy + 36, { color: PAL.ink, shadow: PAL.paper });
+        px += 17;
+      }
     }
     drawTextCentered(ctx, 'Z / Enter to choose', W / 2, H - 18, { color: '#88a494' });
   },

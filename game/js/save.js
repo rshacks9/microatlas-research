@@ -181,9 +181,14 @@ export function slotSummary(slot) {
     playtime: Math.floor(secs / 3600) + ':' + String(Math.floor((secs % 3600) / 60)).padStart(2, '0'),
     badges: num(d.badges, 0, 99, 0),
     dexCaught: caught,
+    // Enough context to remember an hour of play before pressing Enter.
+    money: num(d.player && d.player.money, 0, 999999, 0),
+    seed: num(d.seed, 0, 0xffffffff, 0),
+    where: { x: num(d.player && d.player.x, 0, 4096, 0), y: num(d.player && d.player.y, 0, 4096, 0) },
     party: party.map((c) => ({
       species: getSpecies(c && c.species).id,
       level: clampLevel(c && c.level),
+      variant: !!(c && c.variant),
     })),
   };
 }
