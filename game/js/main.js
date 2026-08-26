@@ -9,7 +9,7 @@ import { getSpecies, STARTERS } from './creatures.js';
 import { generateWorld } from './worldgen.js';
 import { makeCreature, displayName, addToParty } from './party.js';
 import { S, resetState, setFlag } from './state.js';
-import { Overworld, enterMap, player } from './overworld.js';
+import { Overworld, enterMap, player, holdControl, releaseControl } from './overworld.js';
 import { say, ask } from './dialogue.js';
 import { initAudio, playBgm, sfx, setMusicEnabled, setSfxEnabled } from './audio.js';
 import { hasSave, loadGame, slotSummary } from './save.js';
@@ -180,6 +180,10 @@ async function startNewGame() {
   const st = S.world.start;
   enterMap('world', st.x, st.y, 'down');
 
+  // No control until the starter exists. A step into a trainer's sight line
+  // during the intro fired startBattle with an empty party and bricked the run.
+  holdControl();
+  try {
   await fade('in', 0.5);
   await say([
     'The frontier stretches out ahead of you, unmapped and unnamed.',
@@ -214,6 +218,9 @@ async function startNewGame() {
   // in the pause menu instead.
   await say('Ranger: Every settlement keeps a Warden. Beat all ten for their Seals — any order you like, but the far ones hit hard.');
   sfx('levelup');
+  } finally {
+    releaseControl();
+  }
 }
 
 async function continueGame(slot) {

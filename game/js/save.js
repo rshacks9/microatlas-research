@@ -129,6 +129,7 @@ function snapshot() {
     dex: { seen: Object.assign({}, S.dex.seen), caught: Object.assign({}, S.dex.caught),
            variant: Object.assign({}, S.dex.variant || {}) },
     flags: Object.assign({}, S.flags),
+    returnPoint: S.returnPoint ? { x: S.returnPoint.x | 0, y: S.returnPoint.y | 0 } : null,
     time: S.time | 0,
     playtime: Math.floor(S.playtime),
     badges: S.badges | 0,
@@ -219,6 +220,11 @@ export function loadGame(slot) {
     S.dex.variant = sanitizeIdMap(d.dex && d.dex.variant, (k) => getSpecies(k).id === k, 256, true);
     S.flags = sanitizeIdMap(d.flags, (k) => /^[a-z0-9_:]{1,48}$/i.test(k), 512, true);
 
+    // Without this, a save made inside a building or cave forgot where its exit
+    // led, and walking out teleported the player to the start town.
+    S.returnPoint = (d.returnPoint && typeof d.returnPoint === 'object')
+      ? { x: num(d.returnPoint.x, 0, 4096, 0), y: num(d.returnPoint.y, 0, 4096, 0) }
+      : null;
     S.time = num(d.time, 0, 1439, 480);
     S.playtime = num(d.playtime, 0, 1e7, 0);
     S.badges = num(d.badges, 0, 99, 0);

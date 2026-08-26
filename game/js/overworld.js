@@ -49,7 +49,12 @@ const O = {
   map: null,
   cam: null,
   entities: [],
-  busy: false,          // true while a blocking sequence (battle, dialogue, warp) runs
+  // Control lock for blocking sequences (battle, dialogue, warp). A DEPTH
+  // COUNTER owned strictly by begin/endBusy pairs — it used to be a boolean
+  // that resume() and enterMap() cleared blind, which handed the player live
+  // control in the middle of transitions: warping during the post-battle fade
+  // collided two fades and locked input forever.
+  busyDepth: 0,
   t: 0,
   stepsSinceEncounter: 0,
   pendingWatcher: null,
@@ -61,6 +66,14 @@ const O = {
   returnPoint: null,    // where to drop the player when leaving an interior
   turnHold: 0,
 };
+
+function beginBusy() { O.busyDepth++; }
+function endBusy() { O.busyDepth = Math.max(0, O.busyDepth - 1); }
+
+// For main.js: hold the player still through the intro, so an encounter or a
+// trainer sighting can never fire before the starter exists.
+export function holdControl() { beginBusy(); }
+export function releaseControl() { endBusy(); }
 
 // ---------------------------------------------------------------- map loading
 function interiorSeed(mapId) {
@@ -148,7 +161,6 @@ export function enterMap(mapId, x, y, dir) {
   O.cam.follow(player.px + TILE / 2, player.py + TILE / 2, true);
   O.stepsSinceEncounter = 0;
   O.effects = [];
-  O.busy = false;
   O.pendingWatcher = null;
 
   playBgm(data.bgm || (mapId === 'world' ? 'overworld' : 'town'));
@@ -311,7 +323,7 @@ async function encounterWipe() {
 }
 
 async function doWildBattle(wild) {
-  O.busy = true;
+  beginBusy();
   sfx('encounter');
   await encounterWipe();
   // startBattle pushes the battle scene synchronously, so fade back IN over it.
@@ -319,8 +331,7 @@ async function doWildBattle(wild) {
   const battle = startBattle({ wild });
   await fade('in', 0.3);
   const result = await battle;
-  await afterBattle(result);
-  O.busy = false;
+  try { await afterBattle(result); } finally { endBusy(); }
 }
 
 async function afterBattle(result) {
@@ -365,9 +376,15 @@ function nearestTown() {
   const towns = (S.world && S.world.towns) || [];
   const home = (S.world && S.world.start) ? S.world.start : { x: 8, y: 8 };
   if (!towns.length) return { x: home.x, y: home.y, name: 'the frontier' };
+  // Inside a cave or a building, player.x/y are INTERIOR coordinates — measuring
+  // distance with them picked an arbitrary town. Use the world-space point we
+  // entered from instead.
+  const at = (S.mapId === 'world')
+    ? { x: player.x, y: player.y }
+    : (O.returnPoint || S.returnPoint || home);
   let best = towns[0], bestD = Infinity;
   for (const t of towns) {
-    const d = Math.max(Math.abs(t.x - player.x), Math.abs(t.y - player.y));
+    const d = Math.max(Math.abs(t.x - at.x), Math.abs(t.y - at.y));
     if (d < bestD) { bestD = d; best = t; }
   }
   return { x: best.x, y: best.y, name: best.name || 'the nearest settlement' };
@@ -391,16 +408,15 @@ async function interact() {
   }
 
   if (e && !(e.flag && getFlag(e.flag))) {
-    O.busy = true;
-    try { await talkTo(e); } finally { O.busy = false; }
+    beginBusy();
+    try { await talkTo(e); } finally { endBusy(); }
     return true;
   }
 
   const tile = map.at(f.x, f.y);
   if (tile === T.SIGN) {
-    O.busy = true;
-    await say('A weathered signpost. The paint has long since faded.');
-    O.busy = false;
+    beginBusy();
+    try { await say('A weathered signpost. The paint has long since faded.'); } finally { endBusy(); }
     return true;
   }
   return false;
@@ -562,36 +578,37 @@ async function startTrainerBattle(e) {
 
 // ---------------------------------------------------------------- warps
 async function doWarp(wp) {
-  O.busy = true;
+  beginBusy();
   try {
     sfx('open');
     await fade('out', 0.3, '#000');
     const target = wp.to || 'world';
     if (target === 'world') {
-      const rp = O.returnPoint;
+      const rp = O.returnPoint || S.returnPoint;
       if (rp) enterMap('world', rp.x, rp.y, 'down');
       else if (wp.tx !== undefined) enterMap('world', wp.tx, wp.ty, wp.dir || 'down');
       else respawnAtHome();
       O.returnPoint = null;
+      S.returnPoint = null;
     } else {
       O.returnPoint = { x: player.x, y: player.y + 1 };
+      S.returnPoint = O.returnPoint;
       enterMap(target, wp.tx, wp.ty, wp.dir || 'down');
     }
     await fade('in', 0.3);
   } finally {
-    O.busy = false;
+    endBusy();
   }
 }
 
 // ---------------------------------------------------------------- scene
 O.enter = function () {
   O.t = 0;
-  O.busy = false;
+  O.busyDepth = 0;
+  O.returnPoint = S.returnPoint || null;
 };
 
-O.resume = function () {
-  O.busy = false;
-};
+O.resume = function () { /* the sequence that acquired the lock releases it */ };
 
 O.update = function (dt) {
   O.t += dt;
@@ -606,7 +623,7 @@ O.update = function (dt) {
     if (e.update) e.update(dt, O.map);
   }
 
-  if (!O.busy && !isDialogueOpen()) {
+  if (O.busyDepth === 0 && !isDialogueOpen()) {
     handleInput(dt);
   }
 
@@ -678,8 +695,8 @@ function onStepComplete() {
 
   const item = map.entityAt ? map.entityAt(player.x, player.y) : null;
   if (item && item.kind === 'item' && !(item.flag && getFlag(item.flag))) {
-    O.busy = true;
-    talkTo(item).finally(() => { O.busy = false; });
+    beginBusy();
+    talkTo(item).finally(() => { endBusy(); });
     return;
   }
 
@@ -692,7 +709,7 @@ function onStepComplete() {
 
 function findSighting() {
   for (const e of O.entities) {
-    if (e.kind !== 'trainer' || e.hidden || e.defeated) continue;
+    if (e.kind !== 'trainer' || e.hidden || e.defeated || e.engaged) continue;
     if (e.flag && getFlag(e.flag)) continue;
     const d = e.seesPlayer ? e.seesPlayer(player.x, player.y, O.map) : 0;
     if (d > 0) return e;
@@ -701,7 +718,9 @@ function findSighting() {
 }
 
 async function triggerWatcher(e) {
-  O.busy = true;
+  if (e.engaged) return;      // already walking over — never spawn a second chain
+  e.engaged = true;
+  beginBusy();
   try {
     sfx('error');
     await say('!', { speaker: e.name || 'Trainer' });
@@ -720,7 +739,8 @@ async function triggerWatcher(e) {
     player.dir = OPPOSITE[e.dir] || player.dir;
     await startTrainerBattle(e);
   } finally {
-    O.busy = false;
+    e.engaged = false;
+    endBusy();
   }
 }
 

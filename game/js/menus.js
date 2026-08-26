@@ -403,6 +403,43 @@ const BIOME_COLOR = {
   MOUNTAIN: '#8a8578', PEAK: '#e8eef4',
 };
 
+// The region-map downsample survives close/reopen: rebuilding it per open cost a
+// visible hitch on a phone (~215ms of per-pixel fillRect). Cached per seed and
+// built through ImageData, which is one buffer write instead of 36,100 fillRects.
+let regionMapCache = null;
+let regionMapKey = '';
+
+function buildRegionMap(world, size) {
+  const key = (S.seed >>> 0) + ':' + world.map.w + 'x' + world.map.h + ':' + size;
+  if (regionMapCache && regionMapKey === key) return regionMapCache;
+  const mw = world.map.w, mh = world.map.h;
+  const { BIOMES } = worldgenRef;
+  const rgb = BIOMES.map((b) => {
+    const hex = (BIOME_COLOR[b] || '#444444').replace('#', '');
+    const h = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+    const n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  });
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size, size);
+  const d = img.data;
+  for (let py = 0; py < size; py++) {
+    const ty = Math.min(mh - 1, Math.floor((py / size) * mh));
+    for (let px = 0; px < size; px++) {
+      const tx = Math.min(mw - 1, Math.floor((px / size) * mw));
+      const col = rgb[world.biome ? world.biome[ty * mw + tx] : 2] || [68, 68, 68];
+      const o = (py * size + px) * 4;
+      d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  regionMapCache = c;
+  regionMapKey = key;
+  return c;
+}
+
 export function openWorldMap(world) {
   const sc = {
     opaque: true, t: 0, resolve: null, cache: null,
@@ -430,23 +467,7 @@ export function openWorldMap(world) {
       const ox = (W - size) / 2, oy = 26;
       const step = Math.max(1, Math.floor(mw / size));
 
-      if (!this.cache) {
-        // Downsample once; redrawing 384x384 every frame would tank the framerate.
-        const c = document.createElement('canvas');
-        c.width = size; c.height = size;
-        const g = c.getContext('2d');
-        const { BIOMES } = worldgenRef;
-        for (let py = 0; py < size; py++) {
-          for (let px = 0; px < size; px++) {
-            const tx = Math.min(mw - 1, Math.floor((px / size) * mw));
-            const ty = Math.min(mh - 1, Math.floor((py / size) * mh));
-            const b = world.biome ? BIOMES[world.biome[ty * mw + tx]] : 'MEADOW';
-            g.fillStyle = BIOME_COLOR[b] || '#444';
-            g.fillRect(px, py, 1, 1);
-          }
-        }
-        this.cache = c;
-      }
+      if (!this.cache) this.cache = buildRegionMap(world, size);
       ctx.drawImage(this.cache, Math.round(ox), Math.round(oy));
       ctx.strokeStyle = '#5a6472';
       ctx.strokeRect(Math.round(ox) - 0.5, Math.round(oy) - 0.5, size + 1, size + 1);

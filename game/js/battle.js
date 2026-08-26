@@ -12,7 +12,7 @@ import { effectiveness, matchupText, TYPE_COLORS } from './types.js';
 import { statsFor, maxHp, damage, accuracyCheck, speedOf, catchChance, expGain,
          endOfTurnDamage, aiChooseMove, fleeChance, STRUGGLE, expToNext } from './battlecalc.js';
 import { displayName, isFainted, giveExp, tryEvolve, evolveInto, learnMove, knowsMove,
-         hasUsableMove, MOVE_SLOTS, buildTeam, firstHealthy, addToParty } from './party.js';
+         hasUsableMove, MOVE_SLOTS, buildTeam, firstHealthy, addToParty, partyWiped } from './party.js';
 import { S, seeSpecies, addMoney, removeItem, itemCount, bagList, dexCaughtCount } from './state.js';
 import { sfx, playBgm } from './audio.js';
 import { rand } from './rng.js';
@@ -1047,6 +1047,11 @@ function finish(result) {
 B.exit = function () { B.active = false; B.menu = null; B.waiting = null; B.anims = []; };
 
 export function startBattle(opts) {
+  // A battle with nobody able to fight must never construct a scene around
+  // undefined — B.enter would throw, leaving a dead black scene on the stack and
+  // an unhandled rejection. Resolve as a loss and let the overworld's wipe
+  // handling take it from there.
+  if (partyWiped()) return Promise.resolve('lose');
   return new Promise((resolve) => {
     B.resolve = resolve;
     pushScene(B, opts || {});

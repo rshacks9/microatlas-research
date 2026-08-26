@@ -530,11 +530,21 @@ function carvePathToMain(from, dist, prev, ground, overlay, biome) {
   }
 }
 
-function fillRegion(regionId, comp, ground, overlay) {
+// Fill every listed orphan region in ONE pass over the grid. The per-region
+// version rescanned all 147,456 tiles once per region — tens of millions of
+// comparisons per generated world for identical output.
+function fillRegions(regionIds, comp, ground, overlay) {
+  if (!regionIds.length) return;
+  let maxId = 0;
+  for (const id of regionIds) if (id > maxId) maxId = id;
+  const kill = new Uint8Array(maxId + 1);
+  for (const id of regionIds) kill[id] = 1;
   for (let i = 0, n = comp.length; i < n; i++) {
-    if (comp[i] !== regionId) continue;
-    ground[i] = T.ROCK;
-    overlay[i] = 0;
+    const c = comp[i];
+    if (c >= 0 && c <= maxId && kill[c]) {
+      ground[i] = T.ROCK;
+      overlay[i] = 0;
+    }
   }
 }
 
@@ -595,7 +605,7 @@ function repairConnectivity(startIdx, protectedIdx, ground, overlay, biome, buf)
       }
     }
 
-    for (let f = 0; f < toFill.length; f++) fillRegion(toFill[f], comp, ground, overlay);
+    fillRegions(toFill, comp, ground, overlay);
 
     if (!toBridge.length && !toFill.length) return true;
   }
@@ -975,7 +985,10 @@ export function generateWorld(seed) {
     }
     const id = `cave:${c}`;
     caves.push({ x: cs.x, y: cs.y, id, index: c });
-    warps.push({ x: cs.x, y: cs.y, to: id, tx: 5, ty: 9, dir: 'down' });
+    // No tx/ty: enterMap falls back to the cave's own spawn, which buildInterior
+    // places at the mouth, one tile from the exit. The hardcoded 5,9 dumped the
+    // player deep inside an arbitrary chamber.
+    warps.push({ x: cs.x, y: cs.y, to: id, dir: 'down' });
   }
 
   // --- connectivity: the load-bearing invariant ---------------------------

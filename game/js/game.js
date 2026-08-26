@@ -44,6 +44,13 @@ export function clearScenes() {
 const fadeState = { active: false, kind: 'out', t: 0, dur: 0.3, alpha: 0, resolve: null, color: '#000' };
 
 export function fade(kind = 'out', durationSec = 0.35, color = '#000') {
+  // Never strand an awaiter. There is one fadeState.resolve slot, so a second
+  // fade() overwrote the first's resolver and its `await fade(...)` hung forever
+  // — which left doWarp's finally unreached and O's busy lock held permanently,
+  // a full input-dead softlock. A superseded fade now settles immediately.
+  const prev = fadeState.resolve;
+  fadeState.resolve = null;
+  if (prev) prev();
   fadeState.active = true;
   fadeState.kind = kind;
   fadeState.t = 0;

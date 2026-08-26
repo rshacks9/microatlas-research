@@ -16,6 +16,7 @@ export const S = {
   playtime: 0,          // real seconds
   options: { textSpeed: 2, music: true, sfx: true, autoRun: false },
   repelSteps: 0,
+  returnPoint: null,   // world tile to emerge at when leaving an interior
   badges: 0,
   started: false,
 };
@@ -41,6 +42,7 @@ export function resetState(seed, name) {
   S.time = 480;
   S.playtime = 0;
   S.repelSteps = 0;
+  S.returnPoint = null;
   S.badges = 0;
   S.started = true;
   addItem('orb', 3);
