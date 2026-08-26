@@ -1,0 +1,183 @@
+:root {
+  --bg: #0a0f14;
+  --bg2: #141c24;
+  --ink: #f8f4e8;
+  --dim: #7c8894;
+  --accent: #48c058;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  justify-content: center;
+}
+
+#stage {
+  position: relative;
+  line-height: 0;
+  background: #000;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #283848, 0 18px 60px rgba(0,0,0,.7);
+  overflow: hidden;
+}
+
+#screen {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+  touch-action: none;
+}
+
+#boot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0a0f14;
+  transition: opacity .4s ease;
+  line-height: 1.5;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+.boot-inner { text-align: center; padding: 1rem; }
+.boot-inner h1 {
+  margin: 0 0 .6rem;
+  font-size: clamp(13px, 3.4vw, 20px);
+  letter-spacing: .22em;
+  color: var(--accent);
+}
+#boot-msg { margin: 0; font-size: 11px; color: var(--dim); }
+
+#hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dim);
+  text-align: center;
+  line-height: 1.7;
+  padding: 0 12px;
+  max-width: 640px;
+}
+#hint b { color: #b8c4d0; font-weight: 600; }
+
+/* ---------------- touch controls ---------------- */
+#touch {
+  display: none;
+  width: 100%;
+  max-width: 560px;
+  padding: 4px 14px 10px;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+#touch.hidden { display: none !important; }
+
+.dpad {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  flex: 0 0 auto;
+}
+.pad {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  padding: 0;
+  background: #2a3644;
+  color: transparent;
+  border-radius: 8px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.35);
+  touch-action: none;
+}
+.pad.held { background: var(--accent); }
+.pad.up    { left: 44px; top: 0; }
+.pad.left  { left: 0;    top: 44px; }
+.pad.right { left: 88px; top: 44px; }
+.pad.down  { left: 44px; top: 88px; }
+.pad-hub {
+  position: absolute;
+  left: 44px; top: 44px;
+  width: 44px; height: 44px;
+  background: #202a36;
+  pointer-events: none;
+}
+.pad::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  transform: translate(-50%,-50%);
+  border: 7px solid transparent;
+}
+.pad.up::after    { border-bottom-color: #8f9dab; margin-top: -3px; }
+.pad.down::after  { border-top-color: #8f9dab;    margin-top:  3px; }
+.pad.left::after  { border-right-color: #8f9dab;  margin-left: -3px; }
+.pad.right::after { border-left-color: #8f9dab;   margin-left:  3px; }
+
+.face {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 10px;
+  align-items: end;
+  justify-items: end;
+}
+.btn {
+  border: 0;
+  background: #2a3644;
+  color: #d8e0e8;
+  font: 600 12px/1 ui-monospace, monospace;
+  border-radius: 999px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.35);
+  touch-action: none;
+}
+.btn.a, .btn.b { width: 58px; height: 58px; font-size: 16px; }
+.btn.a { background: #3d6b45; color: #eaffea; }
+.btn.b { background: #6b3d3d; color: #ffeaea; }
+.btn.start, .btn.run { width: 58px; height: 30px; font-size: 9px; letter-spacing: .06em; }
+.btn.held { filter: brightness(1.55); }
+
+@media (pointer: coarse) {
+  #touch { display: flex; }
+  #hint { display: none; }
+  #shell { justify-content: space-between; padding-top: 6px; }
+}
+
+@media (max-width: 420px) {
+  .dpad { width: 114px; height: 114px; }
+  .pad { width: 38px; height: 38px; }
+  .pad.up { left: 38px; } .pad.left { top: 38px; }
+  .pad.right { left: 76px; top: 38px; } .pad.down { left: 38px; top: 76px; }
+  .pad-hub { left: 38px; top: 38px; width: 38px; height: 38px; }
+  .btn.a, .btn.b { width: 50px; height: 50px; }
+  .btn.start, .btn.run { width: 50px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #boot { transition: none; }
+}

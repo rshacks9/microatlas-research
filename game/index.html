@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Verdant Frontier</title>
+<meta name="description" content="An open-world creature-collecting RPG that runs entirely in your browser. Procedurally generated every playthrough.">
+<meta name="theme-color" content="#101820">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23182028'/><circle cx='8' cy='8' r='5' fill='%23f8f4e8'/><rect x='3' y='7' width='10' height='2' fill='%23182028'/><circle cx='8' cy='8' r='2' fill='%23e04038'/></svg>">
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<div id="shell">
+  <div id="stage">
+    <canvas id="screen" width="320" height="240" aria-label="Verdant Frontier game screen" role="img"></canvas>
+    <div id="boot">
+      <div class="boot-inner">
+        <h1>VERDANT FRONTIER</h1>
+        <p id="boot-msg">Loading&hellip;</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="touch" class="hidden" aria-hidden="true">
+    <div class="dpad">
+      <button class="pad up"    data-btn="up"    aria-label="Up"></button>
+      <button class="pad left"  data-btn="left"  aria-label="Left"></button>
+      <button class="pad right" data-btn="right" aria-label="Right"></button>
+      <button class="pad down"  data-btn="down"  aria-label="Down"></button>
+      <span class="pad-hub"></span>
+    </div>
+    <div class="face">
+      <button class="btn b"     data-btn="b"     aria-label="B / Cancel">B</button>
+      <button class="btn a"     data-btn="a"     aria-label="A / Confirm">A</button>
+      <button class="btn start" data-btn="start" aria-label="Menu">MENU</button>
+      <button class="btn run"   data-btn="run"   aria-label="Run">RUN</button>
+    </div>
+  </div>
+
+  <p id="hint">
+    <b>Move</b> arrows / WASD &nbsp;·&nbsp; <b>Confirm</b> Z / Enter &nbsp;·&nbsp;
+    <b>Cancel</b> X / Esc &nbsp;·&nbsp; <b>Menu</b> C &nbsp;·&nbsp; <b>Run</b> Shift
+  </p>
+</div>
+
+<noscript><p style="color:#f8f4e8;text-align:center;padding:2rem">Verdant Frontier needs JavaScript enabled.</p></noscript>
+<script type="module" src="js/main.js"></script>
+<script nomodule>document.getElementById('boot-msg').textContent = 'This browser does not support ES modules.';</script>
+</body>
+</html>
