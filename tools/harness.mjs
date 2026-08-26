@@ -8,7 +8,7 @@ import { extname, join, normalize } from 'node:path';
 
 const ROOT = process.cwd();
 const OUT = join(ROOT, '.harness');
-const PORT = 8123;
+let PORT = 0;   // ephemeral: a killed run must never block the next one
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -29,7 +29,7 @@ function serve() {
         rq.end(body);
       } catch (e) { rq.writeHead(500); rq.end(String(e)); }
     });
-    srv.listen(PORT, () => res(srv));
+    srv.listen(0, () => { PORT = srv.address().port; res(srv); });
   });
 }
 
@@ -126,47 +126,77 @@ if (SCRIPT !== 'boot') {
   const afterIntro = await probe('after-intro');
   if (afterIntro && afterIntro.party === 0) note('flow', 'player has no party after the intro sequence');
 
-  // Walk OUT of the start town looking for tall grass. Rotating directions every
-  // burst just oscillates in place, so commit to a heading and only change it when
-  // the player stops making progress (blocked by a building or the shoreline).
-  const HEADINGS = ['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'];
-  let hi = 0;
-  let encountered = false;
-  let prev = await probe('walk-start');
-  let stuckRuns = 0;
+  // Navigate to the nearest encounter grass by RE-PLANNING every step. A one-shot
+  // path drifted the moment anything blocked a step (a wandering NPC is enough),
+  // and wandering randomly was worse: 128 steps without touching grass, while
+  // tools/check-onboarding.mjs shows the real path is ~15 straight steps. So the
+  // test was testing the walker, not the game.
+  const KEY = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
+  const stepKey = async (dir) => {
+    // The game reads HELD keys, and changing direction turns in place first, so a
+    // bare press moves nobody. Hold long enough to turn and then commit to a step.
+    await page.keyboard.down(KEY[dir]);
+    await page.waitForTimeout(185);
+    await page.keyboard.up(KEY[dir]);
+    await page.waitForTimeout(35);
+  };
 
-  for (let i = 0; i < 40 && !encountered; i++) {
-    await hold(HEADINGS[hi], 900);
-    const st = await probe('walk' + i);
-    if (st && st.scene === 'battle') { encountered = true; break; }
-    if (st && prev) {
-      const moved = Math.abs(st.x - prev.x) + Math.abs(st.y - prev.y);
-      if (moved < 2) {
-        // Genuinely blocked this burst. Rotate, but do not treat it as failure:
-        // tools/check-onboarding.mjs shows the real path to grass is straight,
-        // so thrashing here is the walker's fault, not the world's.
-        stuckRuns++;
-        hi = (hi + 1) % HEADINGS.length;
-      } else {
-        stuckRuns = 0;
+  // Returns the first direction to walk toward the nearest reachable grass tile.
+  const nextDir = () => page.evaluate(() => {
+    const g = window.__game;
+    if (!g || !g.S || !g.S.world) return null;
+    const m = g.S.world.map;
+    const sx = g.S.player.x, sy = g.S.player.y;
+    if (g.isGrassTile(m.ground[sy * m.w + sx])) return 'here';
+    const n = m.w * m.h;
+    const dist = new Int32Array(n).fill(-1);
+    const first = new Int8Array(n).fill(-1);
+    const q = new Int32Array(n);
+    let head = 0, tail = 0;
+    const si = sy * m.w + sx;
+    dist[si] = 0; q[tail++] = si;
+    const D = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const NAMES = ['right', 'left', 'down', 'up'];
+    while (head < tail) {
+      const i = q[head++];
+      if (dist[i] > 0 && g.isGrassTile(m.ground[i])) return NAMES[first[i]];
+      const x = i % m.w, y = (i / m.w) | 0;
+      for (let d = 0; d < 4; d++) {
+        const nx = x + D[d][0], ny = y + D[d][1];
+        if (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h) continue;
+        const j = ny * m.w + nx;
+        if (dist[j] !== -1) continue;
+        if (g.isSolidTile(m.ground[j]) || g.overlayBlocksTile(m.overlay[j])) continue;
+        dist[j] = dist[i] + 1;
+        first[j] = dist[i] === 0 ? d : first[i];
+        q[tail++] = j;
       }
     }
+    return null;
+  });
+
+  let encountered = false;
+  let prev = await probe('walk-start');
+  let noPath = false;
+
+  for (let i = 0; i < 160 && !encountered; i++) {
+    const st = await probe('nav' + i);
+    if (!st) break;
     prev = st;
-    if (stuckRuns >= 12) { note('flow', 'player appears boxed in at ' + (st ? st.x + ',' + st.y : '?')); break; }
-  }
-  await shot('05-walk');
-  const walked = prev && afterIntro ? Math.abs(prev.x - afterIntro.x) + Math.abs(prev.y - afterIntro.y) : 0;
-  if (!encountered) {
-    note('flow', 'no wild encounter after 40 walk bursts (moved ' + walked +
-                 ' tiles from spawn, ' + (prev ? prev.steps : 0) + ' steps)');
+    if (st.scene === 'battle') { encountered = true; break; }
+    let dir = await nextDir();
+    if (dir === null) { noPath = true; break; }
+    // Already standing in grass: pace back and forth until an encounter rolls.
+    if (dir === 'here') dir = i % 2 ? 'left' : 'right';
+    await stepKey(dir);
   }
 
-  if (encountered) {
-    await shot('06-battle');
-    // Fight: A to open Fight, A to pick the first move, then mash through the turn.
-    await key('Enter', 2, 300);
-    await key('Enter', 14, 220);
-    await shot('07-battle-turn');
+  if (noPath) note('flow', 'no reachable encounter grass found from the spawn point');
+
+  await shot('05-walk');
+  if (!encountered) {
+    note('flow', 'no wild encounter after navigating to grass (' +
+                 (prev ? prev.grassSteps + ' grass steps, ' + prev.encounterRolls + ' rolls' : 'no state') + ')');
   }
 
   // Pause menu

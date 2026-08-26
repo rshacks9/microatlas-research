@@ -8,6 +8,7 @@ import { drawSprite, hasSprite, walkKey } from './sprites.js';
 import { generateWorld, biomeAt, levelAt, encounterTableFor } from './worldgen.js';
 import { buildInterior } from './towns.js';
 import { makeCreature, displayName, partyWiped, healParty, firstHealthy } from './party.js';
+import { maxHp } from './battlecalc.js';
 import { startBattle } from './battle.js';
 import { say, ask, showBanner, updateBanner, renderBanner, isDialogueOpen } from './dialogue.js';
 import { openPauseMenu, openShop } from './menus.js';
@@ -281,10 +282,20 @@ function rollEncounter() {
   return makeCreature(pick.species, level, { where: currentBiome().toLowerCase() });
 }
 
+// A plain fade makes every encounter feel identical. A short flashing wipe costs
+// almost nothing and turns the moment of an encounter into an event.
+async function encounterWipe() {
+  for (let i = 0; i < 3; i++) {
+    await fade('out', 0.07, '#f8f4e8');
+    await fade('in', 0.07, '#f8f4e8');
+  }
+  await fade('out', 0.26, '#000');
+}
+
 async function doWildBattle(wild) {
   O.busy = true;
   sfx('encounter');
-  await fade('out', 0.35, '#000');
+  await encounterWipe();
   // startBattle pushes the battle scene synchronously, so fade back IN over it.
   // Without this the screen stays under a full-alpha black overlay for the whole battle.
   const battle = startBattle({ wild });
@@ -377,6 +388,41 @@ async function interact() {
   return false;
 }
 
+// NPCs that never acknowledge anything the player has done make a world feel
+// procedural. These fire on top of an NPC's own lines when the player's state
+// gives them something to react to, which is cheap texture for real payoff.
+function reactiveLine() {
+  const seals = S.badges | 0;
+  const caught = Object.keys(S.dex.caught).length;
+  const party = S.party.length;
+  const tod = timeOfDay();
+  const pool = [];
+
+  if (seals >= 8) pool.push('Eight Seals? The Wardens must be running out of things to teach you.');
+  else if (seals >= 4) pool.push('You are carrying real Seals. Word travels faster than you walk.');
+  else if (seals === 0) pool.push('No Seals yet? Every settlement keeps a Warden. Start with ours.');
+
+  if (caught >= 25) pool.push('They say someone out here has catalogued nearly everything. That is you, is it?');
+  else if (caught >= 10) pool.push('You have met more creatures than most of us ever will.');
+
+  if (party >= 6) pool.push('Six already? You will need somewhere to keep the rest.');
+  else if (party === 1) pool.push('Travelling with just the one? Braver than me.');
+
+  if (tod === 'night') pool.push('Out this late? Different things wake up after dark, you know.');
+  else if (tod === 'morning') pool.push('Early start. Best time to be on the road.');
+
+  const hurt = S.party.some((c) => c && c.hp > 0 && c.hp < maxHpOf(c) * 0.35);
+  if (hurt) pool.push('Your team looks rough. The recovery centre costs nothing.');
+
+  if (S.player.money < 300) pool.push('Short on credits? Wardens pay well, if you can take them.');
+
+  return pool.length ? pool[Math.floor(rand.float() * pool.length)] : null;
+}
+
+function maxHpOf(c) {
+  try { return maxHp(c); } catch (_) { return 1; }
+}
+
 async function talkTo(e) {
   if (e.facePoint) e.facePoint(player.x, player.y);
   e.frozen = true;
@@ -417,7 +463,12 @@ async function talkTo(e) {
       await startTrainerBattle(e);
       return;
     }
-    const lines = (e.lines && e.lines.length) ? e.lines : ['...'];
+    const lines = (e.lines && e.lines.length) ? e.lines.slice() : ['...'];
+    // Roughly one in three villagers has something to say about how you are doing.
+    if (e.kind === 'npc' && rand.chance(0.34)) {
+      const extra = reactiveLine();
+      if (extra) lines.push(extra);
+    }
     await say(lines, { speaker: e.name || undefined });
   } finally {
     e.frozen = false;
@@ -427,7 +478,7 @@ async function talkTo(e) {
 async function startTrainerBattle(e) {
   sfx('encounter');
   await say((e.name ? e.name + ': ' : '') + (e.challenge || "Let's battle!"));
-  await fade('out', 0.35, '#000');
+  await encounterWipe();
   const battle = startBattle({ trainer: e });
   await fade('in', 0.3);
   const result = await battle;

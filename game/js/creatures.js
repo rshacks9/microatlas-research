@@ -523,6 +523,38 @@ export const SPECIES = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Evolution learnset invariant
+//
+// An evolution must never learn a shared move LATER than its own pre-evolution,
+// or there is a level band where evolving is a strict downgrade. Measured before
+// this pass: a level 30 nightveil lost to an ordinary wild shadewisp 83% of the
+// time, because shadewisp had Dread Howl (90 power) at 30 and nightveil did not
+// get it until 33.
+//
+// Normalising here rather than hand-editing the tables means the invariant holds
+// for any species added later, and tools/check-evolution.mjs verifies it.
+(function normaliseEvolutionLearnsets() {
+  for (const id of Object.keys(SPECIES)) {
+    const pre = SPECIES[id];
+    if (!pre || !pre.evolve || !pre.evolve.into) continue;
+    const post = SPECIES[pre.evolve.into];
+    if (!post || !Array.isArray(post.learnset) || !Array.isArray(pre.learnset)) continue;
+
+    const preLevel = Object.create(null);
+    for (const [lv, mv] of pre.learnset) {
+      if (preLevel[mv] === undefined || lv < preLevel[mv]) preLevel[mv] = lv;
+    }
+    for (const entry of post.learnset) {
+      const [lv, mv] = entry;
+      const at = preLevel[mv];
+      if (at !== undefined && lv > at) entry[0] = at;
+    }
+    post.learnset.sort((a, b) => a[0] - b[0]);
+  }
+})();
+
+
 /** Returned by getSpecies() for an unknown id so a corrupt save can never crash battle code. */
 export const FALLBACK_SPECIES = Object.freeze({
   id: 'unknown', dexNo: 0, name: '??????', types: ['PLAIN'],

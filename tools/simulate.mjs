@@ -4,7 +4,7 @@ import { SPECIES, allSpecies, getSpecies } from '../game/js/creatures.js';
 import { getMove } from '../game/js/moves.js';
 import { makeCreature, movesAtLevel } from '../game/js/party.js';
 import { statsFor, maxHp, damage, accuracyCheck, speedOf, aiChooseMove,
-         endOfTurnDamage, expGain, catchOdds } from '../game/js/battlecalc.js';
+         endOfTurnDamage, expGain, catchOdds, STRUGGLE } from '../game/js/battlecalc.js';
 import { effectiveness, TYPES } from '../game/js/types.js';
 import { mulberry32 } from '../game/js/rng.js';
 
@@ -20,8 +20,11 @@ function fight(a, b, rng) {
   for (let turn = 0; turn < 300; turn++) {
     const ai = aiChooseMove(A, B, 1, { rng });
     const bi = aiChooseMove(B, A, 1, { rng });
-    const am = ai >= 0 ? getMove(A.inst.moves[ai].id) : null;
-    const bm = bi >= 0 ? getMove(B.inst.moves[bi].id) : null;
+    // aiChooseMove returns -1 when all PP is spent, which battle.js resolves as
+    // STRUGGLE. Treating it as "no move" made both sides stand still forever and
+    // produced phantom 300-turn stalls plus skewed win rates.
+    const am = ai >= 0 ? getMove(A.inst.moves[ai].id) : STRUGGLE;
+    const bm = bi >= 0 ? getMove(B.inst.moves[bi].id) : STRUGGLE;
     const apri = am ? am.priority : 0, bpri = bm ? bm.priority : 0;
     let aFirst;
     if (apri !== bpri) aFirst = apri > bpri;
@@ -69,6 +72,34 @@ const species = allSpecies();
 const LEVEL = 40;
 const rng = mulberry32(0xC0FFEE);
 
+// Pacing must be reported across the level range, not just at one level: the
+// tuning target in battlecalc.js was measured at L40 and does not describe L20.
+function pacingAt(level, reps) {
+  const r2 = mulberry32(0xBEEF + level);
+  let turns = 0, n = 0, oneShot = 0, stall = 0;
+  const all = [];
+  for (let i = 0; i < reps; i++) {
+    const a = species[Math.floor(r2() * species.length)];
+    const b = species[Math.floor(r2() * species.length)];
+    if (a.id === b.id) continue;
+    const ai = makeCreature(a.id, level, { rng: r2 });
+    const bi = makeCreature(b.id, level, { rng: r2 });
+    const res = fight(ai, bi, r2);
+    turns += res.turns; n++; all.push(res.turns);
+    if (res.turns <= 1) oneShot++;
+    if (res.turns >= 300) stall++;
+  }
+  all.sort((x, y) => x - y);
+  return {
+    level, n,
+    avg: (turns / Math.max(1, n)).toFixed(2),
+    median: all[(all.length / 2) | 0] || 0,
+    p95: all[Math.floor(all.length * 0.95)] || 0,
+    oneShot: ((oneShot / Math.max(1, n)) * 100).toFixed(2) + '%',
+    stalls: stall,
+  };
+}
+
 // ---- 1. round-robin win rates at equal level -----------------------------
 const wins = Object.create(null), games = Object.create(null);
 for (const s of species) { wins[s.id]=0; games[s.id]=0; }
@@ -109,6 +140,15 @@ console.log('\nDOMINANT (>82% win, non-legendary):', dominant.map(r=>r.id+' '+(r
 console.log('HOPELESS (<18% win):', hopeless.map(r=>r.id+' '+(r.rate*100).toFixed(0)+'%').join(', ')||'none');
 
 // ---- 2. type coverage ----------------------------------------------------
+console.log('\n=== PACING ACROSS LEVELS ===');
+console.log('lvl    n   avg  median  p95   one-shot  stalls');
+for (const lv of [5, 10, 20, 30, 40, 60, 100]) {
+  const p = pacingAt(lv, 700);
+  console.log(String(p.level).padStart(3) + String(p.n).padStart(6) + String(p.avg).padStart(7) +
+              String(p.median).padStart(8) + String(p.p95).padStart(6) +
+              String(p.oneShot).padStart(10) + String(p.stalls).padStart(8));
+}
+
 console.log('\n=== TYPE COVERAGE ===');
 const bad = [];
 for (const t of TYPES) {

@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 
 const ROOT = process.cwd();
-const PORT = 8137;
+let PORT = 0;   // ephemeral: a killed run must never block the next one
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 
 const srv = await new Promise((res) => {
@@ -19,7 +19,7 @@ const srv = await new Promise((res) => {
     rq.writeHead(200, { 'Content-Type': MIME[extname(full)] || 'application/octet-stream' });
     rq.end(await readFile(full));
   });
-  s.listen(PORT, () => res(s));
+  s.listen(0, () => { PORT = s.address().port; res(s); });
 });
 
 const browser = await chromium.launch({

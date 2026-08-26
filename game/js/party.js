@@ -16,19 +16,64 @@ function rollIvs(rng) {
 }
 
 // The 4 most recent moves learnable at or below `level`.
+// Build a sensible 4-move set for a creature generated at a given level.
+//
+// This used to keep simply the 4 MOST RECENTLY learned moves, which quietly
+// gutted any species whose late learnset entries are status moves: a level 20
+// zapkit ended up with three status moves and one 40-power neutral jab, holding
+// no SPARK move at all despite being a SPARK creature. Since every wild
+// encounter and every trainer team is built here, that inverted the difficulty
+// curve in whole level bands.
+//
+// Selection is now by usefulness: guarantee offence first, then flavour.
 export function movesAtLevel(speciesId, level) {
   const sp = getSpecies(speciesId);
   const lv = clampLevel(level);
+  const types = sp.types || [];
+
   const eligible = (sp.learnset || []).filter((e) => Array.isArray(e) && e[0] <= lv);
-  const ids = [];
+  const order = [];                       // learn order, de-duplicated
   for (const [, id] of eligible) {
-    const i = ids.indexOf(id);
-    if (i !== -1) ids.splice(i, 1);
-    ids.push(id);
+    const i = order.indexOf(id);
+    if (i !== -1) order.splice(i, 1);
+    order.push(id);
   }
-  const chosen = ids.slice(-MOVE_SLOTS);
-  if (!chosen.length) chosen.push('tackle');
-  return chosen.map((id) => {
+  if (!order.length) order.push('tackle');
+
+  const damaging = [], status = [];
+  for (const id of order) {
+    const mv = getMove(id);
+    (mv.category === 'status' || !mv.power ? status : damaging).push(id);
+  }
+
+  const stab = (id) => types.indexOf(getMove(id).type) !== -1;
+  const power = (id) => getMove(id).power || 0;
+  // Best first: STAB counts for a lot, then raw power.
+  const byValue = damaging.slice().sort((a, b) =>
+    (power(b) * (stab(b) ? 1.5 : 1)) - (power(a) * (stab(a) ? 1.5 : 1)));
+
+  const picked = [];
+  const take = (id) => { if (id && picked.indexOf(id) === -1 && picked.length < MOVE_SLOTS) picked.push(id); };
+
+  // 1. Always hold the best same-type attack the species can currently use.
+  take(byValue.find(stab));
+  // 2. Fill up to three damaging moves, strongest first, for coverage.
+  for (const id of byValue) { if (picked.length >= 3) break; take(id); }
+  // 3. Spend what is left on the most recently learned status moves.
+  for (let i = status.length - 1; i >= 0 && picked.length < MOVE_SLOTS; i--) take(status[i]);
+  // 4. Any remaining slot goes to the newest move not already held.
+  for (let i = order.length - 1; i >= 0 && picked.length < MOVE_SLOTS; i--) take(order[i]);
+
+  // A creature with no way to deal damage cannot win or lose a battle.
+  if (!picked.some((id) => getMove(id).power > 0)) {
+    if (byValue.length) picked[picked.length - 1] = byValue[0];
+    else picked.push('tackle');
+  }
+
+  // Present them in learn order so the move list reads naturally.
+  picked.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+  return picked.map((id) => {
     const mv = getMove(id);
     return { id, pp: mv.pp, ppMax: mv.pp };
   });

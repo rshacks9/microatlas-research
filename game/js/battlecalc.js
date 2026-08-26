@@ -5,8 +5,21 @@ import { effectiveness } from './types.js';
 import { rand } from './rng.js';
 
 // Tuned empirically via tools/simulate.mjs. Raising this lengthens battles.
-// 50 (the classic value) produced 2.1-turn battles with this stat spread; 80 gives ~5.3.
-export const DAMAGE_DIVISOR = 80;
+//
+// A FLAT divisor cannot hold pacing steady across the level range, because the
+// attack/defence ratio drifts with level: the constant +5 in the stat formula
+// dominates at low level (so A/D sits near 1) and vanishes at high level (so a
+// high-attack species pulls well clear). A flat 80 gave 6.1-turn battles at L20
+// but 3.5 turns with 6.7% one-shots at L60.
+//
+// Scaling the divisor with level flattens it. Measured over 500 same-level
+// battles per level with the faithful engine:
+//   flat 80          L5 5.5t/0.2%  L20 6.1t/0.8%  L40 3.8t/2.9%  L60 3.5t/6.7%  L100 3.8t/7.3%
+//   70 + lv*0.55     L5 5.5t/0.6%  L20 5.7t/0.8%  L40 4.3t/1.0%  L60 4.8t/2.1%  L100 5.6t/0.6%
+export const DAMAGE_DIVISOR = 80;          // kept for reference; use damageDivisor()
+export function damageDivisor(level) {
+  return 70 + clampLevel(level) * 0.55;
+}
 
 export const STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 export const MAX_LEVEL = 100;
@@ -139,7 +152,7 @@ export function damage(attacker, defender, move, opts = {}) {
   if (physical && attacker.inst.status === 'brn') A = Math.max(1, Math.floor(A * 0.5));
 
   const lv = clampLevel(attacker.inst.level);
-  let dmg = Math.floor(Math.floor((Math.floor((2 * lv) / 5) + 2) * mv.power * A / D) / DAMAGE_DIVISOR) + 2;
+  let dmg = Math.floor(Math.floor((Math.floor((2 * lv) / 5) + 2) * mv.power * A / D) / damageDivisor(lv)) + 2;
 
   if (crit) dmg = Math.floor(dmg * 1.5);
 
