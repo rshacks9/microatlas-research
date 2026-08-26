@@ -97,10 +97,25 @@ const Title = {
       }
     }
 
+    // Creatures on the title. It was text on a gradient with nothing to look at and
+    // no promise of what the game is about — the starters are the promise.
+    const cast = STARTERS.map((id) => getSpecies(id).sprite);
+    for (let i = 0; i < cast.length; i++) {
+      if (!hasSprite(cast[i])) continue;
+      const cx2 = W / 2 + (i - 1) * 62;
+      const bob = Math.round(Math.sin(this.t * 1.6 + i * 1.9) * 3);
+      const back = i !== 1;
+      ctx.save();
+      ctx.globalAlpha = back ? 0.75 : 1;
+      drawSprite(ctx, cast[i], cx2 - (back ? 16 : 22), 150 + bob - (back ? 0 : 6),
+                 { scale: back ? 1 : 1.4 });
+      ctx.restore();
+    }
+
     drawTextCentered(ctx, 'VERDANT FRONTIER', W / 2, 44, { color: '#f4ecd8', shadow: '#101820' });
     drawTextCentered(ctx, 'a wilderness that is never the same twice', W / 2, 60, { color: '#a8c4b0' });
 
-    const bw = 170, bx = (W - bw) / 2, by = 96;
+    const bw = 170, bx = (W - bw) / 2, by = 78;
     drawWindow(ctx, bx, by, bw, 16 + this.items.length * 15);
     for (let i = 0; i < this.items.length; i++) {
       const y = by + 8 + i * 15;
