@@ -274,7 +274,7 @@ Required sprite keys:
 - Player/NPC walk sheets, 16x24, 3 frames per direction, keys:
   `hero_down_0..2`, `hero_up_0..2`, `hero_left_0..2`, `hero_right_0..2` (right may be flipped left)
 - Same pattern for `npc_villager_*`, `npc_elder_*`, `npc_kid_*`, `trainer_hiker_*`, `trainer_angler_*`, `trainer_scout_*`
-- One 40x40 creature sprite per species, key = species `sprite` field. Back sprites are derived by
+- One 32x32 creature sprite per species, key = species `sprite` field. Back sprites are derived by
   flipping + scaling — do not author separate back sprites.
 - UI: `ball_orb`, `ball_great`, `ball_ultra`, `cursor`
 

@@ -4,6 +4,10 @@ import { getMove } from './moves.js';
 import { effectiveness } from './types.js';
 import { rand } from './rng.js';
 
+// Tuned empirically via tools/simulate.mjs. Raising this lengthens battles.
+// 50 (the classic value) produced 2.1-turn battles with this stat spread; 80 gives ~5.3.
+export const DAMAGE_DIVISOR = 80;
+
 export const STAT_KEYS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 export const MAX_LEVEL = 100;
 
@@ -13,7 +17,10 @@ export function statsFor(inst) {
   const lv = clampLevel(inst.level);
   const iv = inst.ivs || {};
   const out = {};
-  out.hp = Math.floor(((2 * sp.base.hp + (iv.hp | 0)) * lv) / 100) + lv + 10;
+  // The +lv*0.6 term is a deliberate deviation from the classic formula: without it,
+  // 28% of same-level battles ended on a single hit (measured with tools/simulate.mjs).
+  // With it, plus DAMAGE_DIVISOR below, battles average ~5 turns and one-shots are ~1%.
+  out.hp = Math.floor(((2 * sp.base.hp + (iv.hp | 0)) * lv) / 100) + lv + 10 + Math.floor(lv * 0.6);
   for (const k of ['atk', 'def', 'spa', 'spd', 'spe']) {
     out[k] = Math.floor(((2 * sp.base[k] + (iv[k] | 0)) * lv) / 100) + 5;
   }
@@ -132,7 +139,7 @@ export function damage(attacker, defender, move, opts = {}) {
   if (physical && attacker.inst.status === 'brn') A = Math.max(1, Math.floor(A * 0.5));
 
   const lv = clampLevel(attacker.inst.level);
-  let dmg = Math.floor(Math.floor((Math.floor((2 * lv) / 5) + 2) * mv.power * A / D) / 50) + 2;
+  let dmg = Math.floor(Math.floor((Math.floor((2 * lv) / 5) + 2) * mv.power * A / D) / DAMAGE_DIVISOR) + 2;
 
   if (crit) dmg = Math.floor(dmg * 1.5);
 
