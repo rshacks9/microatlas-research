@@ -10,7 +10,8 @@ import { getItem, useItem, shopStock, sellPrice } from './items.js';
 import { maxHp, statsFor, expToNext } from './battlecalc.js';
 import { displayName, isFainted, hpFrac, swapParty, nextMilestone } from './party.js';
 import { S, PARTY_MAX, BOX_MAX, bagList, itemCount, removeItem, addItem, spendMoney, addMoney,
-         dexSeenCount, dexCaughtCount, dexVariantCount, clockString, playtimeString } from './state.js';
+         dexSeenCount, dexCaughtCount, dexVariantCount, clockString, playtimeString,
+         isExplored, EXPLORE_CELL, EXPLORE_W, EXPLORE_H } from './state.js';
 import { sfx } from './audio.js';
 import { TYPE_COLORS, TYPE_NAMES } from './types.js';
 import { say, ask } from './dialogue.js';
@@ -660,10 +661,62 @@ function drawCaveMarker(ctx, px, py) {
   ctx.fillRect(px - 1, py, 2, 2);
 }
 
+// ---- fog of war -----------------------------------------------------------
+// Dark parchment over every uncharted map pixel: warm and clearly deliberate
+// against the screen's cold blue-grey, so an empty chart reads as 'unexplored
+// map', never 'rendering bug'.
+const FOG_RGB = [52, 44, 30];   // #342c1e; keep in sync with the legend swatch
+const FOG_EDGE_ALPHA = 168;     // soft 1px edge where charted meets uncharted
+
+// Built once per map OPEN (exploration cannot change while the map scene is
+// up), never per frame, and kept separate from the seed-keyed biome cache:
+// the chart grows between opens while biomes never do. Cost is two passes
+// over size*size pixels through one ImageData — no per-pixel fillRects.
+function buildFogOverlay(world, size) {
+  const mw = world.map.w, mh = world.map.h;
+  const ex = S.explored;   // may be null (pre-chart save): everything uncharted
+  // Pass 1: charted flag per map pixel — one S.explored lookup each, using the
+  // same px->tile mapping as buildRegionMap so fog aligns with biome pixels.
+  const charted = new Uint8Array(size * size);
+  if (ex) {
+    for (let py = 0; py < size; py++) {
+      const ty = Math.min(mh - 1, Math.floor((py / size) * mh));
+      const rowBase = Math.min(EXPLORE_H - 1, (ty / EXPLORE_CELL) | 0) * EXPLORE_W;
+      for (let px = 0; px < size; px++) {
+        const tx = Math.min(mw - 1, Math.floor((px / size) * mw));
+        charted[py * size + px] = ex[rowBase + Math.min(EXPLORE_W - 1, (tx / EXPLORE_CELL) | 0)];
+      }
+    }
+  }
+  // Pass 2: opaque fog on uncharted pixels; an uncharted pixel touching a
+  // charted one goes semi-transparent for a soft 1px frontier. The softening
+  // sits on the UNCHARTED side: a fresh game's whole blot is ~8 map px wide
+  // and cannot spare any charted pixels to a fade.
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size, size);
+  const d = img.data;
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      const i = py * size + px;
+      if (charted[i]) continue;   // alpha stays 0: the map shows through
+      const nearCharted =
+        (px > 0 && charted[i - 1]) || (px < size - 1 && charted[i + 1]) ||
+        (py > 0 && charted[i - size]) || (py < size - 1 && charted[i + size]);
+      const o = i * 4;
+      d[o] = FOG_RGB[0]; d[o + 1] = FOG_RGB[1]; d[o + 2] = FOG_RGB[2];
+      d[o + 3] = nearCharted ? FOG_EDGE_ALPHA : 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
 export function openWorldMap(world) {
   const sc = {
-    opaque: true, t: 0, resolve: null, cache: null,
-    enter(p) { this.resolve = p && p.resolve; this.cache = null; },
+    opaque: true, t: 0, resolve: null, cache: null, fog: null,
+    enter(p) { this.resolve = p && p.resolve; this.cache = null; this.fog = null; },
     update(dt) {
       this.t += dt;
       if (consume('b') || consume('a') || consume('start')) {
@@ -689,27 +742,42 @@ export function openWorldMap(world) {
 
       if (!this.cache) this.cache = buildRegionMap(world, size);
       ctx.drawImage(this.cache, Math.round(ox), Math.round(oy));
+      // Fog on top of the cached biome+danger canvas. Danger rings and their
+      // L## labels are baked into that cache, so the overlay clips them for
+      // free: a label only shows where it lands on charted pixels, with zero
+      // per-frame checks and therefore zero flicker (a label straddling the
+      // frontier is partially covered, which reads as the chart being torn).
+      if (!this.fog) this.fog = buildFogOverlay(world, size);
+      ctx.drawImage(this.fog, Math.round(ox), Math.round(oy));
       ctx.strokeStyle = '#5a6472';
       ctx.strokeRect(Math.round(ox) - 0.5, Math.round(oy) - 0.5, size + 1, size + 1);
 
+      // Markers obey the fog: a place appears only once its tile is charted.
+      // Legend rows for caves/shrines follow the SHOWN count, not existence,
+      // so the legend never explains a marker the fog is still hiding.
       // towns
       for (const t of (world.towns || [])) {
+        if (!isExplored(t.x, t.y)) continue;
         const px = ox + (t.x / mw) * size, py = oy + (t.y / mh) * size;
         ctx.fillStyle = '#f0e070';
         ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 3, 3);
       }
       // cave mouths
       const caves = Array.isArray(world.caves) ? world.caves : [];
+      let cavesShown = 0;
       for (const cv of caves) {
-        if (!cv) continue;
+        if (!cv || !isExplored(cv.x, cv.y)) continue;
+        cavesShown++;
         drawCaveMarker(ctx, Math.round(ox + (cv.x / mw) * size), Math.round(oy + (cv.y / mh) * size));
       }
       // shrines — optional; worldgen may not provide them yet
       const shrines = (world.shrines || (S.world && S.world.shrines));
+      let shrinesShown = 0;
       if (Array.isArray(shrines)) {
         ctx.fillStyle = PAL.gold || '#f0c020';
         for (const s of shrines) {
-          if (!s) continue;
+          if (!s || !isExplored(s.x, s.y)) continue;
+          shrinesShown++;
           const px = Math.round(ox + (s.x / mw) * size), py = Math.round(oy + (s.y / mh) * size);
           ctx.beginPath();
           ctx.moveTo(px, py - 3);
@@ -720,7 +788,7 @@ export function openWorldMap(world) {
           ctx.fill();
         }
       }
-      // player
+      // player — the one marker that ALWAYS draws, fog or no fog
       const ppx = ox + (S.player.x / mw) * size, ppy = oy + (S.player.y / mh) * size;
       if (Math.sin(this.t * 6) > -0.3) {
         ctx.fillStyle = '#e04038';
@@ -735,11 +803,14 @@ export function openWorldMap(world) {
       drawText(ctx, 'You are here', 18, ly1, { color: '#c8d0dc' });
       ctx.fillStyle = '#f0e070'; ctx.fillRect(102, ly1 + 2, 3, 3);
       drawText(ctx, 'Settlement', 110, ly1, { color: '#c8d0dc' });
-      if (caves.length) {
+      if (cavesShown) {
         drawCaveMarker(ctx, 199, ly1 + 3);
         drawText(ctx, 'Cave', 207, ly1, { color: '#c8d0dc' });
       }
-      if (Array.isArray(shrines) && shrines.length) {
+      // Uncharted row: fixed x so it never shifts as cave/shrine rows appear.
+      ctx.fillStyle = '#342c1e'; ctx.fillRect(238, ly1 + 1, 8, 6);
+      drawText(ctx, 'Uncharted', 250, ly1, { color: '#c8d0dc' });
+      if (shrinesShown) {
         ctx.fillStyle = PAL.gold || '#f0c020';
         ctx.beginPath();
         ctx.moveTo(11, ly2); ctx.lineTo(14, ly2 + 3); ctx.lineTo(11, ly2 + 6); ctx.lineTo(8, ly2 + 3);

@@ -9,7 +9,8 @@ import { drawSprite, hasSprite, spriteSize } from './sprites.js';
 import { getSpecies, STARTERS } from './creatures.js';
 import { generateWorld } from './worldgen.js';
 import { makeCreature, displayName, addToParty } from './party.js';
-import { S, resetState, setFlag } from './state.js';
+import { S, resetState, setFlag, getFlag, getRecord, updateRecord, seeSpecies,
+         addMoney, addItem } from './state.js';
 import { Overworld, enterMap, player, holdControl, releaseControl } from './overworld.js';
 import { say } from './dialogue.js';
 import { initAudio, playBgm, sfx, setMusicEnabled, setSfxEnabled } from './audio.js';
@@ -119,13 +120,22 @@ const Title = {
   enter() {
     this.t = 0;
     this.items = [{ label: 'New Journey', act: 'new' }];
+    // New Journey+ appears once the Verdant Trial has ever been finished: either
+    // the device record says so, or the state loaded THIS session carries the
+    // flag (a just-finished trial counts before the record round-trips storage).
+    if (getRecord().trials > 0 || getFlag('trial_done')) {
+      this.items.push({ label: 'New Journey+', act: 'newplus' });
+    }
     for (let i = 0; i < 3; i++) {
       if (hasSave(i)) {
         const s = slotSummary(i);
         this.items.push({ label: 'Continue — ' + s.name + '  ' + s.playtime, act: 'load', slot: i, sum: s });
       }
     }
-    this.index = this.items.length > 1 ? 1 : 0;
+    // Default to the first Continue when one exists (Wave 5.5 behaviour); the
+    // New Journey+ row must not steal that spot just by sitting above it.
+    const firstLoad = this.items.findIndex((it) => it.act === 'load');
+    this.index = firstLoad >= 0 ? firstLoad : 0;
     playBgm('title');
   },
   update(dt) {
@@ -136,7 +146,8 @@ const Title = {
     if (consume('a') || consume('start')) {
       sfx('select');
       const it = this.items[this.index];
-      if (it.act === 'new') startNewGame();
+      if (it.act === 'new') startNewGame(false);
+      else if (it.act === 'newplus') startNewGame(true);
       else continueGame(it.slot);
     }
   },
@@ -177,7 +188,28 @@ const Title = {
     drawTextCentered(ctx, 'VERDANT FRONTIER', W / 2, 44, { color: '#f4ecd8', shadow: '#101820' });
     drawTextCentered(ctx, 'a wilderness that is never the same twice', W / 2, 60, { color: '#a8c4b0' });
 
-    const bw = 170, bx = (W - bw) / 2, by = 78;
+    // Frontier Record strip: lifetime stats for a returning player. It lives in
+    // a band across the very top of the 320x240 canvas — the menu starts at
+    // y>=70 and the Continue card grows DOWNWARD from the menu, so nothing can
+    // ever collide with it at any viewport (viewports only scale the canvas).
+    const rec = getRecord();
+    if (rec.journeys > 0) {
+      ctx.fillStyle = 'rgba(16,24,32,0.55)';
+      ctx.fillRect(0, 0, W, 24);
+      ctx.fillStyle = 'rgba(136,164,148,0.35)';
+      ctx.fillRect(0, 23, W, 1);
+      const th = Math.floor(rec.totalPlaytime / 3600);
+      const tm = Math.floor((rec.totalPlaytime % 3600) / 60);
+      drawText(ctx, 'FRONTIER RECORD', 6, 3, { color: PAL.gold });
+      drawTextRight(ctx, th + ':' + String(tm).padStart(2, '0'), W - 6, 3, { color: '#a8c4b0' });
+      drawText(ctx, 'Journeys ' + rec.journeys + '  Trials ' + rec.trials, 6, 13, { color: '#a8c4b0' });
+      drawTextRight(ctx, 'Dex ' + rec.bestDex + '/34  Seals ' + rec.bestSeals, W - 6, 13, { color: '#a8c4b0' });
+    }
+
+    // Five rows (New, New Journey+, three Continues) push the Continue card
+    // into the bottom hint at the default y; lifting the whole block 8px keeps
+    // every row, the card, and the hint clear of each other in the worst case.
+    const bw = 170, bx = (W - bw) / 2, by = this.items.length >= 5 ? 70 : 78;
     drawWindow(ctx, bx, by, bw, 16 + this.items.length * 15);
     for (let i = 0; i < this.items.length; i++) {
       const y = by + 8 + i * 15;
@@ -453,10 +485,16 @@ function pickStarter() {
   return new Promise((resolve) => pushScene(StarterPick, { resolve }));
 }
 
-async function startNewGame() {
+async function startNewGame(plus = false) {
   clearScenes();
-  pushScene(Loading, { text: 'Shaping the frontier...' });
+  pushScene(Loading, { text: plus ? 'The frontier re-forms...' : 'Shaping the frontier...' });
   await frameBreak();
+
+  // New Journey+ carries the field notes: every dex SEEN entry present in this
+  // session's state (a game loaded or played since boot). That is all main.js
+  // can reach — it cannot read a slot's dex without loading the slot — so a
+  // cold-booted NJ+ carries none, by design.
+  const carrySeen = plus ? Object.keys(S.dex.seen) : [];
 
   const seed = (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
   // resetState restores default options; the ones the player set must outlive
@@ -465,6 +503,15 @@ async function startNewGame() {
   resetState(seed, 'Rowan');
   Object.assign(S.options, keepOpts);
   persistOptions();
+
+  if (plus) {
+    // The veteran's kit, on top of resetState's deliberately lean start
+    // (600 cr, 3 orbs): +800 credits and +5 orbs. Seen entries are re-marked
+    // AFTER resetState wiped the dex, so only the carried notes survive.
+    for (const id of carrySeen) seeSpecies(id);
+    addMoney(800);
+    addItem('orb', 5);
+  }
 
   try {
     S.world = generateWorld(seed);
@@ -479,6 +526,12 @@ async function startNewGame() {
     return;
   }
 
+  // One journey per NEW game actually begun: counted only after the world
+  // exists (a failed generation bounces to the title and must not inflate the
+  // record), and never on Continue, which does not pass through here. A New
+  // Journey+ is still a journey.
+  updateRecord({ adds: { journeys: 1 }, maxes: { lastSeed: seed } });
+
   clearScenes();
   pushScene(Overworld);
   const st = S.world.start;
@@ -489,11 +542,21 @@ async function startNewGame() {
   holdControl();
   try {
   await fade('in', 0.5);
-  await say([
-    'The frontier stretches out ahead of you, unmapped and unnamed.',
-    'Somewhere out there are creatures nobody has catalogued yet.',
-    'An old ranger meets you at the edge of town.',
-  ]);
+  // The NJ+ opening names what carried over so the kit and the notes never
+  // read as a bug; the standard opening is untouched.
+  if (plus) {
+    await say([
+      'The frontier re-forms. Your field notes travel with you.',
+      'A veteran\'s kit is already packed: 800 credits and five spare orbs.',
+      'An old ranger meets you at the edge of town.',
+    ]);
+  } else {
+    await say([
+      'The frontier stretches out ahead of you, unmapped and unnamed.',
+      'Somewhere out there are creatures nobody has catalogued yet.',
+      'An old ranger meets you at the edge of town.',
+    ]);
+  }
   await say('Ranger: Before you go wandering off, pick a companion. You will not last a day alone out there.');
 
   // The scene cannot be dismissed without confirming a pick, so no retry loop:
@@ -711,6 +774,9 @@ function boot() {
     };
   };
   window.__game = { Game, S, enterMap, startNewGame,
+    // Record seams for the headless probes: seed a record before the title
+    // renders, and read it back after a run. Same functions the game uses.
+    getRecord, updateRecord,
     // Menus must persist an option the moment it changes; until they own a
     // proper import seam this is the hook they (and tests) can call.
     persistOptions,

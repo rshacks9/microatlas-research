@@ -115,7 +115,10 @@ export function getRecord() {
       if (d && typeof d === 'object' && !Array.isArray(d)) {
         for (const k of Object.keys(RECORD_SHAPE)) {
           const v = Number(d[k]);
-          if (Number.isFinite(v) && v >= 0) rec[k] = Math.min(v, 1e9);
+          // lastSeed is a full uint32 — the general 1e9 cap would corrupt
+          // seeds above it on read-back.
+          const cap = k === 'lastSeed' ? 0xffffffff : 1e9;
+          if (Number.isFinite(v) && v >= 0) rec[k] = Math.min(v, cap);
         }
       }
     } catch (_) { /* hostile or absent record: keep defaults */ }

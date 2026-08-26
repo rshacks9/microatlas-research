@@ -1,7 +1,7 @@
 // localStorage save/load. The world is NOT serialized — it is regenerated from the seed,
 // which keeps saves tiny and exercises worldgen determinism.
 // Every field coming back from storage is treated as hostile.
-import { S, resetState, PARTY_MAX, BOX_MAX } from './state.js';
+import { S, resetState, PARTY_MAX, BOX_MAX, EXPLORE_W, EXPLORE_H, markExplored, updateRecord } from './state.js';
 import { getSpecies } from './creatures.js';
 import { getMove } from './moves.js';
 import { getItem } from './items.js';
@@ -103,6 +103,68 @@ function sanitizeIdMap(raw, validator, maxKeys, maxVal) {
   return out;
 }
 
+// ---- explored chart codec ---------------------------------------------
+// Save field `explored` (additive in v2 — older v2 saves simply lack it):
+// the 9216-cell chart packed 8 cells per byte, LSB-first (cell i lives in
+// byte i>>3, bit i&7; cell i = cy*EXPLORE_W + cx), then base64 (standard
+// alphabet). 9216 cells -> 1152 bytes -> exactly 1536 base64 chars, no
+// padding (1152 % 3 === 0). Cells are 0/1 in memory, so packing truthiness
+// loses nothing and the round trip is byte-identical.
+// Hand-rolled base64 keeps the module free of btoa/Buffer environment
+// differences and gives strict character validation on the way in.
+const EXPLORED_CELLS = EXPLORE_W * EXPLORE_H;      // 9216
+const EXPLORED_BYTES = EXPLORED_CELLS >> 3;        // 1152
+const EXPLORED_B64_LEN = (EXPLORED_BYTES / 3) * 4; // 1536
+const B64_ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function encodeExplored() {
+  const src = S.explored;
+  if (!(src instanceof Uint8Array) || src.length !== EXPLORED_CELLS) return undefined;
+  const bytes = new Uint8Array(EXPLORED_BYTES);
+  for (let i = 0; i < EXPLORED_CELLS; i++) {
+    if (src[i]) bytes[i >> 3] |= 1 << (i & 7);
+  }
+  let out = '';
+  for (let i = 0; i < EXPLORED_BYTES; i += 3) {
+    const n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    out += B64_ALPHA[(n >> 18) & 63] + B64_ALPHA[(n >> 12) & 63]
+         + B64_ALPHA[(n >> 6) & 63] + B64_ALPHA[n & 63];
+  }
+  return out;
+}
+
+// Full hostile-input treatment: wrong type, wrong length, or any character
+// outside the alphabet -> null ("field absent"), never a throw. The length
+// gate runs first so a huge string costs one comparison, not a decode.
+function decodeExplored(v) {
+  if (typeof v !== 'string' || v.length !== EXPLORED_B64_LEN) return null;
+  const cells = new Uint8Array(EXPLORED_CELLS);
+  for (let i = 0, o = 0; i < EXPLORED_B64_LEN; i += 4, o += 3) {
+    const a = B64_ALPHA.indexOf(v[i]),     b = B64_ALPHA.indexOf(v[i + 1]);
+    const c = B64_ALPHA.indexOf(v[i + 2]), d = B64_ALPHA.indexOf(v[i + 3]);
+    if (a < 0 || b < 0 || c < 0 || d < 0) return null;
+    const n = (a << 18) | (b << 12) | (c << 6) | d;
+    const b0 = (n >> 16) & 255, b1 = (n >> 8) & 255, b2 = n & 255;
+    for (let k = 0; k < 8; k++) {
+      cells[(o << 3) + k] = (b0 >> k) & 1;
+      cells[((o + 1) << 3) + k] = (b1 >> k) & 1;
+      cells[((o + 2) << 3) + k] = (b2 >> k) & 1;
+    }
+  }
+  return cells;
+}
+
+// ---- lifetime playtime watermark ---------------------------------------
+// Seconds of S.playtime already credited to the Frontier Record. Module
+// state, reset by the paths that run through save.js (loadGame). The
+// approximation: playtime in a loaded save was credited when that save was
+// written, and time played between the last save and a quit/load is never
+// credited — so the record can undercount, never double-count. A New
+// Journey started outside save.js leaves a stale (higher) watermark; the
+// Math.max(0, ...) clamp in saveGame absorbs it at the cost of that first
+// delta.
+let playtimeSynced = 0;
+
 // ---- serialise ---------------------------------------------------------
 function packCreature(c) {
   return {
@@ -132,6 +194,9 @@ function snapshot() {
     returnPoint: S.returnPoint ? { x: S.returnPoint.x | 0, y: S.returnPoint.y | 0 } : null,
     time: S.time | 0,
     playtime: Math.floor(S.playtime),
+    // Packed+base64 chart (format above); undefined (field omitted) when the
+    // in-memory chart is missing or malformed, which the loader treats as absent.
+    explored: encodeExplored(),
     badges: S.badges | 0,
     options: {
       textSpeed: S.options.textSpeed | 0,
@@ -147,6 +212,13 @@ export function saveGame(slot) {
   if (!st) return false;
   try {
     st.setItem(keyFor(slot), JSON.stringify(snapshot()));
+    // Lifetime playtime: credit the Frontier Record with the seconds gained
+    // since the last sync (see the watermark comment above). updateRecord is
+    // storage-guarded and never throws, so a blocked record store cannot
+    // turn a successful save into a reported failure.
+    const pt = Math.floor(S.playtime);
+    updateRecord({ adds: { totalPlaytime: Math.max(0, pt - playtimeSynced) } });
+    playtimeSynced = pt;
     return true;
   } catch (_) {
     return false;   // quota exceeded or serialization failure
@@ -203,6 +275,7 @@ export function loadGame(slot) {
 
   try {
     resetState(num(d.seed, 0, 0xffffffff, 1), str(d.player && d.player.name, 12, 'Rowan'));
+    playtimeSynced = 0;   // fresh journey until this load proves otherwise
 
     S.mapId = (typeof d.mapId === 'string' && /^[a-z]+(:[a-z0-9]+){0,3}$/i.test(d.mapId)) ? d.mapId : 'world';
     S.player.x = num(d.player && d.player.x, 0, 4096, 0);
@@ -247,6 +320,24 @@ export function loadGame(slot) {
       S.flags.world_shifted = true;
     }
 
+    // Explored chart. Runs after the v1 migration so a migrated save (now on
+    // the world map) gets the same grace as a v2 save missing the field.
+    // Absent/hostile payload -> keep resetState's blank chart and mark a
+    // generous circle (radius 10) around what save.js can know: the player's
+    // world position, and the returnPoint of an interior save (that is the
+    // world tile they will surface at). Overworld re-charts the rest as the
+    // player walks, so absence never strands anyone on a black map.
+    const chart = decodeExplored(d.explored);
+    if (chart) {
+      S.explored = chart;
+    } else {
+      // x >= 0 skips the v1 spawn-fallback sentinel (-1,-1).
+      if (S.mapId === 'world' && S.player.x >= 0 && S.player.y >= 0) {
+        markExplored(S.player.x, S.player.y, 10);
+      }
+      if (S.returnPoint) markExplored(S.returnPoint.x, S.returnPoint.y, 10);
+    }
+
     const o = (d.options && typeof d.options === 'object') ? d.options : {};
     S.options.textSpeed = num(o.textSpeed, 0, 3, 2);
     S.options.music = o.music !== false;
@@ -259,6 +350,9 @@ export function loadGame(slot) {
     if (S.party.every((c) => c.hp <= 0)) S.party[0].hp = Math.max(1, Math.floor(maxHp(S.party[0]) / 2));
 
     S.started = true;
+    // The loaded playtime was credited to the record by whichever saveGame
+    // wrote it; start counting new lifetime seconds from here.
+    playtimeSynced = Math.floor(S.playtime);
     return true;
   } catch (_) {
     return false;
