@@ -59,6 +59,28 @@ for (let i = 0; i < N; i++) {
   }
 }
 
+// --- the doorstep pool must be survivable ----------------------------------
+// The level clamp caps LEVELS, not stat budgets: a stage-2 clamped to L5
+// still fights on stage-2 stats, and three playtest personas were wiped at
+// the doorstep by "L5" Burrowarden/Voltlope. The overworld filters doorstep
+// encounters to species whose natural band starts at or below L5 (with a
+// lowest-band fallback); assert every seed's start biome has a table so the
+// filter has something to work with, and report what the doorstep offers.
+{
+  const { encounterTableFor, biomeAt } = await import('../game/js/worldgen.js');
+  console.log('\n=== DOORSTEP POOL ===');
+  for (let i = 0; i < N; i++) {
+    const seed = 31337 + i * 2711;
+    const w = generateWorld(seed);
+    const biome = biomeAt(w, w.start.x, w.start.y);
+    const table = encounterTableFor(biome) || [];
+    const inBand = table.filter((e) => (e.minLvl === undefined || e.minLvl <= 5));
+    console.log('  seed ' + seed + ': start biome ' + biome + '  in-band: ' +
+      (inBand.length ? inBand.map((e) => e.species).join(',') : '(lowest-band fallback)'));
+    if (!table.length) fails++, console.log('    FAIL start biome ' + biome + ' has no encounter table');
+  }
+}
+
 console.log('\nhighest ambusher level within ' + SAFE_RADIUS + ' tiles of spawn: ' + worstSeen +
             ' (limit ' + MAX_SAFE_LEVEL + ')');
 console.log(fails ? 'FIRST WALK: ' + fails + ' FAILURES' : 'FIRST WALK: the opening is survivable on every seed');

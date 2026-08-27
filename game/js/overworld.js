@@ -324,19 +324,39 @@ function rollEncounter() {
     return w;   // morning: neutral
   };
 
+  // The level ceiling near the start clamps LEVELS but a stage-2 clamped to
+  // L5 still fights on a stage-2 stat budget — three playtest personas were
+  // wiped at the doorstep by "L5" Burrowarden/Voltlope. Where the ceiling
+  // bites (base <= 4), species whose natural band starts above it simply do
+  // not appear; they return at their real levels a few hundred tiles out.
+  const baseHere = wildLevelHere();
+  const bandCeil = baseHere + (baseHere <= 4 ? 2 : 4);
+  const eligible = baseHere <= 4
+    ? table.filter((e) => (e.minLvl === undefined || e.minLvl <= bandCeil))
+    : table;
+  // A biome whose whole table sits above the band (a savanna doorstep) falls
+  // back to its LOWEST-band species, never the full table — the fallback must
+  // not reopen the door the filter closed.
+  let pool = eligible;
+  if (!pool.length) {
+    const lowest = Math.min(...table.map((e) => (e.minLvl === undefined ? 2 : e.minLvl)));
+    pool = table.filter((e) => (e.minLvl === undefined ? 2 : e.minLvl) <= lowest + 2);
+  }
+  if (!pool.length) pool = table;
+
   let total = 0;
-  for (const e of table) total += weightFor(e);
+  for (const e of pool) total += weightFor(e);
   if (total <= 0) return null;
   let r = rand.float() * total;
-  let pick = table[0];
-  for (const e of table) { r -= weightFor(e); if (r <= 0) { pick = e; break; } }
+  let pick = pool[0];
+  for (const e of pool) { r -= weightFor(e); if (r <= 0) { pick = e; break; } }
   if (!pick || !pick.species) return null;
 
   // Difficulty comes from DISTANCE, not from the biome table. The table's level range
   // says where a species sits relative to its peers; `base` (levelAt) says how dangerous
   // THIS spot is. Rolling the table range straight would put level-23 tundra wilds next
   // to the start town, which kills the whole "walk any direction, danger scales" premise.
-  const base = wildLevelHere();
+  const base = baseHere;
   const lo = pick.minLvl !== undefined ? pick.minLvl : Math.max(2, base - 2);
   const hi = pick.maxLvl !== undefined ? pick.maxLvl : base + 1;
   const roll = rand.range(Math.min(lo, hi), Math.max(lo, hi));
@@ -417,9 +437,9 @@ async function afterBattle(result) {
     await fade('in', 0.4);
     const firstLine = conceded ? 'You conceded the match.' : 'You have no creatures able to battle!';
     const backLine = conceded
-      ? 'You made your way back to ' + where.name + (fee > 0 ? ', ' + fee + ' credits lighter.' : '.')
+      ? 'You made your way back to ' + where.name + (fee > 0 ? ', ' + fee + (fee === 1 ? ' credit' : ' credits') + ' lighter.' : '.')
       : (fee > 0
-        ? 'You scrambled back to ' + where.name + ', dropping ' + fee + ' credits along the way.'
+        ? 'You scrambled back to ' + where.name + ', dropping ' + fee + (fee === 1 ? ' credit' : ' credits') + ' along the way.'
         : 'You scrambled back to ' + where.name + '.');
     await say([firstLine, backLine]);
     return;
@@ -711,14 +731,14 @@ async function startTrainerBattle(e) {
 // missable forever.
 export const TRIAL_KEEPERS = [
   { name: 'Keeper Bramwell', warden: true,   // Circle rounds use the warden battle theme challenge: 'The Circle opens with stone. Wear through me if you can.',
-    team: [{ species: 'boulderkin', level: 54 }, { species: 'ironclad', level: 56 }, { species: 'thornmane', level: 55 }],
+    team: [{ species: 'boulderkin', level: 47 }, { species: 'ironclad', level: 49 }, { species: 'thornmane', level: 48 }],
     prize: 1200 },
   { name: 'Keeper Sable', warden: true,   // Circle rounds use the warden battle theme challenge: 'Round two. What you cannot see will decide this.',
-    team: [{ species: 'nightveil', level: 55 }, { species: 'bogwisp', level: 54 }, { species: 'rimewolf', level: 56 }],
+    team: [{ species: 'nightveil', level: 48 }, { species: 'bogwisp', level: 47 }, { species: 'rimewolf', level: 49 }],
     prize: 1500 },
   { name: 'Keeper Oriane', warden: true,   // Circle rounds use the warden battle theme challenge: 'Last round. The Circle asks for everything now.',
-    team: [{ species: 'thunderjaw', level: 57 }, { species: 'galeplume', level: 55 },
-           { species: 'tidalquill', level: 56 }, { species: 'pyrelynx', level: 58 }],
+    team: [{ species: 'thunderjaw', level: 50 }, { species: 'galeplume', level: 48 },
+           { species: 'tidalquill', level: 49 }, { species: 'pyrelynx', level: 52 }],
     prize: 2400 },
 ];
 

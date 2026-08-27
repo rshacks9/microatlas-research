@@ -85,7 +85,7 @@ console.log('\n=== TRIAL KEEPERS ===');
       const sp = getSpecies(m.species);
       if (sp.id !== m.species) fail(k.name + ' fields unknown species "' + m.species + '"');
       if (sp.rarity === 'legendary') fail(k.name + ' fields a legendary — the player hunts those');
-      if (!(m.level >= 50 && m.level <= 64)) fail(k.name + ': ' + m.species + ' level ' + m.level + ' outside the endgame band');
+      if (!(m.level >= 45 && m.level <= 64)) fail(k.name + ': ' + m.species + ' level ' + m.level + ' outside the endgame band');
     }
   }
   console.log('  keepers: ' + TRIAL_KEEPERS.length + ', team members: ' +

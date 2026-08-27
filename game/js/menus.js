@@ -484,7 +484,9 @@ function habitatLine(sp) {
   if (!sp.biomes || !sp.biomes.length) {
     const base = allSpecies().find((b) => b.evolve && b.evolve.into === sp.id);
     if (base) return 'Habitat: evolves from ' + base.name;
-    return 'Habitat: given by the ranger';
+    // The ranger gives ONE starter; the two paths not taken come from Warden
+    // milestone grants at the third and sixth Seal.
+    return 'Habitat: from the ranger, or a Warden milestone';
   }
   return 'Habitat: ' + sp.biomes.map((b) => b.charAt(0) + b.slice(1).toLowerCase()).join(', ');
 }
@@ -501,6 +503,9 @@ export function openDex() {
       drawText(ctx, 'FIELD DEX', 8, 6, { color: '#f0e8d8' });
       drawTextRight(ctx, 'seen ' + dexSeenCount() + '  caught ' + dexCaughtCount() + '/' + DEX_COUNT +
         '  rare ' + dexVariantCount() + '/' + DEX_COUNT, W - 8, 6, { color: '#98a4b4' });
+      // A headline counter with secret rules reads as a locked door. One
+      // honest line is the whole tutorial the shimmer hunt needs.
+      drawTextRight(ctx, 'rare shimmer: ~1 in 320 wild encounters', W - 8, 16, { color: '#5a6674' });
 
       drawWindow(ctx, 6, 18, 156, 214);
       const rows = 9;
@@ -805,7 +810,11 @@ export function openWorldMap(world) {
         }
       }
       // player — the one marker that ALWAYS draws, fog or no fog
-      const ppx = ox + (S.player.x / mw) * size, ppy = oy + (S.player.y / mh) * size;
+      // Inside a cave or building player.x/y are INTERIOR coordinates —
+      // plotting them on the world chart put 'You are here' in the ocean.
+      // The entrance the player came through is their true world position.
+      const at = (S.mapId === 'world') ? S.player : (S.returnPoint || S.world.start);
+      const ppx = ox + (at.x / mw) * size, ppy = oy + (at.y / mh) * size;
       if (Math.sin(this.t * 6) > -0.3) {
         ctx.fillStyle = '#e04038';
         ctx.fillRect(Math.round(ppx) - 2, Math.round(ppy) - 2, 5, 5);

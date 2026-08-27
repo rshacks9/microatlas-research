@@ -129,6 +129,11 @@ function tweenExp(from, to) {
 
 // ---------------------------------------------------------------- update
 B.update = function (dt) {
+  // Hold-to-fast-forward for the WHOLE battle, not just the text crawl: at
+  // Instant text a battle still carried 25-50s of animation tax, which is
+  // the single biggest clock cost of levelling. Menus never scale — held A
+  // must not rush a choice.
+  if (!B.menu && (Keys.a || Keys.b)) dt *= 2.4;
   B.t += dt;
 
   // Visual timers decay even during hit-stop. They MUST be updated before the
