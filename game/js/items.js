@@ -37,7 +37,10 @@ export const ITEMS = {
     true, false, { kind: 'ball', rate: 3.0, name: 'Dusk Orb' }),
 
   // ---- Healing ------------------------------------------------------------
-  potion: item('potion', 'Potion', 'heal', 300,
+  // 160, not 300: at 18-23 cr per doorstep bounty a 300 cr basic heal was
+  // dead content next to free town healing — the entry-level item must be
+  // affordable off entry-level income.
+  potion: item('potion', 'Potion', 'heal', 160,
     'Restores 20 HP to one creature.',
     true, true, { kind: 'heal', amount: 20 }),
   superpotion: item('superpotion', 'Super Potion', 'heal', 700,

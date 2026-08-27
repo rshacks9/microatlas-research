@@ -150,12 +150,28 @@ export function openParty(opts = {}) {
       if (opts.pick) { self.close(i); return; }
       const c = S.party[i];
       if (!c) return;
-      const choice = await ask('What about ' + displayName(c) + '?', ['Summary', 'Move', 'Cancel']);
+      const choice = await ask('What about ' + displayName(c) + '?', ['Summary', 'Move', 'Store', 'Cancel']);
       if (choice === 0) {
         await openSummary(i);
       } else if (choice === 1) {
         if (swapFrom === -1) { swapFrom = i; }
         else { swapParty(swapFrom, i); swapFrom = -1; self.items = build(); }
+      } else if (choice === 2) {
+        // Storage was withdraw-only: the deposit half lives where the player
+        // is already looking at the creature they want to send away.
+        if (S.party.length <= 1) {
+          await say('Your last companion stays with you.');
+        } else if (c.hp > 0 && !S.party.some((m, mi) => m && mi !== i && m.hp > 0)) {
+          await say(displayName(c) + ' is the only one still standing — someone able to fight must stay with you.');
+        } else if (S.boxes.length >= BOX_MAX) {
+          await say('Storage is full.');
+        } else {
+          S.party.splice(i, 1);
+          S.boxes.push(c);
+          self.items = build();
+          if (self.index >= self.items.length) self.index = Math.max(0, self.items.length - 1);
+          await say(displayName(c) + ' was sent to storage.');
+        }
       }
     },
     render(ctx, self) {
@@ -396,7 +412,10 @@ export function openBag(opts = {}) {
         if (it.inBattle !== false) usable.push({ id, label: it.name, count: itemCount(id) });
         continue;
       }
-      const e = { id, label: it.name, count: itemCount(id), battleOnly: it.inField === false };
+      // The tag lives in the row itself: a description-panel-only hint was
+      // invisible to the first-timer trying to follow "throw an orb".
+      const e = { id, label: it.name + (it.inField === false ? '  (battle)' : ''),
+                  count: itemCount(id), battleOnly: it.inField === false };
       (e.battleOnly ? battleOnly : usable).push(e);
     }
     return usable.concat(battleOnly);
@@ -488,7 +507,11 @@ function habitatLine(sp) {
     // milestone grants at the third and sixth Seal.
     return 'Habitat: from the ranger, or a Warden milestone';
   }
-  return 'Habitat: ' + sp.biomes.map((b) => b.charAt(0) + b.slice(1).toLowerCase()).join(', ');
+  const habitat = 'Habitat: ' + sp.biomes.map((b) => b.charAt(0) + b.slice(1).toLowerCase()).join(', ');
+  // The encounter roll triples UMBRA/PSION/TOXIN weights at night and starves
+  // them by day — an 8x swing the player was never told about.
+  const nocturnal = (sp.types || []).some((t) => t === 'UMBRA' || t === 'PSION' || t === 'TOXIN');
+  return nocturnal ? habitat + '. Most active at night' : habitat;
 }
 
 export function openDex() {
@@ -831,6 +854,15 @@ export function openWorldMap(world) {
       if (cavesShown) {
         drawCaveMarker(ctx, 199, ly1 + 3);
         drawText(ctx, 'Cave', 207, ly1, { color: '#c8d0dc' });
+      }
+      // Name the ground the marker stands on: the dex plans in biome names
+      // but the chart only spoke in colors, so the two never connected.
+      {
+        const bAt = (S.mapId === 'world') ? S.player : (S.returnPoint || S.world.start);
+        const bn = worldgenRef.biomeAt(S.world, bAt.x, bAt.y);
+        if (bn && bn !== 'OCEAN') {
+          drawTextRight(ctx, 'Standing in: ' + bn.charAt(0) + bn.slice(1).toLowerCase(), W - 8, 6, { color: '#98a4b4' });
+        }
       }
       // Uncharted row: fixed x so it never shifts as cave/shrine rows appear.
       ctx.fillStyle = '#342c1e'; ctx.fillRect(238, ly1 + 1, 8, 6);
