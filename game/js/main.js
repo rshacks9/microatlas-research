@@ -10,11 +10,11 @@ import { getSpecies, STARTERS } from './creatures.js';
 import { generateWorld } from './worldgen.js';
 import { makeCreature, displayName, addToParty } from './party.js';
 import { S, resetState, setFlag, getFlag, getRecord, updateRecord, seeSpecies,
-         addMoney, addItem } from './state.js';
+         addMoney, addItem, loadStoredOptions, persistOptions, optionsOnDevice } from './state.js';
 import { Overworld, enterMap, player, holdControl, releaseControl } from './overworld.js';
 import { say } from './dialogue.js';
 import { initAudio, playBgm, sfx, setMusicEnabled, setSfxEnabled } from './audio.js';
-import { hasSave, loadGame, slotSummary } from './save.js';
+import { hasSave, loadGame, slotSummary, allKnownSeen } from './save.js';
 import * as tilesRef from './tiles.js';
 
 const FIXED = 1 / 60;
@@ -54,51 +54,8 @@ function setupCanvas() {
 // Options live under their own key: a New Journey resets S, and a save slot can
 // be deleted, but neither may take the player's settings with them. Every
 // storage access is guarded — private mode and disabled storage must be no-ops.
-const OPTIONS_KEY = 'verdant.options';
-let optionsOnDevice = false;   // true once the key is known to exist
-
-function optionsStorage() {
-  try {
-    if (typeof localStorage === 'undefined') return null;
-    localStorage.setItem('__vf_probe_opts', '1');
-    localStorage.removeItem('__vf_probe_opts');
-    return localStorage;
-  } catch (_) { return null; }   // private mode / disabled storage
-}
-
-// Applies the stored options onto S.options. Returns false when no usable
-// stored copy exists; every field is range-checked before it is trusted.
-function loadStoredOptions() {
-  const st = optionsStorage();
-  if (!st) return false;
-  let text;
-  try { text = st.getItem(OPTIONS_KEY); } catch (_) { return false; }
-  if (!text || typeof text !== 'string' || text.length > 4096) return false;
-  let o;
-  try { o = JSON.parse(text); } catch (_) { return false; }
-  if (!o || typeof o !== 'object') return false;
-  const ts = Number(o.textSpeed);
-  if (isFinite(ts)) S.options.textSpeed = Math.max(0, Math.min(3, Math.floor(ts)));
-  if (typeof o.music === 'boolean') S.options.music = o.music;
-  if (typeof o.sfx === 'boolean') S.options.sfx = o.sfx;
-  if (typeof o.autoRun === 'boolean') S.options.autoRun = o.autoRun;
-  return true;
-}
-
-function persistOptions() {
-  const st = optionsStorage();
-  if (!st) return false;
-  try {
-    st.setItem(OPTIONS_KEY, JSON.stringify({
-      textSpeed: S.options.textSpeed | 0,
-      music: !!S.options.music,
-      sfx: !!S.options.sfx,
-      autoRun: !!S.options.autoRun,
-    }));
-    optionsOnDevice = true;
-    return true;
-  } catch (_) { return false; }
-}
+// Options persistence lives in state.js (loadStoredOptions / persistOptions /
+// optionsOnDevice) so the pause menu can persist at the moment of change.
 
 // ------------------------------------------------------------------ control wording
 // Key names are meaningless on a touch screen; wording must follow the control
@@ -224,9 +181,10 @@ const Title = {
       const cw = 190, cx = (W - cw) / 2, cy = by + 16 + this.items.length * 15 + 6;
       drawWindow(ctx, cx, cy, cw, 52);
       // Fixed columns: each stat owns its span, so no value width can ever run
-      // one string into another. The Seal total is the generated town count;
-      // the world is not built at the title, so the usual count stands in.
-      const sealTotal = (S.world && S.world.towns ? S.world.towns.length : 10);
+      // one string into another. The Seal goal travels inside each save (the
+      // town count varies 8-10 by seed); a 9-Seal world must never read
+      // "9/10" at its own front door.
+      const sealTotal = s.sealTotal || (S.world && S.world.towns ? S.world.towns.length : 10);
       drawText(ctx, 'Seals ' + s.badges + '/' + sealTotal, cx + 8, cy + 6, { color: PAL.gold });
       drawText(ctx, 'Dex ' + s.dexCaught + '/34', cx + 112, cy + 6, { color: PAL.accent });
       drawText(ctx, s.money + ' cr', cx + 8, cy + 16, { color: PAL.shadow });
@@ -490,11 +448,15 @@ async function startNewGame(plus = false) {
   pushScene(Loading, { text: plus ? 'The frontier re-forms...' : 'Shaping the frontier...' });
   await frameBreak();
 
-  // New Journey+ carries the field notes: every dex SEEN entry present in this
-  // session's state (a game loaded or played since boot). That is all main.js
-  // can reach — it cannot read a slot's dex without loading the slot — so a
-  // cold-booted NJ+ carries none, by design.
-  const carrySeen = plus ? Object.keys(S.dex.seen) : [];
+  // New Journey+ carries the field notes from the SAVES, not session memory:
+  // the title is only reachable at cold boot, when S.dex.seen is always empty,
+  // so a session-memory carry was a promise that never fired in real play.
+  // Union across all three slots plus whatever this session saw.
+  let carrySeen = [];
+  if (plus) {
+    const fromSaves = (() => { try { return allKnownSeen(); } catch (_) { return []; } })();
+    carrySeen = [...new Set([...fromSaves, ...Object.keys(S.dex.seen)])];
+  }
 
   const seed = (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
   // resetState restores default options; the ones the player set must outlive
@@ -594,7 +556,7 @@ async function continueGame(slot) {
   // The save embeds an options copy, but the session's options are the current
   // truth whenever the device-level store exists; a save from before that store
   // existed seeds it instead, so migrating players keep their settings.
-  const sessionOpts = optionsOnDevice ? Object.assign({}, S.options) : null;
+  const sessionOpts = optionsOnDevice() ? Object.assign({}, S.options) : null;
 
   if (!loadGame(slot)) {
     clearScenes();
@@ -720,7 +682,7 @@ function boot() {
 
   // Stored options apply from the first frame; audio flags must match them
   // before the first gesture arms the audio graph.
-  optionsOnDevice = loadStoredOptions();
+  loadStoredOptions();
   setMusicEnabled(S.options.music);
   setSfxEnabled(S.options.sfx);
 

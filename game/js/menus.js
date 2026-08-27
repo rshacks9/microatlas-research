@@ -11,7 +11,7 @@ import { maxHp, statsFor, expToNext } from './battlecalc.js';
 import { displayName, isFainted, hpFrac, swapParty, nextMilestone } from './party.js';
 import { S, PARTY_MAX, BOX_MAX, bagList, itemCount, removeItem, addItem, spendMoney, addMoney,
          dexSeenCount, dexCaughtCount, dexVariantCount, clockString, playtimeString,
-         isExplored, EXPLORE_CELL, EXPLORE_W, EXPLORE_H } from './state.js';
+         isExplored, EXPLORE_CELL, EXPLORE_W, EXPLORE_H, persistOptions } from './state.js';
 import { sfx } from './audio.js';
 import { TYPE_COLORS, TYPE_NAMES } from './types.js';
 import { say, ask } from './dialogue.js';
@@ -1015,6 +1015,9 @@ export async function openOptions() {
       else if (i === 2) { S.options.sfx = !S.options.sfx; audio.setSfxEnabled(S.options.sfx); }
       else if (i === 3) { S.options.autoRun = !S.options.autoRun; }
       else { self.close(-1); return; }
+      // Persist at the moment of change: deferring this to save time is how
+      // pause-menu settings shipped reverting on every reload.
+      persistOptions();
       self.items = rows();
     },
     render(ctx, self) {

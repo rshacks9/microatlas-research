@@ -672,7 +672,11 @@ async function startTrainerBattle(e) {
     updateRecord({ maxes: { bestSeals: S.badges } });
     await grantStarterMilestone();
     if (S.badges >= sealGoal() && !getFlag('trial_done')) {
-      await offerVerdantTrial(e.name || 'The Warden');
+      // An accepted Trial runs its own afterBattle for whichever way it ends;
+      // running this function's own one too replayed the fade and stamped
+      // overworld BGM over a town after a Trial loss.
+      const trialRan = await offerVerdantTrial(e.name || 'The Warden');
+      if (trialRan) { e.defeated = true; return; }
     }
   }
   e.defeated = result === 'win';
@@ -698,6 +702,7 @@ export const TRIAL_KEEPERS = [
     prize: 2400 },
 ];
 
+/** Returns true when the Trial was accepted (whatever its outcome). */
 async function offerVerdantTrial(byName) {
   await say([
     byName + ': Every Seal on the frontier answers to you now.',
@@ -706,9 +711,10 @@ async function offerVerdantTrial(byName) {
   const yes = await ask('Face the Verdant Trial?', ['Begin', 'Not yet']);
   if (yes !== 0) {
     await say('The Circle will convene whenever you speak to a Warden you have bested.');
-    return;
+    return false;
   }
   await runVerdantTrial();
+  return true;
 }
 
 async function runVerdantTrial() {

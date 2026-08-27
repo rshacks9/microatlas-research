@@ -198,6 +198,9 @@ function snapshot() {
     // in-memory chart is missing or malformed, which the loader treats as absent.
     explored: encodeExplored(),
     badges: S.badges | 0,
+    // The live Seal goal is the generated town count (8-10); the title cannot
+    // rebuild the world per slot, so the goal travels with the save.
+    sealTotal: (S.world && S.world.towns && S.world.towns.length) || 10,
     options: {
       textSpeed: S.options.textSpeed | 0,
       music: !!S.options.music,
@@ -244,6 +247,26 @@ function readRaw(slot) {
 
 export function hasSave(slot) { return readRaw(slot) !== null; }
 
+/**
+ * Union of dex SEEN species ids across every save slot, sanitized. New
+ * Journey+ carries "your field notes" — and since the title is only ever
+ * reached at cold boot, session memory is always empty there; the notes a
+ * player actually accumulated live in their saves.
+ */
+export function allKnownSeen() {
+  const out = new Set();
+  for (let slot = 0; slot < SLOTS; slot++) {
+    const d = readRaw(slot);
+    if (!d || !d.dex || typeof d.dex.seen !== 'object' || d.dex.seen === null) continue;
+    let n = 0;
+    for (const k of Object.keys(d.dex.seen)) {
+      if (n++ > 256) break;                       // hostile save: absurd key count
+      if (getSpecies(k).id === k) out.add(k);
+    }
+  }
+  return [...out];
+}
+
 export function slotSummary(slot) {
   const d = readRaw(slot);
   if (!d) return null;
@@ -255,6 +278,7 @@ export function slotSummary(slot) {
     name: str(d.player && d.player.name, 12, 'Rowan'),
     playtime: Math.floor(secs / 3600) + ':' + String(Math.floor((secs % 3600) / 60)).padStart(2, '0'),
     badges: num(d.badges, 0, 99, 0),
+    sealTotal: num(d.sealTotal, 1, 20, 10),
     dexCaught: caught,
     // Enough context to remember an hour of play before pressing Enter.
     money: num(d.player && d.player.money, 0, 999999, 0),

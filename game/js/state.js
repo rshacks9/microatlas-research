@@ -81,6 +81,60 @@ export function isExplored(x, y) {
 }
 
 // ---------------------------------------------------------------------------
+// Options persistence: options live on their own device key so a New Journey
+// never resets them. persistOptions must run at the moment an option CHANGES
+// (the pause menu calls it), not only at save boundaries — deferring it to
+// save time is exactly how the pause menu shipped with reverting settings.
+const OPTIONS_KEY = 'verdant.options';
+let optionsKnown = false;
+
+function optionsStore() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    localStorage.setItem('__vf_probe_opts', '1');
+    localStorage.removeItem('__vf_probe_opts');
+    return localStorage;
+  } catch (_) { return null; }   // private mode / disabled storage
+}
+
+/** Apply the stored options onto S.options. Every field range-checked. */
+export function loadStoredOptions() {
+  const st = optionsStore();
+  if (!st) return false;
+  let text;
+  try { text = st.getItem(OPTIONS_KEY); } catch (_) { return false; }
+  if (!text || typeof text !== 'string' || text.length > 4096) return false;
+  let o;
+  try { o = JSON.parse(text); } catch (_) { return false; }
+  if (!o || typeof o !== 'object') return false;
+  const ts = Number(o.textSpeed);
+  if (isFinite(ts)) S.options.textSpeed = Math.max(0, Math.min(3, Math.floor(ts)));
+  if (typeof o.music === 'boolean') S.options.music = o.music;
+  if (typeof o.sfx === 'boolean') S.options.sfx = o.sfx;
+  if (typeof o.autoRun === 'boolean') S.options.autoRun = o.autoRun;
+  optionsKnown = true;
+  return true;
+}
+
+export function persistOptions() {
+  const st = optionsStore();
+  if (!st) return false;
+  try {
+    st.setItem(OPTIONS_KEY, JSON.stringify({
+      textSpeed: S.options.textSpeed | 0,
+      music: !!S.options.music,
+      sfx: !!S.options.sfx,
+      autoRun: !!S.options.autoRun,
+    }));
+    optionsKnown = true;
+    return true;
+  } catch (_) { return false; }
+}
+
+/** True once the device store is known to hold an options copy. */
+export function optionsOnDevice() { return optionsKnown; }
+
+// ---------------------------------------------------------------------------
 // Frontier Record: lifetime stats across every journey on this device. Lives
 // in its own storage key, never inside a save slot, so it survives New
 // Journey and deleted saves alike. Every access is guarded — a blocked store
