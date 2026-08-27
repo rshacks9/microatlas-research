@@ -30,7 +30,7 @@ const SHRINE_ART = [
   '....orRRdRdo....',
   '....orRRRddo....',
   '....omRRRRdo....',
-  '....omRRRRd.....',
+  '....omRRRRdo....',
   '....omRRRRdo....',
   '...oomRRRRdoo...',
   '..ormmRRRRRddo..',

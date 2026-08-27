@@ -230,6 +230,15 @@ export function openStorage() {
           const pi = await openParty({ pick: true });
           if (pi < 0 || !S.party[pi]) return;
           const out = S.party[pi];
+          // Boxes legitimately hold fainted creatures; swapping the last one
+          // able to fight for a fainted one would leave the player walking
+          // into an automatic loss the save layer promises can't exist.
+          const boxedFainted = !(c.hp > 0);
+          const othersHealthy = S.party.some((m, mi) => m && mi !== pi && m.hp > 0);
+          if (boxedFainted && !othersHealthy && out.hp > 0) {
+            await say(displayName(out) + ' is the only one still standing — someone able to fight must stay with you.');
+            return;
+          }
           S.party[pi] = c;
           S.boxes[i] = out;
           msg = displayName(c) + ' joined the party. ' + displayName(out) + ' was sent to storage.';
@@ -465,11 +474,18 @@ export function openBag(opts = {}) {
 }
 
 // ------------------------------------------------------------------ dex
-// Habitat rules: legendaries never enter encounter tables (shrine-only) and
-// starters (empty biomes) only come from the intro ranger.
+// Habitat rules: legendaries never enter encounter tables (shrine-only);
+// among the empty-biome species only the BASE starters come from the ranger —
+// their stage-2s (also biome-less) exist only through evolution, and telling a
+// player the ranger hands out Thornmane sends them hunting a gift that
+// does not exist.
 function habitatLine(sp) {
   if (sp.rarity === 'legendary') return 'Habitat: a distant shrine';
-  if (!sp.biomes || !sp.biomes.length) return 'Habitat: given by the ranger';
+  if (!sp.biomes || !sp.biomes.length) {
+    const base = allSpecies().find((b) => b.evolve && b.evolve.into === sp.id);
+    if (base) return 'Habitat: evolves from ' + base.name;
+    return 'Habitat: given by the ranger';
+  }
   return 'Habitat: ' + sp.biomes.map((b) => b.charAt(0) + b.slice(1).toLowerCase()).join(', ');
 }
 
@@ -818,7 +834,11 @@ export function openWorldMap(world) {
         drawText(ctx, 'Shrine', 18, ly2, { color: '#c8d0dc' });
       }
       ctx.fillStyle = '#f0c878'; ctx.fillRect(102, ly2 + 2, 8, 2);
-      drawText(ctx, 'L## = wild level', 114, ly2, { color: '#c8d0dc' });
+      // The danger labels are clipped by the fog, so explaining them over a
+      // nearly blank chart described marks the player cannot see yet.
+      if (S.explored && S.explored.reduce((a, b) => a + b, 0) > 60) {
+        drawText(ctx, 'L## = wild level', 114, ly2, { color: '#c8d0dc' });
+      }
       drawTextRight(ctx, 'B: back', W - 8, ly2, { color: '#98a4b4' });
     },
   };

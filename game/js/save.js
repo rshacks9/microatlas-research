@@ -261,7 +261,9 @@ export function allKnownSeen() {
     let n = 0;
     for (const k of Object.keys(d.dex.seen)) {
       if (n++ > 256) break;                       // hostile save: absurd key count
-      if (getSpecies(k).id === k) out.add(k);
+      // 'unknown' is FALLBACK_SPECIES's own id, so the identity check would
+      // accept it — the one id the fallback exists to absorb, not admit.
+      if (k !== 'unknown' && getSpecies(k).id === k) out.add(k);
     }
   }
   return [...out];
@@ -314,9 +316,10 @@ export function loadGame(slot) {
       .map(sanitizeCreature).filter(Boolean);
 
     S.bag = sanitizeIdMap(d.bag, (k) => getItem(k).id === k, 64, 99);
-    S.dex.seen = sanitizeIdMap(d.dex && d.dex.seen, (k) => getSpecies(k).id === k, 256, true);
-    S.dex.caught = sanitizeIdMap(d.dex && d.dex.caught, (k) => getSpecies(k).id === k, 256, true);
-    S.dex.variant = sanitizeIdMap(d.dex && d.dex.variant, (k) => getSpecies(k).id === k, 256, true);
+    const realSpecies = (k) => k !== 'unknown' && getSpecies(k).id === k;   // 'unknown' is the fallback id
+    S.dex.seen = sanitizeIdMap(d.dex && d.dex.seen, realSpecies, 256, true);
+    S.dex.caught = sanitizeIdMap(d.dex && d.dex.caught, realSpecies, 256, true);
+    S.dex.variant = sanitizeIdMap(d.dex && d.dex.variant, realSpecies, 256, true);
     S.flags = sanitizeIdMap(d.flags, (k) => /^[a-z0-9_:]{1,48}$/i.test(k), 512, true);
 
     // Without this, a save made inside a building or cave forgot where its exit

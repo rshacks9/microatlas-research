@@ -92,6 +92,22 @@ console.log('\n=== TRIAL KEEPERS ===');
     TRIAL_KEEPERS.reduce((n, k) => n + k.team.length, 0));
 }
 
+// --- every tonic must be purchasable somewhere ------------------------------
+// Five tonics shipped with only one in any shop's stock: four IV grades were
+// frozen decoration. Outcome check: the union of all tier stocks covers every
+// item of kind 'tonic'.
+console.log('\n=== TONIC AVAILABILITY ===');
+{
+  const { ITEMS, shopStock } = await import('../game/js/items.js');
+  const sold = new Set();
+  for (let t = 1; t <= 4; t++) for (const id of shopStock(t)) sold.add(id);
+  const tonics = Object.keys(ITEMS).filter((id) => ITEMS[id].kind === 'tonic');
+  console.log('  tonics defined: ' + tonics.length + ', sold: ' + tonics.filter((id) => sold.has(id)).length);
+  for (const id of tonics) {
+    if (!sold.has(id)) fail('tonic "' + id + '" is defined but no shop tier sells it — its IV grade can never move');
+  }
+}
+
 // Leave no test flags behind for any later in-process import of state.
 S.flags = {};
 

@@ -288,16 +288,20 @@ export function useItem(id, targetInst, context) {
 
 // Shop stock grows with tier; each tier is a superset of the one before it,
 // plus one specialty item per tier so towns feel different:
-//   tier 2 -> superrepel, tier 3 -> cureall + revive, tier 4 -> duskorb + ironbrew.
+//   tier 2 -> superrepel, tier 3 -> cureall + revive + the first tonics,
+//   tier 4 -> duskorb + every tonic. All five tonics must be buyable somewhere
+//   or their IV grades in the summary are frozen decoration.
 const SHOP_TIERS = [
   ['orb', 'potion', 'antidote'],
   ['orb', 'greatorb', 'potion', 'superpotion', 'antidote', 'burnsalve', 'wakebell', 'repel',
     'superrepel'],
   ['orb', 'greatorb', 'potion', 'superpotion', 'antidote', 'burnsalve', 'icemelt',
-    'wakebell', 'sparkdrop', 'cureall', 'revive', 'repel', 'superrepel'],
+    'wakebell', 'sparkdrop', 'cureall', 'revive', 'repel', 'superrepel',
+    'stonehide', 'quickstep'],
   ['orb', 'greatorb', 'ultraorb', 'duskorb', 'potion', 'superpotion', 'hyperpotion',
     'fullrestore', 'antidote', 'burnsalve', 'icemelt', 'wakebell', 'sparkdrop', 'cureall',
-    'revive', 'fullrevive', 'repel', 'superrepel', 'ironbrew'],
+    'revive', 'fullrevive', 'repel', 'superrepel',
+    'ironbrew', 'stonehide', 'quickstep', 'clearmind', 'stoutheart'],
 ];
 
 /** @returns {string[]} item ids sold at this tier (1..4). */

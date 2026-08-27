@@ -39,7 +39,7 @@ Touch controls appear automatically on touch devices.
 - **The usual RPG loop** — a party of six plus a storage screen, an item bag, tiered shops with
   permanent-stat tonics, recovery centres, trainer archetypes with line-of-sight, a field dex
   with habitat lines, and a fog-of-war region map that charts as you explore.
-- **Ten named Wardens** — each with a type specialty their team expresses, a named Seal, and a
+- **Named Wardens** — one per settlement (worlds generate 8-10), each with a type specialty their team expresses, a named Seal, and a
   truthful pre-battle tell. Distance decides difficulty, so any Seal order works.
 - **An actual ending** — hold every Seal and the Wardens' Circle convenes the Verdant Trial:
   three Keepers, back to back, no healing between rounds. Legendaries live at fixed, Seal-gated
@@ -92,13 +92,13 @@ Modules that must stay **DOM-free** (they are imported by the headless Node tool
 
 ```sh
 node tools/simulate.mjs 500     # headless battle balance report
-node tools/attack-save.mjs      # adversarial tests against save deserialization (36 cases)
+node tools/attack-save.mjs      # adversarial tests against save deserialization
 node tools/harness.mjs --shots  # headless Chromium play-test, screenshots to .harness/
 node tools/harness.mjs --script=mobile
 ```
 
-Twelve deterministic checkers cover the invariants that have actually broken during
-development — run them all with:
+Eleven deterministic checkers (plus the attack-save suite above) cover the
+invariants that have actually broken during development — run them all with:
 
 ```sh
 for c in graph movesets capture evolution curve firstwalk entitylock world \

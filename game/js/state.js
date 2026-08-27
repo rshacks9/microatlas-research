@@ -230,6 +230,11 @@ export function catchSpecies(id, variant) {
   // A second, equally deep completion layer for free: the variant system already
   // gives every species a recognisable alternate palette, and nothing recorded it.
   if (variant) S.dex.variant[id] = true;
+  // Every caught mark flows through here — wild catches, shrine legendaries,
+  // gifted starters, evolutions — so this is the one honest place to keep the
+  // Frontier Record's dex high-water mark. Updating it only at the wild-catch
+  // call site left shrine and gift catches showing a stale title strip.
+  updateRecord({ maxes: { bestDex: Object.keys(S.dex.caught).length } });
 }
 export function dexVariantCount() { return Object.keys(S.dex.variant || {}).length; }
 export function dexSeenCount() { return Object.keys(S.dex.seen).length; }

@@ -184,7 +184,7 @@ export function enterMap(mapId, x, y, dir) {
   O.effects = [];
   O.pendingWatcher = null;
 
-  playBgm(data.bgm || (mapId === 'world' ? 'overworld' : 'town'));
+  playBgm(fieldBgm(mapId) || data.bgm || 'town');
   // Name the place you are actually standing in. The world map's own name was
   // being shown for every town, so settlements the generator named were nameless
   // to the player.
@@ -375,7 +375,6 @@ async function doWildBattle(wild) {
     // player that its promises are decorative. Pay it off exactly once, and
     // only when this really IS the first catch: the flag alone would fire the
     // congratulation mid-game on a pre-flag save, dozens of catches too late.
-    if (result === 'caught') updateRecord({ maxes: { bestDex: dexCaughtCount() } });
     if (result === 'caught' && !getFlag('ranger_first_catch')) {
       setFlag('ranger_first_catch', true);
       if (dexCaughtCount() <= 2) {   // the starter plus the one just caught
@@ -394,6 +393,9 @@ async function doWildBattle(wild) {
 async function afterBattle(result) {
   O.stepsSinceEncounter = 0;
   if (result === 'lose' || partyWiped()) {
+    // A concede arrives here as 'lose' with a healthy team — same cost, but
+    // telling that player their creatures were wiped is simply false.
+    const conceded = !partyWiped();
     // Losing used to cost nothing at all, which also meant winning carried no
     // relief. The cost is deliberately mild — and gentler before the second
     // Seal: playtests showed two doorstep losses eating a third of starting
@@ -413,18 +415,30 @@ async function afterBattle(result) {
     enterMap('world', where.x, where.y, 'down');
     playBgm('town');
     await fade('in', 0.4);
-    await say(fee > 0
-      ? ['You have no creatures able to battle!',
-         'You scrambled back to ' + where.name + ', dropping ' + fee + ' credits along the way.']
-      : ['You have no creatures able to battle!',
-         'You scrambled back to ' + where.name + '.']);
+    const firstLine = conceded ? 'You conceded the match.' : 'You have no creatures able to battle!';
+    const backLine = conceded
+      ? 'You made your way back to ' + where.name + (fee > 0 ? ', ' + fee + ' credits lighter.' : '.')
+      : (fee > 0
+        ? 'You scrambled back to ' + where.name + ', dropping ' + fee + ' credits along the way.'
+        : 'You scrambled back to ' + where.name + '.');
+    await say([firstLine, backLine]);
     return;
   }
   // The battle scene has popped and the overworld is visible again; a short dip
   // covers the swap rather than snapping.
   await fade('out', 0.18, '#000');
   await fade('in', 0.28);
-  playBgm(S.mapId === 'world' ? 'overworld' : (String(S.mapId).startsWith('cave') ? 'cave' : 'town'));
+  playBgm(fieldBgm(S.mapId) || 'town');
+}
+
+// The audio compiler derives overworld2/cave2 from the base tracks; unplayed
+// tracks are dead content. Night gets its own overworld voice, and caves
+// alternate by index so two neighbouring caves never sound identical.
+function fieldBgm(mapId) {
+  if (mapId === 'world') return timeOfDay() === 'night' ? 'overworld2' : 'overworld';
+  const m = /^cave:(\d+)/.exec(String(mapId));
+  if (m) return ((m[1] | 0) % 2) ? 'cave2' : 'cave';
+  return null;
 }
 
 function respawnAtHome() {
@@ -592,9 +606,15 @@ async function talkTo(e) {
       if (e.flag && getFlag(e.flag)) {
         // Already beaten: they stay put and acknowledge it, rather than the world
         // quietly deleting everyone you have defeated.
-        if (e.warden && (S.badges | 0) >= sealGoal() && !getFlag('trial_done')) {
-          await offerVerdantTrial(e.name || 'The Warden');
-          return;
+        if (e.warden) {
+          // A milestone grant refused for lack of space must stay claimable —
+          // after the FINAL Warden there is no next win to retry it on, and
+          // the gifted starters are the only path to a complete dex.
+          await grantStarterMilestone();
+          if ((S.badges | 0) >= sealGoal() && !getFlag('trial_done')) {
+            await offerVerdantTrial(e.name || 'The Warden');
+            return;
+          }
         }
         const lines = (e.lines && e.lines.length) ? e.lines : ['You bested me fair and square.'];
         await say(lines, { speaker: e.name || undefined });
@@ -690,13 +710,13 @@ async function startTrainerBattle(e) {
 // again from any beaten Warden — the ending must be winnable eventually, not
 // missable forever.
 export const TRIAL_KEEPERS = [
-  { name: 'Keeper Bramwell', challenge: 'The Circle opens with stone. Wear through me if you can.',
+  { name: 'Keeper Bramwell', warden: true,   // Circle rounds use the warden battle theme challenge: 'The Circle opens with stone. Wear through me if you can.',
     team: [{ species: 'boulderkin', level: 54 }, { species: 'ironclad', level: 56 }, { species: 'thornmane', level: 55 }],
     prize: 1200 },
-  { name: 'Keeper Sable', challenge: 'Round two. What you cannot see will decide this.',
+  { name: 'Keeper Sable', warden: true,   // Circle rounds use the warden battle theme challenge: 'Round two. What you cannot see will decide this.',
     team: [{ species: 'nightveil', level: 55 }, { species: 'bogwisp', level: 54 }, { species: 'rimewolf', level: 56 }],
     prize: 1500 },
-  { name: 'Keeper Oriane', challenge: 'Last round. The Circle asks for everything now.',
+  { name: 'Keeper Oriane', warden: true,   // Circle rounds use the warden battle theme challenge: 'Last round. The Circle asks for everything now.',
     team: [{ species: 'thunderjaw', level: 57 }, { species: 'galeplume', level: 55 },
            { species: 'tidalquill', level: 56 }, { species: 'pyrelynx', level: 58 }],
     prize: 2400 },

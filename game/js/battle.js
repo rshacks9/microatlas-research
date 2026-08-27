@@ -101,6 +101,9 @@ function menuSelect(items, opts = {}) {
   B.menu = {
     items, index: opts.index || 0, cols: opts.cols || 1,
     cancelable: opts.cancelable !== false, kind: opts.kind || 'main',
+    // The title is the menu's question; dropping it rendered the concede
+    // confirm as an unlabeled Concede/Keep-fighting pair.
+    title: opts.title || null,
   };
   return new Promise((res) => { B.waiting = { kind: 'menu', resolve: res }; });
 }
@@ -966,9 +969,11 @@ async function runBattle() {
         if (B.isTrainer) {
           // 'Forfeit' was a label over a refusal. Conceding is a real choice
           // with the real cost of losing.
-          const conf = await menuSelect([{ label: 'Concede' }, { label: 'Keep fighting' }],
+          // Cursor starts on 'Keep fighting': A is the battle fast-forward
+          // key, so the destructive answer must never be the buffered default.
+          const conf = await menuSelect([{ label: 'Keep fighting' }, { label: 'Concede' }],
             { kind: 'list', title: 'Forfeit the match?', cancelable: true });
-          if (conf === 0) { await msg('You conceded the match.', false); return 'lose'; }
+          if (conf === 1) { await msg('You conceded the match.', false); return 'lose'; }
           continue;
         }
         B.runAttempts++;
@@ -1113,7 +1118,7 @@ B.enter = function (params) {
   setHpShown('me', B.me);
   setHpShown('foe', B.foe);
 
-  playBgm('battle');
+  playBgm(B.isTrainer && B.trainerSpec && B.trainerSpec.warden ? 'battle_warden' : 'battle');
 
   runBattle()
     .then(async (result) => {
