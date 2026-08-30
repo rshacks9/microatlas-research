@@ -511,7 +511,9 @@ function habitatLine(sp) {
   // The encounter roll triples UMBRA/PSION/TOXIN weights at night and starves
   // them by day — an 8x swing the player was never told about.
   const nocturnal = (sp.types || []).some((t) => t === 'UMBRA' || t === 'PSION' || t === 'TOXIN');
-  return nocturnal ? habitat + '. Most active at night' : habitat;
+  // One word, not a sentence: the long suffix wrapped to a third line the
+  // panel clipped, losing exactly the word that mattered.
+  return nocturnal ? habitat + ' (nocturnal)' : habitat;
 }
 
 export function openDex() {
@@ -526,10 +528,6 @@ export function openDex() {
       drawText(ctx, 'FIELD DEX', 8, 6, { color: '#f0e8d8' });
       drawTextRight(ctx, 'seen ' + dexSeenCount() + '  caught ' + dexCaughtCount() + '/' + DEX_COUNT +
         '  rare ' + dexVariantCount() + '/' + DEX_COUNT, W - 8, 6, { color: '#98a4b4' });
-      // A headline counter with secret rules reads as a locked door. One
-      // honest line is the whole tutorial the shimmer hunt needs.
-      drawTextRight(ctx, 'rare shimmer: ~1 in 320 wild encounters', W - 8, 16, { color: '#5a6674' });
-
       drawWindow(ctx, 6, 18, 156, 214);
       const rows = 9;
       for (let r = 0; r < rows; r++) {
@@ -557,20 +555,25 @@ export function openDex() {
         for (const t of s.types) bx += drawTypeBadge(ctx, t, bx, 114) + 4;
         drawText(ctx, 'Ht ' + s.height + 'm   Wt ' + s.weight + 'kg', 176, 130, { color: PAL.shadow });
         const hab = wrapText(habitatLine(s), 132);
-        const habN = Math.min(2, hab.length);
+        const habN = Math.min(3, hab.length);
         for (let i = 0; i < habN; i++) {
           drawText(ctx, hab[i], 176, 141 + i * 10, { color: PAL.accent });
         }
         const ey = 141 + habN * 10 + 3;
         const lines = wrapText(s.entry || '', 132);
-        // Panel inner bottom is y=228; never let entry text cross it.
-        const maxE = Math.max(0, Math.floor((228 - ey) / 10));
+        // The panel's last line is reserved for the shimmer odds; entry text
+        // stops above it (inner bottom y=228, odds at 218).
+        const maxE = Math.max(0, Math.floor((215 - ey) / 10));
         for (let i = 0; i < Math.min(maxE, lines.length); i++) {
           drawText(ctx, lines[i], 176, ey + i * 10, { color: PAL.ink });
         }
       } else {
         drawTextCentered(ctx, 'Not yet encountered', 240, 118, { color: PAL.dim });
       }
+      // A headline counter with secret rules reads as a locked door. One line
+      // is the whole tutorial the shimmer hunt needs — drawn last, over the
+      // windows, where nothing can paint it out.
+      drawText(ctx, 'rare shimmer: ~1 in 320 wilds', 176, 218, { color: '#5a6674' });
     },
   });
   return new Promise((resolve) => pushScene(sc, { resolve }));

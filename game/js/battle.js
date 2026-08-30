@@ -221,6 +221,11 @@ B.update = function (dt) {
       // frozen game. B has nothing else to do while a message holds.
       sfx('select');
       B.waiting = null; wr.resolve();
+    } else if ((Keys.a || Keys.b) && wr.t > 0.3) {
+      // A HELD confirm flows through wait-messages after a readable beat —
+      // without this the 2.4x fast-forward stalled at every hard stop and
+      // the practical speedup collapsed in message-heavy fights.
+      B.waiting = null; wr.resolve();
     }
     return;
   }
@@ -1043,7 +1048,10 @@ async function runBattle() {
         const next = firstHealthy();
         if (next < 0) return 'lose';
         const list = switchableList();
-        const pi = await menuSelect(list, { kind: 'list', title: 'Send out?', cancelable: false });
+        // Cursor starts on the first creature that can actually fight — it
+        // used to sit on the one that just fainted.
+        const firstOk = Math.max(0, list.findIndex((l) => !l.disabled));
+        const pi = await menuSelect(list, { kind: 'list', title: 'Send out?', cancelable: false, index: firstOk });
         const idx = (pi >= 0 && !list[pi].disabled) ? list[pi].index : next;
         await doSwitch(idx, true);
         break;

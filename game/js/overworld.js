@@ -14,6 +14,7 @@ import { say, ask, showBanner, updateBanner, renderBanner, isDialogueOpen } from
 import { openPauseMenu, openShop } from './menus.js';
 import { S, advanceTime, addItem, setFlag, getFlag, seeSpecies, spendMoney, timeOfDay, dexCaughtCount, markExplored, updateRecord } from './state.js';
 import { getSpecies, STARTERS } from './creatures.js';
+import { effectiveness } from './types.js';
 import { makeRng, rand } from './rng.js';
 import { playBgm, sfx } from './audio.js';
 import { drawText, drawWindow, PAL } from './ui.js';
@@ -331,16 +332,29 @@ function rollEncounter() {
   // not appear; they return at their real levels a few hundred tiles out.
   const baseHere = wildLevelHere();
   const bandCeil = baseHere + (baseHere <= 4 ? 2 : 4);
+  // Levels alone were not enough: a doorstep mudpuff at L3 still went 5-0
+  // against a full-HP fire starter, because STAB typing beats even stats.
+  // In the training-wheels zone the pool also refuses species whose STAB is
+  // super-effective against the player's lead — those species return, at the
+  // same spot, the moment the lead can answer back (or one ring out).
+  const lead = S.party.find((c) => c && c.hp > 0) || S.party[0];
+  const leadTypes = lead ? getSpecies(lead.species).types : [];
+  const stabCounters = (id) =>
+    leadTypes.length > 0 && getSpecies(id).types.some((t) => effectiveness(t, leadTypes) > 1);
+  const inBand = (e) => (e.minLvl === undefined || e.minLvl <= bandCeil);
+
   const eligible = baseHere <= 4
-    ? table.filter((e) => (e.minLvl === undefined || e.minLvl <= bandCeil))
+    ? table.filter((e) => inBand(e) && !stabCounters(e.species))
     : table;
-  // A biome whose whole table sits above the band (a savanna doorstep) falls
-  // back to its LOWEST-band species, never the full table — the fallback must
-  // not reopen the door the filter closed.
+  // Fallbacks relax one rule at a time and never reopen both doors at once:
+  // first keep the counter rule over the lowest band, then band alone, then
+  // (a table that is ALL counters in-band) anything.
   let pool = eligible;
-  if (!pool.length) {
+  if (!pool.length && baseHere <= 4) {
     const lowest = Math.min(...table.map((e) => (e.minLvl === undefined ? 2 : e.minLvl)));
-    pool = table.filter((e) => (e.minLvl === undefined ? 2 : e.minLvl) <= lowest + 2);
+    const lowBand = (e) => (e.minLvl === undefined ? 2 : e.minLvl) <= lowest + 2;
+    pool = table.filter((e) => lowBand(e) && !stabCounters(e.species));
+    if (!pool.length) pool = table.filter(lowBand);
   }
   if (!pool.length) pool = table;
 
@@ -730,13 +744,16 @@ async function startTrainerBattle(e) {
 // again from any beaten Warden — the ending must be winnable eventually, not
 // missable forever.
 export const TRIAL_KEEPERS = [
-  { name: 'Keeper Bramwell', warden: true,   // Circle rounds use the warden battle theme challenge: 'The Circle opens with stone. Wear through me if you can.',
+  { name: 'Keeper Bramwell', warden: true,   // warden battle theme
+    challenge: 'The Circle opens with stone. Wear through me if you can.',
     team: [{ species: 'boulderkin', level: 47 }, { species: 'ironclad', level: 49 }, { species: 'thornmane', level: 48 }],
     prize: 1200 },
-  { name: 'Keeper Sable', warden: true,   // Circle rounds use the warden battle theme challenge: 'Round two. What you cannot see will decide this.',
+  { name: 'Keeper Sable', warden: true,   // warden battle theme
+    challenge: 'Round two. What you cannot see will decide this.',
     team: [{ species: 'nightveil', level: 48 }, { species: 'bogwisp', level: 47 }, { species: 'rimewolf', level: 49 }],
     prize: 1500 },
-  { name: 'Keeper Oriane', warden: true,   // Circle rounds use the warden battle theme challenge: 'Last round. The Circle asks for everything now.',
+  { name: 'Keeper Oriane', warden: true,   // warden battle theme
+    challenge: 'Last round. The Circle asks for everything now.',
     team: [{ species: 'thunderjaw', level: 50 }, { species: 'galeplume', level: 48 },
            { species: 'tidalquill', level: 49 }, { species: 'pyrelynx', level: 52 }],
     prize: 2400 },

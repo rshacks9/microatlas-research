@@ -631,7 +631,11 @@ export function stampTown(map, cx, cy, rng, index, tier) {
     // slice keeps the specialty in the majority: sizes 2 are all in-type, and
     // the single off-type companion only joins teams of three or four.
     const w = WARDENS[wrapIdx(idx, WARDENS.length)];
-    const wLvl = clamp(lvl + 3, 4, 62);
+    // Wardens climb their own, steeper ladder than town trainers: the flat
+    // +3 gave a ~L27 ceiling at tier 9, leaving a 20-level pure-grind gap to
+    // the L47-52 Trial Keepers. Tier 9 now reaches ~L39-42, and tier 0 eases
+    // to ~L4-5 so the first Seal is a lesson, not a wall.
+    const wLvl = clamp(3 + tierN * 4, 4, 62);
     const wPool = tierN >= 4 ? w.high : w.low;
     const wTeam = [];
     const wSize = tierN === 0 ? 2 : Math.min(4, 2 + Math.floor(tierN / 2));
