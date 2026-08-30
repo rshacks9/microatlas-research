@@ -1,2 +1,6 @@
+# Same-origin proxy for the Dallas Fire-Rescue official feed used by /tracker/
+# (works on Netlify; harmlessly ignored on hosts that don't support external 200 rewrites)
+/dfr-feed https://dallascityhall.com/departments/fire-rescue/Pages/active-incidents.aspx 200
+
 /reports/*/*-report.pdf /checkout-pending.html 302
 /reports/*/*-report.md /checkout-pending.html 302
