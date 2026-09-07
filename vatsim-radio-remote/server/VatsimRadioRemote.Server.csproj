@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>VatsimRadioRemote</AssemblyName>
+    <RootNamespace>VatsimRadioRemote</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Product>VATSIM Radio Remote</Product>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Build-only: lets `dotnet build` compile a net48 project without Visual Studio. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Management" />
+  </ItemGroup>
+
+  <!--
+    Managed SimConnect wrapper. Populate ..\lib by running tools\fetch-simconnect.ps1
+    (it copies the two DLLs out of your MSFS SDK / sim install). The build still
+    succeeds without them; the SimConnect layer then reports "SDK missing" at runtime.
+  -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\lib\Microsoft.FlightSimulator.SimConnect.dll')">
+    <Reference Include="Microsoft.FlightSimulator.SimConnect">
+      <HintPath>$(MSBuildThisFileDirectory)..\lib\Microsoft.FlightSimulator.SimConnect.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\lib\Microsoft.FlightSimulator.SimConnect.dll')">
+    <DefineConstants>$(DefineConstants);HAVE_SIMCONNECT</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\lib\SimConnect.dll')">
+    <None Include="$(MSBuildThisFileDirectory)..\lib\SimConnect.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- The phone UI ships next to the exe. -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\web\**\*">
+      <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

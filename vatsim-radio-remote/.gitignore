@@ -1,0 +1,6 @@
+# Third-party SDK DLLs copied in by tools\fetch-*.ps1 - never committed.
+lib/
+
+bin/
+obj/
+config.json

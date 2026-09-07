@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VATSIM Radio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VATSIM Radio">
+<meta name="theme-color" content="#0e1418">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="callsign" id="callsign">VATSIM RADIO</span>
+  </div>
+  <div class="chips">
+    <span class="chip" id="chip-sim"><i></i>SIM</span>
+    <span class="chip" id="chip-net"><i></i>NET</span>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============================ RADIO ============================ -->
+  <section class="tab" id="tab-radio">
+
+    <div class="radio" id="com1">
+      <div class="radio-head">
+        <span class="radio-name">COM 1</span>
+        <button class="pill tx" data-tx="1">TX</button>
+        <button class="pill rx" data-rx="1">RX</button>
+      </div>
+      <div class="radio-body">
+        <button class="freq active" data-edit="1-active">
+          <span class="freq-label">ACTIVE</span>
+          <span class="freq-value" id="com1-active">---.---</span>
+        </button>
+        <button class="swap" data-swap="1" aria-label="Swap COM 1">⇅</button>
+        <button class="freq standby" data-edit="1-standby">
+          <span class="freq-label">STANDBY</span>
+          <span class="freq-value" id="com1-standby">---.---</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="radio" id="com2">
+      <div class="radio-head">
+        <span class="radio-name">COM 2</span>
+        <button class="pill tx" data-tx="2">TX</button>
+        <button class="pill rx" data-rx="2">RX</button>
+      </div>
+      <div class="radio-body">
+        <button class="freq active" data-edit="2-active">
+          <span class="freq-label">ACTIVE</span>
+          <span class="freq-value" id="com2-active">---.---</span>
+        </button>
+        <button class="swap" data-swap="2" aria-label="Swap COM 2">⇅</button>
+        <button class="freq standby" data-edit="2-standby">
+          <span class="freq-label">STANDBY</span>
+          <span class="freq-value" id="com2-standby">---.---</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="row-card">
+      <span class="row-label">Receive both radios</span>
+      <button class="toggle" id="rx-all" role="switch" aria-checked="false"><span></span></button>
+    </div>
+
+    <div class="radio xpdr">
+      <div class="radio-head">
+        <span class="radio-name">TRANSPONDER</span>
+        <span class="xpdr-mode" id="xpdr-mode">STBY</span>
+      </div>
+      <div class="radio-body">
+        <button class="freq active wide" data-edit="squawk">
+          <span class="freq-label">SQUAWK</span>
+          <span class="freq-value" id="xpdr-code">----</span>
+        </button>
+        <div class="xpdr-actions">
+          <button class="btn" id="xpdr-toggle">MODE C</button>
+          <button class="btn warn" id="xpdr-ident">IDENT</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint" id="sim-hint"></p>
+  </section>
+
+  <!-- ============================= ATC ============================= -->
+  <section class="tab" id="tab-atc" hidden>
+    <div class="search-wrap">
+      <input id="atc-search" type="search" placeholder="Filter by callsign" autocomplete="off"
+             autocorrect="off" autocapitalize="characters" spellcheck="false">
+    </div>
+    <div id="atc-list" class="list"></div>
+    <p class="hint" id="atc-hint"></p>
+  </section>
+
+  <!-- ============================ TEXT ============================= -->
+  <section class="tab" id="tab-text" hidden>
+    <div id="msg-list" class="messages"></div>
+  </section>
+
+</main>
+
+<!-- text composer sits above the tab bar, only on the TEXT tab -->
+<div class="composer" id="composer" hidden>
+  <button class="target" id="msg-target">RADIO</button>
+  <input id="msg-input" type="text" placeholder="Message" autocomplete="off"
+         autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="send">
+  <button class="send" id="msg-send">SEND</button>
+</div>
+
+<div class="ptt-wrap">
+  <button id="ptt" class="ptt">PUSH TO TALK</button>
+</div>
+
+<nav class="tabbar">
+  <button class="tabbtn on" data-tab="radio">Radio</button>
+  <button class="tabbtn" data-tab="atc">ATC<span class="badge" id="atc-count"></span></button>
+  <button class="tabbtn" data-tab="text">Text<span class="badge unread" id="msg-badge"></span></button>
+</nav>
+
+<!-- ========================== keypad sheet ========================= -->
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+<div class="sheet" id="keypad" hidden>
+  <div class="sheet-head">
+    <span id="keypad-title">COM 1 STANDBY</span>
+    <button class="sheet-close" id="keypad-cancel">Cancel</button>
+  </div>
+  <div class="entry" id="keypad-entry">---.---</div>
+  <div class="keys">
+    <button class="key" data-k="1">1</button>
+    <button class="key" data-k="2">2</button>
+    <button class="key" data-k="3">3</button>
+    <button class="key" data-k="4">4</button>
+    <button class="key" data-k="5">5</button>
+    <button class="key" data-k="6">6</button>
+    <button class="key" data-k="7">7</button>
+    <button class="key" data-k="8">8</button>
+    <button class="key" data-k="9">9</button>
+    <button class="key ghost" data-k="del">⌫</button>
+    <button class="key" data-k="0">0</button>
+    <button class="key go" data-k="ok">SET</button>
+  </div>
+</div>
+
+<!-- ======================== controller sheet ======================= -->
+<div class="sheet" id="tunesheet" hidden>
+  <div class="sheet-head">
+    <span id="tune-title">KJFK_TWR</span>
+    <button class="sheet-close" id="tune-cancel">Cancel</button>
+  </div>
+  <div class="tune-freq" id="tune-freq">---.---</div>
+  <div class="tune-actions">
+    <button class="btn big" data-tune="1-standby">COM 1 standby</button>
+    <button class="btn big" data-tune="1-active">COM 1 active</button>
+    <button class="btn big" data-tune="2-standby">COM 2 standby</button>
+    <button class="btn big" data-tune="2-active">COM 2 active</button>
+    <button class="btn big ghost" data-tune="pm">Send private message</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

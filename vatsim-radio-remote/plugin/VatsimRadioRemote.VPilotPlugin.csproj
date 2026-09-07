@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>VatsimRadioRemote.VPilotPlugin</AssemblyName>
+    <RootNamespace>VatsimRadioRemote.VPilotPlugin</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Product>VATSIM Radio Remote - vPilot plugin</Product>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+  <!--
+    vPilot's plugin SDK assembly. tools\fetch-vpilot-sdk.ps1 copies it out of your
+    vPilot installation into ..\lib. Never redistribute it.
+    Private=false: vPilot already has this loaded, we must not ship a second copy.
+  -->
+  <ItemGroup>
+    <Reference Include="Vatsim.Vpilot.Plugins">
+      <HintPath>$(MSBuildThisFileDirectory)..\lib\Vatsim.Vpilot.Plugins.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckVpilotSdk" BeforeTargets="BeforeBuild"
+          Condition="!Exists('$(MSBuildThisFileDirectory)..\lib\Vatsim.Vpilot.Plugins.dll')">
+    <Error Text="Vatsim.Vpilot.Plugins.dll is missing. Run tools\fetch-vpilot-sdk.ps1 first (it copies the DLL out of your vPilot install into the lib folder)." />
+  </Target>
+
+</Project>
