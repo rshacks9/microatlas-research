@@ -45,6 +45,21 @@ Installer**. Install only the base SDK; that is enough.
 
 Run these from a PowerShell window inside the `vatsim-radio-remote` folder.
 
+One command runs all of it:
+
+```powershell
+.\tools\quickstart.ps1
+```
+
+That fetches both SDKs, builds the server and plugin, installs the plugin into
+vPilot, opens the firewall, and starts the server. Windows will show one UAC
+prompt partway through, for the firewall step — approve it. It's safe to
+re-run any time (after a vPilot update, say, or if you skipped the plugin SDK
+the first time because vPilot wasn't installed yet).
+
+Prefer to run the steps yourself, or something failed partway and you want to
+retry just that step:
+
 ```powershell
 # 1. Copy the SimConnect DLLs out of the MSFS SDK
 .\tools\fetch-simconnect.ps1
