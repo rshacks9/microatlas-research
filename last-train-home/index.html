@@ -499,7 +499,7 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
   <header class="topbar">
     <h1 class="wordmark">Last Train<br>Home<span class="rail"></span></h1>
   </header>
-  <p class="banner">This is a preview inside Claude, which switches off GPS and live sharing. The demo below rides a simulated walk up the Monon so you can see and hear everything.</p>
+  <p class="banner">This is a preview inside Claude, which switches off GPS, live sharing and satellite pictures. The demo below rides a simulated walk up the Monon so you can see and hear everything else.</p>
   <section class="flapboard" aria-label="Sample arrivals board">
     <div class="row between" style="margin-bottom:10px"><span class="eyebrow">Sample arrivals</span><span class="eyebrow">Monon Trail</span></div>
     <div class="flapgrid">
@@ -2664,14 +2664,14 @@ const MiniMap = (() => {
       this.svg = el('svg', { class: 'mm-over' });
       this.canvas.append(this.tileLayer, this.svg);
       host.append(this.canvas);
+      if (tiles || lineNote) { this.attr = document.createElement('div'); this.attr.className = 'mm-attr'; host.append(this.attr); }
       if (tiles) {
-        this.attr = document.createElement('div'); this.attr.className = 'mm-attr';
         this.modeBtn = document.createElement('button');
         this.modeBtn.type = 'button'; this.modeBtn.className = 'mm-mode';
         const pill = document.createElement('span'); pill.className = 'mm-pill'; pill.textContent = 'Satellite';
         this.modeBtn.append(pill);
         this.modeBtn.addEventListener('click', () => setMode(mode === 'sat' ? 'map' : 'sat'));
-        host.append(this.attr, this.modeBtn);
+        host.append(this.modeBtn);
       }
       this.view = null; this.focusKey = ''; this.base = el('g', {}, this.svg); this.keep = {}; this.last = null;
       views.add(this);
@@ -2682,7 +2682,7 @@ const MiniMap = (() => {
     chrome() {
       const sat = mode === 'sat', street = !sat && !!this.curKey;
       this.host.classList.toggle('sat', this.tiles && sat);
-      if (!this.tiles) return;
+      if (!this.tiles) { if (this.attr) this.attr.textContent = this.note; return; } // no pictures here: say why
       this.modeBtn.setAttribute('aria-pressed', String(sat));
       const a = this.attr; a.hidden = false;
       if (sat) a.innerHTML = 'Imagery: <a href="https://www.indianamap.org/datasets/INMap::indiana-current-imagery/about" target="_blank" rel="noopener">Indiana GIO</a>, <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS</a>';
@@ -2733,7 +2733,7 @@ const MiniMap = (() => {
       // boxes the station names must stay clear of: markers, their labels, the switch and the credits
       const boxes = [];
       if (this.tiles) boxes.push([w - 110, 0, w, 46]);
-      if (this.tiles && this.attr && !this.attr.hidden) boxes.push([w * 0.3, h - 20, w, h]);
+      if (this.attr && !this.attr.hidden && this.attr.textContent) boxes.push([w * 0.3, h - 20, w, h]);
       for (const m of opts.marks || []) {
         if (!m || !m.ll) continue;
         const [x, y] = P(m.ll);
@@ -2812,6 +2812,7 @@ const MiniMap = (() => {
       const layer = this.tileLayer; layer.textContent = '';
       this.tilesDrawn = true;
       if (!this.tiles || !this.view) return;
+      this.chrome(); // clears a "didn't load" note from an earlier view
       const { z, x0, y0, w, h } = this.view;
       if (mode === 'sat') return this.imagery(layer, z, x0, y0, w, h);
       if (!this.curKey) return; // the plain line map
@@ -2830,22 +2831,30 @@ const MiniMap = (() => {
       back.className = 'mm-back'; front.className = 'mm-front';
       layer.append(back, front);
       const seenBack = new Set();
+      // every picture that settles is counted; when none of them loaded, the map says so
+      let pending = 0, loaded = 0;
+      const settle = ok => {
+        pending--; if (ok) loaded++;
+        if (pending === 0 && loaded === 0 && layer.contains(front) && this.attr) {
+          this.attr.hidden = false;
+          this.attr.textContent = 'Satellite pictures didn\u2019t load. Check the signal, or tap Satellite for the line map.';
+        }
+      };
+      const track = (img, onFail) => { pending++; img.onload = () => settle(true); img.onerror = () => { img.remove(); if (onFail) onFail(); settle(false); }; return img; };
       // the USGS tile under this one, at level 16 at most (one tile can sit under several)
       const backup = (tx, ty) => {
         const up = Math.max(0, zi - US_MAX), pz = zi - up, px = Math.floor(tx / Math.pow(2, up)), py = Math.floor(ty / Math.pow(2, up)), id = `${pz}/${px}/${py}`;
         if (seenBack.has(id)) return;
         seenBack.add(id);
         const size = S * Math.pow(2, up);
-        back.append(tileImg(`${US_TILES}${pz}/${py}/${wrap(px, Math.pow(2, pz))}`, px * size - x0, py * size - y0, size));
+        back.append(track(tileImg(`${US_TILES}${pz}/${py}/${wrap(px, Math.pow(2, pz))}`, px * size - x0, py * size - y0, size)));
       };
       for (let tx = Math.floor(x0 / S); tx <= Math.floor((x0 + w) / S); tx++) {
         for (let ty = Math.floor(y0 / S); ty <= Math.floor((y0 + h) / S); ty++) {
           if (ty < 0 || ty >= n) continue;
           const wx = wrap(tx, n);
           if (!inIndiana(wx, ty, zi)) { backup(tx, ty); continue; }
-          const img = tileImg(`${IN_TILES}${zi}/${ty}/${wx}`, tx * S - x0, ty * S - y0, S);
-          img.onerror = () => { img.remove(); backup(tx, ty); };
-          front.append(img);
+          front.append(track(tileImg(`${IN_TILES}${zi}/${ty}/${wx}`, tx * S - x0, ty * S - y0, S), () => backup(tx, ty)));
         }
       }
     }
@@ -3181,7 +3190,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   // Stations for the maps: the big crossings are named first, then streets and named spots, then bridges and water
   const mapStations = () => trail.stations.filter(st => Number.isFinite(st.lat) && Number.isFinite(st.lon))
     .map(st => ({ ll: [st.lat, st.lon], name: st.short || st.name, rank: st.kind === 'major' ? 0 : ['street', 'spot', 'place'].includes(st.kind) ? 1 : 2 }));
-  const LINE_NOTE = 'Line map. A free key in Settings adds streets.';
+  // Claude's viewer blocks pictures from other sites, so there the maps say where satellite works
+  const LINE_NOTE = IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : 'Line map. A free key in Settings adds streets.';
   function walkedLine(se, far, s) {
     const xs = [se, far, s].filter(v => v != null && isFinite(v));
     if (xs.length < 2) return null;
@@ -5807,7 +5817,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (you) focus.push(you);
       if (!focus.length) { card.hidden = true; return; }
       card.hidden = false;
-      if (!this.map) this.map = new MiniMap.View($('#b-map'), { tiles: !IN_CLAUDE, height: 230, label: 'Map of the walk', streetKey: () => (this.p && this.p.mk) || '' });
+      if (!this.map) this.map = new MiniMap.View($('#b-map'), { tiles: !IN_CLAUDE, height: 230, label: 'Map of the walk', streetKey: () => (this.p && this.p.mk) || '', lineNote: IN_CLAUDE ? LINE_NOTE : '' });
       const marks = [];
       if (entry) marks.push({ ll: [entry.lat, entry.lon], kind: 'entry' });
       if (goal && !p.turn) marks.push({ ll: [goal.lat, goal.lon], kind: 'goal', label: goal.short });
