@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@500;700&display=swap">
 <style>
 /* Layout: a night-run signal cab. Split-flap board up top, instruments in the middle,
@@ -41,10 +41,14 @@
   --go: #57d78e;
   --caution: #f3c451;
   --stop: #ff6268;
+  --enamel: #a51d2a;
+  --enamel-edge: #5e0f18;
+  --cream: #f4ead6;
   --f-display: 'Big Shoulders Display', 'Oswald', 'Arial Narrow', 'Roboto Condensed', sans-serif;
   --f-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-flap: 'Chivo Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --r: 14px;
+  --r: 16px; /* panels; controls use 12 and 10, plates 10 */
+  /* Type scale: 12 13 15 17 20 26 34 44 64, with body copy at 16 */
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -57,13 +61,13 @@ body {
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
 }
 button, input, select { font: inherit; color: inherit; }
-input[type="range"] { accent-color: var(--amber); }
+input[type="range"] { accent-color: var(--amber); height: 40px; }
 a { color: var(--amber); }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .wrap { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 132px; display: grid; gap: 14px; }
 .wrap > * { min-width: 0; }
 .num { font-variant-numeric: tabular-nums; }
-.eyebrow { font: 600 11px/1.2 var(--f-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.eyebrow { font: 600 13px/1.25 var(--f-body); letter-spacing: 0.01em; color: var(--ink-3); }
 .muted { color: var(--ink-2); }
 .faint { color: var(--ink-3); }
 .small { font-size: 13px; }
@@ -71,21 +75,23 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 p { margin: 0; }
 
 /* ------------------------------------------------ brand + top bar */
-.wordmark { font: 900 44px/0.9 var(--f-display); letter-spacing: 0.01em; text-transform: uppercase; }
+.wordmark { font: 900 44px/0.9 var(--f-display); letter-spacing: 0.01em; text-transform: uppercase; margin: 0; }
 .wordmark .rail { display: block; height: 6px; margin-top: 10px; background:
   repeating-linear-gradient(90deg, var(--monon) 0 22px, transparent 22px 28px); border-radius: 2px; }
 .topbar { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
-.topbar .train { font: 800 20px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar > div { min-width: 0; }
+.topbar > .iconbtn { flex: none; }
+.topbar .train { font: 800 26px/1.05 var(--f-display); letter-spacing: 0.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .topbar.stack { flex-direction: column; align-items: flex-start; gap: 8px; }
 .topbar.stack .pills { justify-content: flex-start; }
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: var(--panel-2);
-  border: 1px solid var(--rule); font: 600 11px/1 var(--f-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--panel-2);
+  border: 1px solid var(--rule); font: 600 13px/1 var(--f-body); color: var(--ink-2); white-space: nowrap; }
 .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
 .pill.go i { background: var(--go); box-shadow: 0 0 8px var(--go); }
 .pill.caution i { background: var(--caution); }
 .pill.stop i { background: var(--stop); }
-.iconbtn { background: none; border: 1px solid var(--rule); border-radius: 10px; padding: 7px 10px; color: var(--ink-2); cursor: pointer; }
+.iconbtn { background: none; border: 1px solid var(--rule); border-radius: 10px; padding: 8px 12px; font-size: 15px; min-height: 44px; color: var(--ink-2); cursor: pointer; }
 
 /* ------------------------------------------------ split flap */
 .flapboard { background: var(--flap); border-radius: 12px; padding: 12px; border: 1px solid #1c2027; box-shadow: inset 0 1px 0 #1b1f26; }
@@ -96,23 +102,32 @@ p { margin: 0; }
 .cell::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #000; opacity: 0.85; }
 .cell.sp { background: linear-gradient(#111317 0 50%, #0b0c0f 50% 100%); }
 .flapfield { display: grid; gap: 4px; min-width: 0; }
-.flapfield .eyebrow { color: #928e86; }
-.flapgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; font-size: 19px; }
+.flapboard .eyebrow { color: #928e86; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+.flapgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; font-size: 20px; }
 .flapgrid .wide { grid-column: 1 / -1; }
 
 /* ------------------------------------------------ station sign + gauges */
-.sign { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 14px 16px 16px; display: grid; gap: 6px; position: relative; overflow: hidden; }
-.sign::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--monon); }
-.sign .name { font: 800 40px/0.95 var(--f-display); text-transform: uppercase; letter-spacing: 0.01em; text-wrap: balance; }
-.sign .meta { display: flex; gap: 14px; flex-wrap: wrap; color: var(--ink-2); font-size: 15px; }
-.caption { min-height: 1.4em; color: var(--ink-2); font-size: 14px; font-style: italic; }
+/* The station sign is the one loud object: a red enamel plate with a cream keyline and two rivets. */
+.sign { position: relative; display: grid; gap: 6px; padding: 16px 28px 18px; border-radius: 10px; color: var(--cream);
+  background: linear-gradient(176deg, #b22433 0%, var(--enamel) 52%, #951926 100%);
+  outline: 2px solid var(--cream); outline-offset: -7px; box-shadow: 0 3px 0 var(--enamel-edge), 0 12px 26px rgba(0, 0, 0, 0.35); }
+.sign::before, .sign::after { content: ''; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -4px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff8ea 0 22%, #cdbd9f 58%, #7f725c); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.45); }
+.sign::before { left: 13px; }
+.sign::after { right: 13px; }
+.sign .eyebrow { color: rgba(244, 234, 214, 0.92); }
+.sign .name { font: 800 44px/0.95 var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; text-wrap: balance; }
+.sign .meta { display: flex; gap: 14px; flex-wrap: wrap; color: var(--cream); font-size: 15px; }
+.sign .meta > :empty { display: none; }
+.caption { min-height: 1.4em; color: var(--ink-2); font-size: 15px; font-style: italic; }
 .caption b { font-style: normal; color: var(--amber); font-weight: 600; }
-.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.g { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
-.g .v { font: 800 42px/1 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; white-space: nowrap; }
-.g .v small { font: 600 16px/1 var(--f-body); color: var(--ink-2); margin-left: 3px; letter-spacing: 0; }
+/* The instruments share one panel ruled into cells, like a cab's gauge cluster */
+.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.g { background: var(--panel); padding: 12px 14px 13px; display: grid; gap: 2px; min-width: 0; }
+.g .v { font: 800 44px/1 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; white-space: nowrap; }
+.g .v small { font: 600 15px/1 var(--f-body); color: var(--ink-2); margin-left: 3px; letter-spacing: 0; }
 .g .s { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.g.home { border-color: #4a2a30; background: linear-gradient(160deg, #221519, var(--panel) 60%); }
+.g.home { background: linear-gradient(160deg, #241519, var(--panel) 65%); }
 .g.home .v { color: var(--monon-ink); }
 .g.home .s { white-space: normal; }
 .g[data-effort="easy"] { box-shadow: inset 0 -3px 0 #3d5a80; }
@@ -122,24 +137,28 @@ p { margin: 0; }
 /* ------------------------------------------------ line strip (to scale) */
 .strip { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 10px 12px 6px; }
 .strip svg { display: block; width: 100%; height: 100px; overflow: visible; }
-.strip .lbl { font: 600 11px var(--f-body); fill: var(--ink-2); letter-spacing: 0.02em; }
+.strip .lbl { font: 600 12px var(--f-body); fill: var(--ink-2); letter-spacing: 0.02em; }
 .strip .lbl.dim { fill: var(--ink-3); }
 .strip .lbl.goal { fill: var(--amber); }
 
 /* ------------------------------------------------ upcoming stops */
 .stops { display: grid; gap: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
 .stop { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: baseline; padding: 10px 14px; border-top: 1px solid var(--rule); }
-.stop:first-child { border-top: 0; }
+.stop:first-child, .stops-head + .stop { border-top: 0; }
+.stops-head { padding: 10px 14px 0; font: 600 13px/1.25 var(--f-body); color: var(--ink-3); }
 .stop .n { font: 700 20px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; min-width: 0; }
 .stop .d, .stop .t { color: var(--ink-2); font-variant-numeric: tabular-nums; font-size: 15px; }
 .stop.goal .n { color: var(--amber); }
-.stop .tag { font: 600 10px/1 var(--f-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-left: 6px; }
+.stop .tag { font: 700 12px/1 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--amber); margin-left: 8px; vertical-align: 2px; }
 
 /* ------------------------------------------------ cards, buttons, chips */
 .card { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
 .card > *, .field > * { min-width: 0; }
-.card h2 { font: 800 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; }
+.card h2, .sh { font: 800 26px/1.05 var(--f-display); letter-spacing: 0.005em; }
+.sh.caps { font-size: 34px; line-height: 0.95; text-transform: uppercase; letter-spacing: 0.01em; }
+.kv.sm .v { font-size: 20px; }
 .card.alert { border-color: #6b3a1f; background: linear-gradient(160deg, #2a1a10, var(--panel) 70%); }
+.card.plain { background: none; border: 0; border-top: 1px solid var(--rule); border-radius: 0; padding: 16px 0 2px; }
 .card.danger { border-color: #7a2a33; background: linear-gradient(160deg, #2e1216, var(--panel) 70%); }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .row.between { justify-content: space-between; }
@@ -148,37 +167,51 @@ p { margin: 0; }
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: var(--monon); border-color: var(--monon-hi); color: var(--monon-ink); }
 .btn.primary:hover { background: var(--monon-hi); }
-.btn.big { width: 100%; min-height: 64px; font: 800 26px/1 var(--f-display); letter-spacing: 0.04em; text-transform: uppercase; border-radius: 16px; }
+.btn.big { width: 100%; min-height: 64px; font: 800 26px/1 var(--f-display); letter-spacing: 0.01em; border-radius: 16px; }
 .btn.ghost { background: transparent; }
-.btn.small { min-height: 36px; padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+.btn.small { min-height: 42px; padding: 8px 14px; font-size: 15px; border-radius: 10px; }
 .btn[disabled] { opacity: 0.45; cursor: default; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
 .chips.chips-wrap { flex-wrap: wrap; overflow: visible; padding-bottom: 0; }
-.chip { flex: none; border: 1px solid var(--rule); background: var(--panel-2); color: var(--ink-2); border-radius: 999px; padding: 9px 14px; min-height: 42px; font: 600 14px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
+.chips.voice-grid { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; padding-bottom: 0; }
+.chips[data-fade="r"] { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+.chips[data-fade="l"] { -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px); mask-image: linear-gradient(90deg, transparent, #000 36px); }
+.chips[data-fade="lr"] { -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+.chip { flex: none; border: 1px solid var(--rule); background: var(--panel-2); color: var(--ink-2); border-radius: 999px; padding: 9px 14px; min-height: 42px; font: 600 15px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
 .chip[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #1a1206; }
 .linkrow { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
-.linkbtn { background: none; border: 0; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px 2px; font-size: 15px; }
+.linkbtn { background: none; border: 0; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px 2px; font-size: 15px; min-height: 44px; }
+a.linkbtn { display: inline-flex; align-items: center; }
 .field { display: grid; gap: 6px; min-width: 0; }
 .field label { font: 600 13px/1.2 var(--f-body); color: var(--ink-2); }
 .input { width: 100%; background: var(--ground); border: 1px solid var(--rule); border-radius: 10px; padding: 11px 12px; min-height: 46px; }
 .input:focus { border-color: var(--amber); outline: none; }
 .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
-.seg button { border: 0; background: var(--panel-2); padding: 9px 14px; min-height: 40px; cursor: pointer; color: var(--ink-2); }
+.seg button { border: 0; background: var(--panel-2); padding: 9px 14px; min-height: 40px; font-size: 15px; cursor: pointer; color: var(--ink-2); }
 .seg button[aria-pressed="true"] { background: var(--amber); color: #1a1206; font-weight: 700; }
 .kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.kv > div { display: grid; gap: 2px; min-width: 0; }
-.kv .v { font: 800 26px/1 var(--f-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kv > div, .kv > .kvbtn { display: grid; gap: 2px; min-width: 0; align-content: start; }
+.kv .v { font: 800 26px/1 var(--f-display); font-variant-numeric: tabular-nums; text-wrap: balance; overflow-wrap: anywhere; }
 .codebox { font: 500 13px/1.4 var(--f-flap); background: var(--ground); border: 1px dashed var(--rule); border-radius: 10px; padding: 10px; overflow-wrap: anywhere; user-select: all; }
 .note { font-size: 13px; color: var(--ink-3); }
-.banner { background: #1d1a12; border: 1px solid #4d3f1c; color: #f5dca4; border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.banner { background: #1d1a12; border: 1px solid #4d3f1c; color: #f5dca4; border-radius: 12px; padding: 10px 12px; font-size: 15px; }
 
 /* ------------------------------------------------ dock */
 .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(12, 14, 18, 0.94);
   border-top: 1px solid var(--rule); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(8px); }
-.dock .inner { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.dock .btn { min-height: 56px; flex-direction: column; gap: 4px; font-size: 12px; padding: 8px 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+.dock .inner { max-width: 528px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.dock .btn { min-height: 56px; flex-direction: column; gap: 4px; font-size: 13px; padding: 8px 4px; letter-spacing: 0.01em; }
 .dock .btn svg { width: 22px; height: 22px; }
+
+/* The depot keeps All aboard in reach: a departure bar fixed above the home indicator */
+.depart-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(12, 14, 18, 0.94); border-top: 1px solid var(--rule);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.depart-bar .inner { max-width: 528px; margin: 0 auto; }
+/* L12 departures board header */
+.flapboard .board-head { margin-bottom: 12px; align-items: baseline; }
+.flapboard .clock { font: 700 15px/1 var(--f-flap); color: var(--amber); font-variant-numeric: tabular-nums; }
+#d-fit .linkbtn { font-size: 13px; padding: 2px 0; color: var(--amber); }
 
 /* ------------------------------------------------ board: vertical line map */
 .linemap { position: relative; display: grid; gap: 0; }
@@ -187,10 +220,10 @@ p { margin: 0; }
 .linemap .lm-row.minor .dot { width: 7px; height: 7px; border-width: 2px; }
 .linemap .lm-row.home .dot { width: 15px; height: 15px; background: var(--monon); }
 .linemap .lm-row .nm { font: 700 17px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: 0.02em; }
-.linemap .lm-row.minor .nm { font: 500 14px/1.1 var(--f-body); text-transform: none; color: var(--ink-2); letter-spacing: 0; }
+.linemap .lm-row.minor .nm { font: 500 15px/1.1 var(--f-body); text-transform: none; color: var(--ink-2); letter-spacing: 0; }
 .linemap .lm-row .tm { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
 .linemap .lm-row.passed .nm { color: var(--ink-3); }
-.linemap .lm-row.goal .nm::after { content: 'TURN'; font: 600 10px/1 var(--f-body); letter-spacing: 0.12em; color: var(--amber); margin-left: 8px; vertical-align: middle; }
+.linemap .lm-row.goal .nm::after { content: 'Turn'; font: 700 12px/1 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--amber); margin-left: 8px; vertical-align: 2px; }
 .linemap .rail { position: absolute; left: 15px; width: 4px; background: var(--monon); border-radius: 2px; }
 .linemap .spur { position: absolute; left: 15px; width: 4px; background: repeating-linear-gradient(var(--monon) 0 5px, transparent 5px 9px); }
 .linemap .train { position: absolute; left: 3px; width: 28px; height: 18px; margin-top: -9px; border-radius: 6px; background: var(--amber); z-index: 2;
@@ -204,14 +237,16 @@ p { margin: 0; }
   -webkit-mask-composite: source-in; mask-composite: intersect; }
 .ticket .top { display: flex; justify-content: space-between; gap: 10px; font: 700 11px/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: #8a2630; }
 .ticket .route { font: 900 26px/0.95 var(--f-display); text-transform: uppercase; text-wrap: balance; }
-.ticket .facts { display: flex; gap: 16px; flex-wrap: wrap; font: 600 14px/1.2 var(--f-body); font-variant-numeric: tabular-nums; }
+.ticket .facts { display: flex; gap: 16px; flex-wrap: wrap; font: 600 15px/1.2 var(--f-body); font-variant-numeric: tabular-nums; }
+.ticket .when { font: 600 13px/1.2 var(--f-body); color: #5b4e3c; font-variant-numeric: tabular-nums; margin-top: -2px; }
 .ticket .punch { display: flex; gap: 6px; flex-wrap: wrap; }
 .ticket .punch span { font: 600 11px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; border: 1px dashed #b9a98b; border-radius: 999px; padding: 4px 8px; color: #5b4e3c; }
 .ticket.new { box-shadow: 0 0 0 2px var(--amber); }
 .ticket .stamps { display: flex; gap: 6px; flex-wrap: wrap; }
 .ticket .stamps span { font: 700 11px/1 var(--f-body); letter-spacing: 0.1em; text-transform: uppercase; background: #8a2630; color: #fff4ef; border-radius: 4px; padding: 5px 8px; transform: rotate(-1.5deg); }
-.meter { height: 10px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--rule); }
-.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--monon), var(--amber)); }
+.meter { position: relative; height: 12px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--rule); }
+.meter i { display: block; height: 100%; background: var(--amber); border-radius: 999px; }
+.meter b { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ground); }
 .sky { display: grid; gap: 8px; }
 .skyrow { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center; font-size: 15px; min-width: 0; }
 .skyrow svg { justify-self: center; color: var(--ink-3); }
@@ -219,8 +254,8 @@ p { margin: 0; }
 .skyrow.warn svg { color: var(--caution); }
 .voices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .voice { text-align: left; display: grid; align-content: start; gap: 4px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--rule); background: var(--panel-2); color: var(--ink-2); cursor: pointer; min-height: 72px; }
-.voice b { font: 800 18px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink); }
-.voice span { font-size: 12.5px; line-height: 1.3; }
+.voice b { font: 800 20px/1 var(--f-display); letter-spacing: 0.005em; color: var(--ink); }
+.voice span { font-size: 13px; line-height: 1.3; }
 .voice[aria-pressed="true"] { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); background: linear-gradient(160deg, #2a2112, var(--panel-2) 70%); }
 .voice[aria-pressed="true"] b { color: var(--amber); }
 .flabel { font: 600 13px/1.2 var(--f-body); color: var(--ink-2); }
@@ -230,10 +265,10 @@ p { margin: 0; }
 .note.ghost.up { color: var(--go); }
 .note.ghost.down { color: var(--ink-2); }
 .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.mbadge { display: grid; grid-template-columns: 26px 1fr; column-gap: 8px; align-items: center; padding: 8px 10px; border: 1px dashed var(--rule); border-radius: 12px; color: var(--ink-3); }
+.mbadge { display: grid; grid-template-columns: 26px 1fr; column-gap: 8px; align-items: center; align-content: center; padding: 8px 10px; border: 1px dashed var(--rule); border-radius: 12px; color: var(--ink-3); }
 .mbadge .medal { grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--ink-3); }
-.mbadge b { font: 700 14px/1.1 var(--f-body); color: var(--ink-2); }
-.mbadge span:last-child { font-size: 11.5px; line-height: 1.3; }
+.mbadge b { font: 700 15px/1.1 var(--f-body); color: var(--ink-2); }
+.mbadge .how { font-size: 12px; line-height: 1.3; }
 .mbadge.got { border: 1px solid #6b5320; background: linear-gradient(160deg, #2a2112, var(--panel) 75%); }
 .mbadge.got .medal { border-color: var(--amber); background: radial-gradient(circle at 35% 35%, #ffe2aa, var(--amber) 60%, #b87a1e); }
 .mbadge.got b { color: var(--amber); }
@@ -243,14 +278,33 @@ p { margin: 0; }
 .tl-row { display: grid; grid-template-columns: 68px 1fr; column-gap: 10px; padding: 7px 0; border-top: 1px solid var(--rule); }
 .tl-row:first-child { border-top: 0; }
 .tl-t { grid-row: span 2; color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 1px; }
-.tl-k { font: 600 10px/1.2 var(--f-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
-.tl-x { font-size: 14px; color: var(--ink-2); }
+.tl-k { font: 700 12px/1.3 var(--f-body); color: var(--amber); }
+.tl-x { font-size: 15px; color: var(--ink-2); }
 .tg.reply b { color: var(--amber); font-weight: 600; }
 ol.guide { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
-ol.guide li { color: var(--ink-2); font-size: 14px; }
+ol.guide li { color: var(--ink-2); font-size: 15px; }
 ol.guide li b { display: block; color: var(--ink); font-weight: 700; }
 .passport { display: flex; flex-wrap: wrap; gap: 6px; }
 .card.ok { border-color: #245a3c; background: linear-gradient(160deg, #10251a, var(--panel) 70%); }
+.controls .row.between { min-height: 40px; }
+.controls .flabel { font-size: 15px; color: var(--ink); }
+.subrow { display: grid; gap: 8px; border-top: 1px dashed var(--rule); padding-top: 12px; margin-top: 2px; }
+.seg.tabs { display: flex; width: 100%; }
+.seg.tabs button { flex: 1; }
+.seg button[aria-selected="true"] { background: var(--amber); color: #1a1206; font-weight: 700; }
+.panel-stack { display: grid; gap: 14px; min-width: 0; }
+.month { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-top: 4px; }
+.month h2 { font: 800 20px/1.1 var(--f-display); }
+.kvbtn { all: unset; box-sizing: border-box; display: grid; gap: 2px; min-width: 0; cursor: pointer; border-radius: 8px; }
+.kvbtn .v { text-decoration: underline dotted var(--ink-3); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.kvbtn:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+.cheer-line { font: 700 17px/1.35 var(--f-body); color: var(--amber); }
+details.more > summary { padding: 8px 0 4px; font-size: 15px; }
+.topbar.sticky { position: sticky; top: 0; z-index: 15; background: var(--ground);
+  margin: calc(-14px - env(safe-area-inset-top, 0px)) -16px 0; padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 10px; }
+.result { display: block; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--rule); padding: 11px 14px; font: 500 15px/1.35 var(--f-body); color: var(--ink); cursor: pointer; }
+.result:first-child { border-top: 0; }
+.result.msg { color: var(--ink-2); cursor: default; }
 .btn.cheer { background: #2a2112; border-color: #6b5320; color: var(--amber); }
 /* map */
 .minimap { position: relative; overflow: hidden; border-radius: 12px; background: #0b0d11; border: 1px solid var(--rule); }
@@ -272,7 +326,7 @@ ol.guide li b { display: block; color: var(--ink); font-weight: 700; }
 .mm-pickup .mm-dot { fill: var(--stop); stroke: #2e1216; stroke-width: 1.5; }
 .mm-pickup .mm-hole { fill: #2e1216; }
 .mm-label { font: 700 12px var(--f-body); fill: var(--ink); paint-order: stroke; stroke: #07080b; stroke-width: 3px; stroke-linejoin: round; }
-.mm-attr { position: absolute; right: 4px; bottom: 3px; font: 500 10px/1.4 var(--f-body); color: #9a9a9a; background: rgba(0, 0, 0, 0.6); padding: 0 5px; border-radius: 4px; }
+.mm-attr { position: absolute; right: 4px; bottom: 3px; font: 500 11px/1.4 var(--f-body); color: #9a9a9a; background: rgba(0, 0, 0, 0.6); padding: 0 5px; border-radius: 4px; }
 .mm-attr a { color: #c4c4c4; text-decoration: none; }
 /* trip profile */
 .profile { display: block; width: 100%; height: 132px; overflow: visible; }
@@ -282,7 +336,7 @@ ol.guide li b { display: block; color: var(--ink); font-weight: 700; }
 .pf-proj { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 5 5; opacity: 0.6; }
 .pf-now { fill: var(--amber); stroke: var(--ground); stroke-width: 2; }
 .pf-lbl { font: 700 12px var(--f-body); fill: var(--ink); }
-.pf-axis { font: 500 11px var(--f-body); fill: var(--ink-3); }
+.pf-axis { font: 500 12px var(--f-body); fill: var(--ink-3); }
 .wk-bar { fill: #8a6a2e; }
 .wk-bar.cur { fill: var(--amber); }
 .wk-goal { stroke: var(--ink-3); stroke-width: 1; }
@@ -301,7 +355,8 @@ details > summary { cursor: pointer; color: var(--ink-2); font-size: 13px; paddi
 .dtable th:not(:first-child), .dtable td:not(:first-child) { text-align: right; }
 .ticket.tap { cursor: pointer; }
 .ticket.tap:active { transform: scale(0.99); }
-.seg.small button { padding: 6px 10px; font-size: 13px; }
+.seg.small button { padding: 6px 12px; font-size: 13px; min-width: 44px; }
+.seg button { min-width: 44px; }
 .checklist { display: grid; gap: 6px; }
 .check { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: center; text-align: left; background: var(--panel-2); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px; color: var(--ink); cursor: pointer; font-size: 15px; }
 .check .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--ink-3); display: grid; place-items: center; font-weight: 800; color: #1a1206; }
@@ -309,33 +364,47 @@ details > summary { cursor: pointer; color: var(--ink-2); font-size: 13px; paddi
 .check.ok .box { background: var(--go); border-color: var(--go); }
 /* big view: just what you need at a glance */
 #s-cab.big .sign .name { font-size: 64px; }
-#s-cab.big .sign .meta { font-size: 22px; }
+#s-cab.big .sign .meta { font-size: 20px; }
 #s-cab.big .gauges .g:nth-child(n+5) { display: none; }
 #s-cab.big .g .v { font-size: clamp(40px, 12.5vw, 60px); }
-#s-cab.big .g .v small { font-size: 14px; }
+#s-cab.big .g .v small { font-size: 15px; }
 #s-cab.big .g .s { font-size: 15px; }
-#s-cab.big .caption { font-size: 18px; }
+#s-cab.big .caption { font-size: 20px; }
 #s-cab.big .strip, #s-cab.big #c-stops, #s-cab.big #c-map-card { display: none; }
-.stamp { font: 600 12px/1 var(--f-body); border: 1px dashed var(--rule); border-radius: 999px; padding: 6px 9px; color: var(--ink-3); }
+.stamp { font: 600 12px/1 var(--f-body); border: 1px dashed var(--rule); border-radius: 999px; padding: 6px 10px; color: var(--ink-3); min-height: 32px; }
 .stamp.got { border: 1px solid var(--amber); color: var(--amber); }
 button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 .stop.tap { cursor: pointer; }
 .linemap .lm-row.tap { cursor: pointer; }
 
 /* ------------------------------------------------ pocket mode + overlays */
-.pocket { position: fixed; inset: 0; z-index: 50; background: #000; color: #5a2a2e; display: grid; place-items: center; text-align: center; padding: 24px; touch-action: none; user-select: none; -webkit-user-select: none; }
-.pocket .big { font: 800 64px/1 var(--f-display); color: #7b3037; font-variant-numeric: tabular-nums; }
-.pocket .hold { margin-top: 28px; width: 76px; height: 76px; border-radius: 50%; border: 2px solid #3a1c1f; display: grid; place-items: center; margin-inline: auto; position: relative; }
+/* Pocket mode: dim red on true black so it does not light up a pocket or ruin night vision,
+   but every line still reads at 3.2:1 or better */
+.pocket { position: fixed; inset: 0; z-index: 50; background: #000; color: #a3434b; display: grid; place-items: center; text-align: center; padding: 24px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pocket .pk { display: grid; justify-items: center; gap: 6px; width: min(340px, 100%); }
+.pocket .pk-l, .pocket .pk-stats { font: 600 15px/1.3 var(--f-body); color: #a3434b; font-variant-numeric: tabular-nums; }
+.pocket .big { font: 800 64px/1 var(--f-display); color: #b84a53; font-variant-numeric: tabular-nums; }
+.pocket .pk-in { font: 600 17px/1.2 var(--f-body); color: #b0464f; }
+.pocket .pk-next { font: 600 17px/1.35 var(--f-body); color: #b0464f; margin-top: 12px; }
+.pocket .pk-rail { position: relative; width: 100%; height: 4px; border-radius: 2px; background: #2a1215; margin: 12px 0 6px; }
+.pocket .pk-rail i, .pocket .pk-rail b { position: absolute; top: 50%; border-radius: 50%; }
+.pocket .pk-rail i { left: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px; background: #b84a53; z-index: 1; }
+.pocket .pk-rail b { width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 2px solid #b0464f; background: #000; }
+.pocket .pk-msg { font: 600 15px/1.35 var(--f-body); color: #c4545d; border: 1px solid #4a2226; border-radius: 12px; padding: 8px 12px; margin-top: 8px; }
+.pocket .hold { margin-top: 22px; width: 76px; height: 76px; border-radius: 50%; border: 2px solid #4a2226; display: grid; place-items: center; position: relative; }
 .pocket .hold svg { position: absolute; inset: -2px; width: 80px; height: 80px; transform: rotate(-90deg); }
+.pocket .hold span { font: 600 13px var(--f-body); color: #a3434b; }
+.pocket .hold:focus-visible { outline: 2px solid #c4545d; outline-offset: 4px; }
+.pocket .pk-hint { margin-top: 8px; font-size: 13px; color: #9a3f47; }
 .sheet { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.6); display: grid; align-items: end; }
 .sheet .panel { background: var(--panel); border-top: 1px solid var(--rule); border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 12px; max-width: 560px; width: 100%; margin: 0 auto; }
-.toast { pointer-events: none; position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60; background: var(--ink); color: var(--ground); padding: 10px 14px; border-radius: 10px; font-weight: 600; font-size: 14px; max-width: calc(100% - 32px); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+.toast { pointer-events: none; position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60; background: var(--ink); color: var(--ground); padding: 10px 14px; border-radius: 10px; font-weight: 600; font-size: 15px; max-width: calc(100% - 32px); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
 .notif { pointer-events: none; position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 61; width: min(420px, calc(100% - 24px)); background: rgba(40, 42, 48, 0.97); border: 1px solid #3a3f49; border-radius: 16px; padding: 10px 14px; display: grid; gap: 2px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-.notif b { font-size: 14px; } .notif span { font-size: 14px; color: var(--ink-2); }
+.notif b { font-size: 15px; } .notif span { font-size: 15px; color: var(--ink-2); }
 
 /* ------------------------------------------------ board layout */
 .arrivals-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
-.arrivals-head .clock { font: 700 22px/1 var(--f-flap); color: var(--amber); font-variant-numeric: tabular-nums; }
+.arrivals-head .clock { font: 700 20px/1 var(--f-flap); color: var(--amber); font-variant-numeric: tabular-nums; }
 .eta-big { display: grid; gap: 4px; }
 .eta-big .v { font: 900 64px/0.9 var(--f-display); letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
 .eta-big .v small { font: 700 26px/1 var(--f-display); color: var(--ink-2); margin-left: 6px; }
@@ -345,18 +414,62 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 .fresh.stale i { background: var(--caution); }
 .fresh.lost i { background: var(--stop); }
 .tg-list { display: grid; gap: 6px; }
-.tg { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--ink-2); }
+.tg { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; color: var(--ink-2); }
 .tg .st { color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tg .st.ok { color: var(--go); }
 .tg .st.warn { color: var(--caution); }
 .mini { width: 100%; height: 64px; display: block; }
 
+@media (orientation: landscape) and (max-height: 500px) {
+  .dock .btn { min-height: 44px; flex-direction: row; gap: 8px; font-size: 14px; }
+  .dock .btn svg { width: 18px; height: 18px; }
+  .depart-bar .btn.big { min-height: 50px; font-size: 22px; }
+  .wrap { padding-bottom: 96px; }
+}
 @media (min-width: 720px) {
   .wrap { max-width: 640px; }
-  .sign .name { font-size: 48px; }
+  .depart-bar .inner, .dock .inner { max-width: 608px; }
+  .sign .name { font-size: 64px; }
 }
+/* Motion answers what happened: a sheet rising, a toast arriving, the sign flipping to a new station,
+   a fresh update on her board. Nothing loops on its own, and Reduce Motion turns all of it off. */
+@keyframes lth-fade { from { opacity: 0; } }
+@keyframes lth-fade-out { to { opacity: 0; } }
+@keyframes lth-up { from { transform: translateY(28px); } }
+@keyframes lth-down { to { transform: translateY(28px); opacity: 0; } }
+@keyframes lth-dim { from { background-color: rgba(0, 0, 0, 0); } }
+@keyframes lth-undim { to { background-color: rgba(0, 0, 0, 0); } }
+@keyframes lth-rise { from { opacity: 0; transform: translate(-50%, 10px); } }
+@keyframes lth-sink { to { opacity: 0; transform: translate(-50%, 10px); } }
+@keyframes lth-drop { from { opacity: 0; transform: translate(-50%, -14px); } }
+@keyframes lth-lift { to { opacity: 0; transform: translate(-50%, -14px); } }
+@keyframes lth-renew { from { opacity: 0.35; transform: translate(-50%, -6px); } }
+@keyframes lth-flip { from { transform: perspective(500px) rotateX(-75deg); opacity: 0; } }
+@keyframes lth-glow { from { box-shadow: 0 0 0 2px var(--amber), 0 0 28px rgba(255, 181, 71, 0.35); } to { box-shadow: 0 0 0 0 rgba(255, 181, 71, 0); } }
+@keyframes lth-ping { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(2.4); opacity: 0; } }
+.sheet:not([hidden]) { animation: lth-dim 180ms ease-out; }
+.sheet:not([hidden]) .panel { animation: lth-up 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sheet.out { animation: lth-undim 160ms ease-in forwards; }
+.sheet.out .panel { animation: lth-down 160ms ease-in forwards; }
+.toast:not([hidden]) { animation: lth-rise 180ms ease-out; }
+.toast.out { animation: lth-sink 160ms ease-in forwards; }
+.notif:not([hidden]) { animation: lth-drop 220ms ease-out; }
+.notif.out { animation: lth-lift 180ms ease-in forwards; }
+.notif.renew { animation: lth-renew 220ms ease-out; }
+.pocket.out { animation: lth-fade-out 200ms ease-in forwards; }
+.sign .name.flip { animation: lth-flip 380ms cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: 50% 0; }
+.card.flash { animation: lth-glow 2.4s ease-out; }
+.fresh i { position: relative; }
+.fresh i.ping::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--go); animation: lth-ping 900ms ease-out forwards; }
+.seg button, .chip, .voice, .check, .btn { transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
+.chip:active, .seg button:active, .voice:active { transform: scale(0.97); }
+.mm-mark.glide { transition: transform 900ms linear; }
+.mm-over.snap .glide { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .linemap .train { transition: none; }
+  .sheet, .sheet .panel, .toast, .notif, .notif.renew, .pocket, .sign .name, .card.flash, .fresh i::after { animation: none !important; }
+  .seg button, .chip, .voice, .check, .btn, .mm-mark.glide { transition: none !important; }
+  .chip:active, .seg button:active, .voice:active { transform: none; }
 }
 </style>
 
@@ -367,11 +480,11 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 <!-- ============ PREVIEW LANDING (only inside Claude's viewer) ============ -->
 <main id="s-preview" class="wrap" hidden>
   <header class="topbar">
-    <div class="wordmark">Last Train<br>Home<span class="rail"></span></div>
+    <h1 class="wordmark">Last Train<br>Home<span class="rail"></span></h1>
   </header>
   <p class="banner">This is a preview inside Claude, which switches off GPS and live sharing. The demo below rides a simulated walk up the Monon so you can see and hear everything.</p>
   <section class="flapboard" aria-label="Sample arrivals board">
-    <div class="row between" style="margin-bottom:10px"><span class="eyebrow">Arrivals &middot; sample</span><span class="eyebrow">Monon Trail</span></div>
+    <div class="row between" style="margin-bottom:10px"><span class="eyebrow">Sample arrivals</span><span class="eyebrow">Monon Trail</span></div>
     <div class="flapgrid">
       <div class="flapfield wide"><span class="eyebrow">Train</span><div class="flaprow" data-flap="TOM  NIGHT LOCAL"></div></div>
       <div class="flapfield"><span class="eyebrow">Status</span><div class="flaprow" data-flap="INBOUND"></div></div>
@@ -393,24 +506,22 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 
 <!-- ============ WELCOME / SETUP ============ -->
 <main id="s-welcome" class="wrap" hidden>
-  <header><div class="wordmark">Last Train<br>Home<span class="rail"></span></div></header>
+  <header><h1 class="wordmark">Last Train<br>Home<span class="rail"></span></h1></header>
   <p class="muted">A conductor for your Monon walks, and an arrivals board for the person waiting at home. Set it up once.</p>
   <section class="card">
     <div class="field"><label for="w-name">Your name</label><input id="w-name" class="input" autocomplete="given-name" maxlength="24" placeholder="First name"></div>
     <div class="field"><label for="w-train">Name your train</label><input id="w-train" class="input" maxlength="32" placeholder="The Night Local"></div>
     <div class="field"><label for="w-watcher">Who's watching the board?</label><input id="w-watcher" class="input" maxlength="24" placeholder="Their first name"></div>
+    <div class="row between"><span class="flabel" id="w-units-l">Units</span>
+      <div class="seg" id="w-units" role="group" aria-labelledby="w-units-l"><button data-unit="mi" aria-pressed="true">Miles</button><button data-unit="km" aria-pressed="false">Kilometers</button></div></div>
   </section>
   <section class="card">
     <h2>Home station</h2>
     <p class="muted small">The walk starts and ends here. Stand at home and tap the first button, or search your address.</p>
-    <div class="row"><button class="btn primary" data-act="home-here">I'm home now, use my location</button></div>
-    <div class="row"><input id="w-addr" class="input" style="flex:1;min-width:0" placeholder="Search an address" autocomplete="street-address"><button class="btn" data-act="home-search">Search</button></div>
+    <div class="row"><button class="btn" data-act="home-here"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>I'm home now, use my location</button></div>
+    <div class="row"><input id="w-addr" class="input" style="flex:1;min-width:0" placeholder="Search an address" aria-label="Home address" autocomplete="street-address"><button class="btn" data-act="home-search">Search</button></div>
     <div id="w-addr-results" class="stops" hidden></div>
     <p id="w-home-status" class="note">No home set yet.</p>
-  </section>
-  <section class="card">
-    <div class="row between"><span class="field"><label>Units</label></span>
-      <div class="seg" id="w-units"><button data-unit="mi" aria-pressed="true">Miles</button><button data-unit="km" aria-pressed="false">Kilometers</button></div></div>
   </section>
   <button class="btn primary big" data-act="welcome-save">Save and continue</button>
   <div class="linkrow"><button class="linkbtn" data-act="demo-cab">Try the demo first</button></div>
@@ -419,11 +530,19 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 <!-- ============ DEPOT (ready to depart) ============ -->
 <main id="s-depot" class="wrap" hidden>
   <header class="topbar">
-    <div><div class="eyebrow">Last Train Home</div><div class="train" id="d-train">The Night Local</div></div>
+    <div><div class="eyebrow">Last Train Home</div><h1 class="train" id="d-train">The Night Local</h1></div>
     <button class="iconbtn" data-go="s-settings" aria-label="Settings">Settings</button>
   </header>
   <section class="card" id="d-resume" hidden></section>
   <section class="card" id="d-check" hidden></section>
+  <section class="flapboard" id="d-board" aria-label="Departures">
+    <div class="row between board-head"><span class="eyebrow">Departures</span><span class="clock" id="d-clock"></span></div>
+    <div class="flapgrid">
+      <div class="flapfield wide"><span class="eyebrow">Turning at</span><div class="flaprow" id="d-f-to"></div></div>
+      <div class="flapfield"><span class="eyebrow" id="d-f-rt-l">Round trip</span><div class="flaprow" id="d-f-rt"></div></div>
+      <div class="flapfield"><span class="eyebrow">Home at</span><div class="flaprow" id="d-f-home"></div></div>
+    </div>
+  </section>
   <section class="card">
     <div class="row between"><h2>Tonight's turnaround</h2><div class="seg small" id="d-plan" role="group" aria-label="Plan by"><button data-plan="stop">Stop</button><button data-plan="dist">Distance</button><button data-plan="time">Time</button></div></div>
     <div class="chips" id="d-goals" role="group" aria-label="Turnaround"></div>
@@ -432,13 +551,13 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <div class="row">
       <label for="d-homeby" class="note" style="flex:1">Home by (optional)</label>
       <input id="d-homeby" type="time" class="input" style="width:auto;min-width:0">
-      <button class="btn small ghost" data-act="homeby-clear">Clear</button>
+      <button class="btn small ghost" data-act="homeby-clear" id="d-homeby-clear" hidden>Clear</button>
     </div>
+    <p class="note" id="d-fit" aria-live="polite" hidden></p>
   </section>
   <section class="card" id="d-tonight"></section>
   <section class="card" id="d-week" hidden></section>
   <section class="card" id="d-share"></section>
-  <button class="btn primary big" data-act="depart">All aboard</button>
   <p class="note" id="d-note">Starts GPS, keeps your screen on, and calls out every stop. Keep the page open with the phone in your pocket.</p>
   <section id="d-last"></section>
   <div class="linkrow">
@@ -447,6 +566,7 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <button class="linkbtn" data-act="open-board-self">Preview her board</button>
     <button class="linkbtn" data-go="s-about">About</button>
   </div>
+  <div class="depart-bar"><div class="inner"><button class="btn primary big" data-act="depart">All aboard</button></div></div>
 </main>
 
 <!-- ============ CAB (walking) ============ -->
@@ -459,11 +579,12 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <div class="train" id="c-train">The Night Local</div>
     <div class="pills"><span class="pill" id="c-phase"><i></i><b>Boarding</b></span><span class="pill" id="c-share"><i></i><b>Live</b></span><span class="pill" id="c-gps"><i></i><b>GPS</b></span><span class="pill" id="c-wx" hidden><i></i><b></b></span></div>
   </header>
-  <section class="sign" aria-live="polite">
+  <section class="sign">
     <span class="eyebrow" id="c-sign-label">Next stop</span>
     <h1 class="name" id="c-sign-name">Finding GPS</h1>
     <div class="meta"><span id="c-sign-dist" class="num"></span><span id="c-sign-eta" class="num"></span><span id="c-sign-last"></span></div>
   </section>
+  <p class="sr" id="c-live" aria-live="polite"></p>
   <p class="caption" id="c-caption"></p>
   <section class="gauges">
     <div class="g"><span class="eyebrow">Distance</span><span class="v" id="c-dist">0.00<small>mi</small></span><span class="s" id="c-dist-s">&nbsp;</span></div>
@@ -477,31 +598,32 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
   <section class="card danger" id="c-pickup" hidden></section>
   <section class="card alert" id="c-hours" hidden></section>
   <section class="card alert" id="c-check" hidden></section>
+  <section class="card alert" id="c-wake" hidden></section>
   <section class="strip"><svg id="c-strip" role="img" aria-label="Line map"></svg></section>
   <p class="note ghost" id="c-ghost" hidden></p>
   <section class="card" id="c-map-card" hidden><div class="row between"><h2>Map</h2><button class="btn small ghost" data-act="cab-map" id="c-map-toggle">Hide</button></div><div id="c-map"></div></section>
   <section class="stops" id="c-stops"></section>
   <section class="card" id="c-wire" hidden><div class="row between"><h2>Telegrams</h2><span class="eyebrow" id="c-wire-from"></span></div><div class="tg-list" id="c-wire-list"></div><div class="chips" id="c-replies" role="group" aria-label="Quick replies"></div></section>
-  <div class="row">
-    <button class="btn small" data-act="voice-toggle" id="c-voice">Voice on</button>
-    <button class="btn small" data-act="change-goal">Change turnaround</button>
-    <button class="btn small" data-act="send-link">Arrivals link</button>
-    <button class="btn small" data-act="mark-spot">Mark spot</button>
-    <button class="btn small" data-act="cab-big" id="c-big">Big view</button>
-  </div>
+  <section class="card controls" id="c-controls" aria-label="Cab controls">
+    <div class="row between"><span class="flabel" id="c-voice-l">Conductor's voice</span><div class="seg small" id="c-voice" role="group" aria-labelledby="c-voice-l"><button data-act="voice-set" data-v="1">On</button><button data-act="voice-set" data-v="0">Off</button></div></div>
+    <div class="row between"><span class="flabel" id="c-big-l">Screen</span><div class="seg small" id="c-big" role="group" aria-labelledby="c-big-l"><button data-act="view-set" data-v="0">Normal</button><button data-act="view-set" data-v="1">Big</button></div></div>
+    <div class="row between"><span class="flabel" id="c-goal-l">Turnaround</span><button class="btn small" data-act="change-goal" id="c-goal-btn">Change</button></div>
+    <div class="row"><button class="btn small" data-act="mark-spot">Mark this spot</button><button class="btn small ghost" data-act="send-link">Send board link</button></div>
+  </section>
 </main>
 <nav class="dock" id="dock" hidden>
   <div class="inner">
     <button class="btn" data-act="pocket"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>Pocket</button>
     <button class="btn" data-act="pause" id="k-pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14M16 5v14"/></svg><span>Pause</span></button>
-    <button class="btn" data-act="pickup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l2-6h14l2 6v5H3z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>Pickup</button>
+    <button class="btn" data-act="pickup" id="k-pickup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l2-6h14l2 6v5H3z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg><span>Pick me up</span></button>
     <button class="btn primary" data-act="finish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>Finish</button>
   </div>
 </nav>
 
 <!-- ============ SUMMARY ============ -->
 <main id="s-summary" class="wrap" hidden>
-  <header class="topbar"><div><div class="eyebrow" id="u-eyebrow">End of the line</div><div class="train" id="u-title">Walk complete</div></div></header>
+  <header class="topbar"><div><div class="eyebrow" id="u-eyebrow">End of the line</div><h1 class="train" id="u-title">Walk complete</h1></div></header>
+  <p class="cheer-line" id="u-cheer" hidden></p>
   <div id="u-ticket"></div>
   <section class="card" id="u-map-card" hidden><h2>Route</h2><div id="u-map"></div></section>
   <section class="card"><div class="kv" id="u-kv"></div></section>
@@ -512,22 +634,34 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 
 <!-- ============ HISTORY ============ -->
 <main id="s-history" class="wrap" hidden>
-  <header class="topbar"><div><div class="eyebrow">Ticket book</div><div class="train">Your walks</div></div><button class="iconbtn" data-go="s-depot">Back</button></header>
+  <header class="topbar sticky"><div><div class="eyebrow">Ticket book</div><h1 class="train">Your walks</h1></div><button class="iconbtn" data-go="s-depot">Back</button></header>
   <section class="card"><div class="kv" id="h-totals"></div></section>
-  <section class="card"><h2>Records</h2><div class="kv" id="h-records"></div></section>
-  <div id="h-charts" class="wrap" style="padding:0" hidden>
-    <section class="card"><div class="row between"><h2>Weekly distance</h2><span class="note" id="h-weeks-note"></span></div><svg id="h-weeks" class="profile" style="height:120px" role="img" aria-label="Distance per week for the last ten weeks"></svg><div id="h-weeks-tbl"></div></section>
-    <section class="card"><div class="row between"><h2>Pace</h2><span class="note">Moving pace per walk</span></div><svg id="h-pace" class="profile" style="height:110px" role="img" aria-label="Moving pace for recent walks"></svg><div id="h-pace-tbl"></div></section>
+  <div class="seg tabs" id="h-tabs" role="tablist" aria-label="Ticket book">
+    <button role="tab" id="h-tab-t" data-tab="tickets" aria-selected="true" aria-controls="h-p-tickets">Tickets</button>
+    <button role="tab" id="h-tab-s" data-tab="stats" aria-selected="false" aria-controls="h-p-stats" tabindex="-1">Stats</button>
+    <button role="tab" id="h-tab-b" data-tab="badges" aria-selected="false" aria-controls="h-p-badges" tabindex="-1">Badges</button>
   </div>
-  <section class="card"><div class="row between"><h2>Merit badges</h2><span class="note" id="h-badges-n"></span></div><div class="badges" id="h-badges" role="list"></div></section>
-  <section class="card"><div class="row between"><h2>Station passport</h2><span class="note" id="h-pass-n"></span></div><div class="passport" id="h-passport"></div></section>
-  <div id="h-list" class="wrap" style="padding:0"></div>
-  <div class="linkrow"><button class="linkbtn" data-act="history-clear">Erase history</button></div>
+  <div class="panel-stack" id="h-p-tickets" role="tabpanel" aria-labelledby="h-tab-t">
+    <div id="h-list" class="panel-stack"></div>
+    <div class="linkrow"><button class="linkbtn" data-act="history-clear">Erase history</button></div>
+  </div>
+  <div class="panel-stack" id="h-p-stats" role="tabpanel" aria-labelledby="h-tab-s" hidden>
+    <section class="card"><h2>Records</h2><div class="kv" id="h-records"></div></section>
+    <div id="h-charts" class="panel-stack" hidden>
+      <section class="card"><div class="row between"><h2>Weekly distance</h2><span class="note" id="h-weeks-note"></span></div><svg id="h-weeks" class="profile" style="height:120px" role="img" aria-label="Distance per week for the last ten weeks"></svg><div id="h-weeks-tbl"></div></section>
+      <section class="card"><div class="row between"><h2>Pace</h2><span class="note">Moving pace per walk</span></div><svg id="h-pace" class="profile" style="height:110px" role="img" aria-label="Moving pace for recent walks"></svg><div id="h-pace-tbl"></div></section>
+    </div>
+    <p class="note" id="h-stats-empty" hidden>Charts appear after your second walk.</p>
+  </div>
+  <div class="panel-stack" id="h-p-badges" role="tabpanel" aria-labelledby="h-tab-b" hidden>
+    <section class="card"><div class="row between"><h2>Merit badges</h2><span class="note" id="h-badges-n"></span></div><div class="badges" id="h-badges" role="list"></div><div id="h-badges-more"></div></section>
+    <section class="card"><div class="row between"><h2>Station passport</h2><span class="note" id="h-pass-n"></span></div><div class="passport" id="h-passport"></div></section>
+  </div>
 </main>
 
 <!-- ============ SETTINGS ============ -->
 <main id="s-settings" class="wrap" hidden>
-  <header class="topbar"><div><div class="eyebrow">Settings</div><div class="train">Crew and cab</div></div><button class="iconbtn" data-go="s-depot">Done</button></header>
+  <header class="topbar sticky"><div><div class="eyebrow">Settings</div><h1 class="train">Crew and cab</h1></div><button class="iconbtn" data-go="s-depot">Done</button></header>
   <section class="card">
     <div class="field"><label for="p-name">Your name</label><input id="p-name" class="input" maxlength="24"></div>
     <div class="field"><label for="p-train">Train name</label><input id="p-train" class="input" maxlength="32"></div>
@@ -541,8 +675,9 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <h2>Announcements</h2>
     <div class="field"><span class="flabel">Who calls your stops</span><div id="p-style"></div></div>
     <div class="field"><label for="p-voice">Speaking voice</label><select id="p-voice" class="input"></select>
-      <p class="note">Stars mark the natural-sounding voices. On iPhone you can download better ones: Settings, Accessibility, Spoken Content, Voices, English. Pick an Enhanced or Premium voice there, then choose it here.</p></div>
-    <div class="row between"><span class="note">Speaking rate</span><input id="p-rate" type="range" min="0.8" max="1.2" step="0.05" style="flex:1;max-width:220px"></div>
+      <p class="note">Stars mark the natural-sounding voices.</p>
+      <details class="more"><summary>Get better voices on iPhone</summary><p class="note">Open Settings, then Accessibility, Spoken Content, Voices, English. Download an Enhanced or Premium voice there, then choose it here.</p></details></div>
+    <div class="row between"><label class="note" for="p-rate">Speaking rate</label><div class="row" style="flex:1;max-width:260px;gap:10px;flex-wrap:nowrap"><input id="p-rate" type="range" min="0.8" max="1.2" step="0.05" style="flex:1;min-width:0"><output id="p-rate-v" class="note num" for="p-rate" style="min-width:52px;text-align:right">Normal</output></div></div>
     <div class="row between"><span class="note">Call-outs</span><div class="seg" id="p-verb"><button data-v="all">Every stop</button><button data-v="landmarks">Landmarks</button><button data-v="quiet">Quiet</button></div></div>
     <div class="row between"><span class="note">History facts</span><div class="seg" id="p-facts"><button data-b="1">On</button><button data-b="0">Off</button></div></div>
     <div class="row between"><span class="note">Chimes and whistle</span><div class="seg" id="p-chimes"><button data-b="1">On</button><button data-b="0">Off</button></div></div>
@@ -562,7 +697,7 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <div class="row between"><span class="note">Share my walks live</span><div class="seg" id="p-share"><button data-b="1">On</button><button data-b="0">Off</button></div></div>
     <div class="row between"><span class="note">Phone alerts for the watcher</span><div class="seg" id="p-bell"><button data-b="1">On</button><button data-b="0">Off</button></div></div>
     <p class="note" id="p-relay-note"></p>
-    <div class="field"><label for="p-relay">Relay server (advanced)</label><input id="p-relay" class="input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://ntfy.sh/"></div>
+    <details class="more"><summary>Advanced: relay server</summary><div class="field"><label for="p-relay">Relay server address</label><input id="p-relay" class="input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://ntfy.sh/"><p class="note">Leave blank to use ntfy.sh. A custom relay is written into the board link you send, so her board follows it.</p></div></details>
     <button class="btn" data-act="new-link">Make a new board link</button>
   </section>
   <section class="card">
@@ -575,23 +710,31 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 
 <!-- ============ ABOUT ============ -->
 <main id="s-about" class="wrap" hidden>
-  <header class="topbar"><div><div class="eyebrow">About</div><div class="train">How it works</div></div><button class="iconbtn" data-act="back">Back</button></header>
-  <section class="card">
+  <header class="topbar sticky"><div><div class="eyebrow">About</div><h1 class="train">How it works</h1></div><button class="iconbtn" data-act="back">Back</button></header>
+  <section class="card plain">
     <h2>Tracking</h2>
     <p class="muted">GPS points are matched to the trail itself, so distance on the Monon is measured along the path and stray points get thrown out. Off the trail, points are smoothed before they count. The app knows the trail from 10th Street to 146th Street in Carmel, and any spots you name along it.</p>
     <p class="muted">Phones pause web pages when the screen locks. Keep the screen on (the app asks for that) and use Pocket mode. If tracking does pause, the gap is measured along the trail when you come back.</p>
   </section>
-  <section class="card">
+  <section class="card plain">
     <h2>Home time</h2>
     <p class="muted">The home estimate uses your recent pace, stops included, and the distance left: back along the trail, then the same way home you came. Before you turn around it assumes your chosen turnaround, then your usual one.</p>
   </section>
-  <section class="card">
+  <section class="card plain" id="a-phone">
     <h2>Put it on your phone</h2>
     <p class="muted">The preview inside Claude can't use GPS. Host the index.html file on any free static host, then add it to your Home Screen.</p>
     <button class="btn" data-act="phone-guide">Show me how</button>
   </section>
-  <section class="card">
+  <section class="card plain">
     <h2>What's new</h2>
+    <ul class="muted small changelog">
+      <li>A Departures board on the depot: tonight's turn, the round trip, and when you'd be home if you left now. All aboard stays in reach, and a home-by time gets a yes or a nearer stop.</li>
+      <li>A red enamel station sign, one instrument cluster, and clear On and Off controls in the cab. The sign says if you walk past your turnaround.</li>
+      <li>Pocket mode shows a countdown, a progress rail, her latest telegram and any check-in, in a red you can actually read.</li>
+      <li>Her board puts the telegram and the guess near the top, groups alerts in one card, and her intro sets up sounds and alerts.</li>
+      <li>Ticket book tabs and month headings, records that open their walk, and a share picture with a tear-off stub.</li>
+    </ul>
+    <details class="more"><summary>Earlier updates</summary>
     <ul class="muted small changelog">
       <li>Four voices: Conductor, Coach, Historian and Night Owl, each with its own check-ins.</li>
       <li>Weather, rain warnings, sunset and the moon phase, plus a Dispatch card before you leave.</li>
@@ -603,30 +746,37 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
       <li>Race a ghost of your best walk, earn merit badges, get a Monday recap, and send quick replies from the cab.</li>
       <li>Her board adds tonight's timeline, a guess-his-arrival game he hears about, and a QR code for the link.</li>
     </ul>
+    </details>
   </section>
-  <section class="card">
+  <section class="card plain">
     <h2>Voices</h2>
     <p class="muted">Four voices share one brain. The Conductor calls stations with a bit of history. The Coach watches your pace, compares miles, and nudges you when you fade. The Historian tells more stories. The Night Owl keeps quiet, checks in every half hour, and mentions the moon and sky.</p>
   </section>
-  <section class="card">
+  <section class="card plain">
     <h2>Weather and sky</h2>
     <p class="muted">Weather comes from Open-Meteo and refreshes every 30 minutes on a walk, with rain warnings when a shower looks likely within the hour. Sunset and the moon phase are calculated on this phone. The moon phase is the average cycle, so it can be off by up to a day.</p>
   </section>
-  <section class="card">
+  <section class="card plain">
     <h2>Privacy</h2>
-    <p class="muted">Everything stays on this phone except two things. Live board updates are encrypted before they leave and carried by ntfy.sh; the key lives only in the board link, and anyone with that link can see your walk, so share it with one person. Weather lookups send Open-Meteo your location rounded to about a kilometer. Maps load their background pictures from CARTO, which sees which part of town is on screen.</p>
+    <p class="muted">Your walks, history and settings stay on this phone. Four services see a little, and only when used:</p>
+    <ul class="muted small changelog">
+      <li><b>ntfy.sh</b> carries live board updates, encrypted on this phone first. The key lives only in the board link, so anyone with the link can see your walk: send it to one person. Phone alerts, if she turns them on, are plain text with status, times and the nearest cross street, never your exact position.</li>
+      <li><b>Open-Meteo</b> gets your location rounded to about a kilometer, for the weather.</li>
+      <li><b>CARTO</b> serves the map pictures and sees which part of town is on screen.</li>
+      <li><b>OpenStreetMap Nominatim</b> gets the address you type, only if you search for your home.</li>
+    </ul>
   </section>
-  <section class="card">
+  <section class="card plain">
     <h2>Trail hours</h2>
     <p class="muted">Carmel posts its Monon Greenway, north of 96th Street, as open sunrise to sunset. The conductor mentions it when you reach 96th after dark.</p>
   </section>
-  <section class="card"><h2>Sources</h2><div id="a-sources" class="tg-list"></div></section>
+  <section class="card plain"><h2>Sources</h2><div id="a-sources" class="tg-list"></div></section>
 </main>
 
 <!-- ============ ARRIVALS BOARD (her view) ============ -->
 <main id="s-board" class="wrap" hidden>
   <header class="arrivals-head">
-    <div><div class="eyebrow" id="b-sub">Monon Trail</div><div class="wordmark" style="font-size:40px">Arrivals</div></div>
+    <div><div class="eyebrow" id="b-sub">Monon Trail</div><h1 class="wordmark" style="font-size:44px">Arrivals</h1></div>
     <div class="clock" id="b-clock">--:--</div>
   </header>
   <section class="card" id="b-intro" hidden></section>
@@ -639,7 +789,7 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
       <div class="flapfield wide"><span class="eyebrow" id="b-f-at-l">Now at</span><div class="flaprow" id="b-f-at"></div></div>
     </div>
   </section>
-  <section class="eta-big" aria-live="polite">
+  <section class="eta-big" id="b-eta-box" aria-live="polite">
     <span class="eyebrow" id="b-eta-l">Home in</span>
     <span class="v" id="b-eta">--</span>
     <span class="muted" id="b-eta-s"></span>
@@ -648,37 +798,44 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
   <div class="fresh" id="b-fresh"><i></i><span>Connecting</span></div>
   <section class="card" id="b-check" hidden></section>
   <section class="card" id="b-map-card" hidden><div class="row between"><h2>Map</h2><span class="note" id="b-map-note"></span></div><div id="b-map"></div><a class="linkbtn" id="b-map-open" target="_blank" rel="noopener" hidden>Open his spot in Maps</a></section>
-  <section class="card"><div class="kv" id="b-kv"></div></section>
-  <section class="card" id="b-prof-card" hidden><div class="row between"><h2>Tonight's trip</h2><span class="note" id="b-prof-note"></span></div><svg id="b-prof" class="profile" role="img" aria-label="Distance from home over time"></svg><div id="b-prof-tbl"></div></section>
-  <section class="card" id="b-guess"></section>
-  <section class="card" id="b-tl-card" hidden><h2>Tonight's timeline</h2><div class="timeline" id="b-tl"></div></section>
-  <section class="card"><div class="row between"><h2>The line</h2><span class="note" id="b-line-note"></span></div><div class="linemap" id="b-line"></div></section>
-  <section class="card">
+  <section class="card" id="b-talk" hidden>
     <h2>Send a telegram</h2>
     <p class="note">The conductor reads it aloud in his earbuds.</p>
     <button class="btn cheer" data-act="b-cheer" id="b-cheer">Send a cheer</button>
     <div class="chips" id="b-presets"></div>
     <div class="row"><input id="b-msg" class="input" style="flex:1;min-width:0" maxlength="120" placeholder="Write your own" aria-label="Telegram message"><button class="btn primary" data-act="b-send">Send</button></div>
     <div class="tg-list" id="b-sent"></div>
+    <div class="subrow">
+      <label for="b-hb" class="flabel">Ask him to be home by</label>
+      <div class="row"><input id="b-hb" type="time" class="input" style="width:auto;min-width:0"><button class="btn" data-act="b-homeby">Ask</button></div>
+      <p class="note">He hears when to turn around to make it.</p>
+    </div>
   </section>
-  <section class="card">
-    <h2>Home by</h2>
-    <p class="note">He'll hear when to turn around to make it.</p>
-    <div class="row"><input id="b-hb" type="time" class="input" style="width:auto;min-width:0"><button class="btn" data-act="b-homeby">Ask</button></div>
+  <section class="card" id="b-guess" hidden></section>
+  <section class="card" id="b-kv-card" hidden><div class="kv" id="b-kv"></div></section>
+  <section class="card" id="b-prof-card" hidden><div class="row between"><h2>Tonight's trip</h2><span class="note" id="b-prof-note"></span></div><svg id="b-prof" class="profile" role="img" aria-label="Distance from home over time"></svg><div id="b-prof-tbl"></div></section>
+  <section class="card" id="b-tl-card" hidden><h2>Tonight's timeline</h2><div class="timeline" id="b-tl"></div></section>
+  <section class="card" id="b-line-card" hidden><div class="row between"><h2>The line</h2><span class="note" id="b-line-note"></span></div><div class="linemap" id="b-line"></div></section>
+  <section class="card" id="b-alerts-card">
+    <h2>Alerts</h2>
+    <div class="field"><span class="flabel">Heads-up when he's this close to home</span><div class="chips" id="b-heads-chips" role="group" aria-label="Heads-up time"></div></div>
+    <div class="row between"><span class="flabel" id="b-sound-l">Sounds on this page</span><div class="seg small" id="b-sound" role="group" aria-labelledby="b-sound-l"><button data-act="b-sound-set" data-v="1" aria-pressed="false">On</button><button data-act="b-sound-set" data-v="0" aria-pressed="true">Off</button></div></div>
+    <div class="subrow" id="b-alerts"></div>
   </section>
-  <section class="card"><h2>Heads-up</h2><p class="note">How far out should the board, and your phone alerts, tell you he's close?</p><div class="chips" id="b-heads-chips" role="group" aria-label="Heads-up time"></div></section>
-  <section class="card" id="b-alerts"></section>
-  <div class="row"><button class="btn small" data-act="b-sound" id="b-sound">Turn on arrival sounds</button></div>
   <div class="linkrow"><button class="linkbtn" data-act="b-leave">This is my own phone: switch to walker mode</button></div>
 </main>
 
-<div id="pocket" class="pocket" hidden>
-  <div>
-    <div class="eyebrow" style="color:#4a2327">Home at</div>
+<div id="pocket" class="pocket" role="dialog" aria-modal="true" aria-label="Pocket mode, still tracking" hidden>
+  <div class="pk">
+    <div class="pk-l">Home at</div>
     <div class="big" id="pk-eta">--</div>
-    <div id="pk-next" style="margin-top:10px;color:#5a2a2e;font:600 16px var(--f-body)"></div>
-    <div class="hold" id="pk-hold"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="none" stroke="#7b3037" stroke-width="3" stroke-dasharray="238.8" stroke-dashoffset="238.8" id="pk-ring"/></svg><span style="font:600 11px var(--f-body);letter-spacing:.1em;color:#5a2a2e">HOLD</span></div>
-    <p style="margin-top:12px;font-size:12px;color:#3f1f22">Tracking. Hold the circle to unlock.</p>
+    <div class="pk-in" id="pk-in"></div>
+    <div class="pk-next" id="pk-next"></div>
+    <div class="pk-rail" aria-hidden="true"><b id="pk-turn" hidden></b><i id="pk-pos"></i></div>
+    <div class="pk-stats" id="pk-stats"></div>
+    <div class="pk-msg" id="pk-msg" role="status" hidden></div>
+    <div class="hold" id="pk-hold" role="button" tabindex="0" aria-label="Hold to unlock. With a keyboard, hold Space or Enter."><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="none" stroke="#b0464f" stroke-width="3" stroke-dasharray="238.8" stroke-dashoffset="238.8" id="pk-ring"/></svg><span>Hold</span></div>
+    <p class="pk-hint">Tracking. Hold the circle to unlock.</p>
   </div>
 </div>
 <div id="sheet" class="sheet" hidden><div class="panel" id="sheet-panel"></div></div>
@@ -799,6 +956,7 @@ const SOURCES = [
   ['Calories', '2024 Adult Compendium of Physical Activities: Walking', 'https://pacompendium.com/walking/'],
   ['Weather', 'Open-Meteo forecast API (non-commercial use)', 'https://open-meteo.com/en/docs'],
   ['Map tiles', 'CARTO basemaps with OpenStreetMap data', 'https://carto.com/attributions'],
+  ['Address search', 'OpenStreetMap Nominatim, data \u00a9 OpenStreetMap contributors', 'https://nominatim.org/'],
   ['Moon phase', 'Mean synodic month from the new moon of January 6, 2000 (Meeus, Astronomical Algorithms)', 'https://en.wikipedia.org/wiki/Lunar_phase'],
 ];
 if (typeof module !== 'undefined') module.exports = { FACTS, SOURCES };
@@ -2332,33 +2490,45 @@ const MiniMap = (() => {
         a.innerHTML = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
         host.append(a);
       }
-      this.view = null; this.focusKey = '';
+      this.view = null; this.focusKey = ''; this.base = el('g', {}, this.svg); this.keep = {};
     }
     // opts: { line: [[lat,lon]..], done: [[lat,lon]..], marks: [{ll:[lat,lon], kind, label}], focus: [[lat,lon]..] }
     draw(opts) {
       const w = this.host.clientWidth || 320, h = this.height;
       if (!w) return;
+      if (opts.label && this.host.getAttribute('aria-label') !== opts.label) this.host.setAttribute('aria-label', opts.label);
       const focus = (opts.focus || []).filter(p => p && isFinite(p[0]) && isFinite(p[1]));
       if (!focus.length) return;
-      if (this.needsView(focus, w, h)) this.setView(focus, w, h);
+      const moved = this.needsView(focus, w, h);
+      if (moved) this.setView(focus, w, h);
       const { z, x0, y0 } = this.view;
       const P = ([lat, lon]) => { const [x, y] = world(lat, lon, z); return [x - x0, y - y0]; };
       const path = pts => pts.map((p, i) => { const [x, y] = P(p); return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`; }).join('');
-      const svg = this.svg; svg.textContent = '';
+      const svg = this.svg, base = this.base; base.textContent = '';
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('width', w); svg.setAttribute('height', h);
+      // a new view jumps; within a view, the live marker glides to its next spot
+      if (moved) { svg.classList.add('snap'); requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('snap'))); }
+      const seen = new Set();
       if (opts.line && opts.line.length > 1) {
-        el('path', { d: path(opts.line), class: 'mm-line-case' }, svg);
-        el('path', { d: path(opts.line), class: 'mm-line' }, svg);
+        el('path', { d: path(opts.line), class: 'mm-line-case' }, base);
+        el('path', { d: path(opts.line), class: 'mm-line' }, base);
       }
-      if (opts.spur && opts.spur.length > 1) el('path', { d: path(opts.spur), class: 'mm-spur' }, svg);
-      if (opts.done && opts.done.length > 1) el('path', { d: path(opts.done), class: 'mm-done' }, svg);
+      if (opts.spur && opts.spur.length > 1) el('path', { d: path(opts.spur), class: 'mm-spur' }, base);
+      if (opts.done && opts.done.length > 1) el('path', { d: path(opts.done), class: 'mm-done' }, base);
       for (const m of opts.marks || []) {
         if (!m || !m.ll) continue;
         const [x, y] = P(m.ll);
-        const g = el('g', { class: `mm-mark mm-${m.kind}`, transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` }, svg);
-        if (m.kind === 'you' || m.kind === 'est') {
-          el('circle', { r: 13, class: 'mm-halo' }, g);
-          el('circle', { r: 7, class: 'mm-dot' }, g);
+        const live = m.kind === 'you' || m.kind === 'est';
+        let g;
+        if (live) {
+          seen.add(m.kind);
+          g = this.keep[m.kind];
+          if (!g) { g = this.keep[m.kind] = el('g', { class: `mm-mark mm-${m.kind} glide` }, svg); el('circle', { r: 13, class: 'mm-halo' }, g); el('circle', { r: 7, class: 'mm-dot' }, g); }
+          g.style.display = ''; g.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+          const old = g.querySelector('.mm-label'); if (old) old.remove();
+        } else g = el('g', { class: `mm-mark mm-${m.kind}`, transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` }, base);
+        if (live) {
+          // drawn once above
         } else if (m.kind === 'home') {
           el('rect', { x: -6, y: -6, width: 12, height: 12, rx: 2, class: 'mm-dot' }, g);
         } else if (m.kind === 'pickup') {
@@ -2373,6 +2543,7 @@ const MiniMap = (() => {
           if (x > w - 90) { tx.setAttribute('x', -11); tx.setAttribute('text-anchor', 'end'); }
         }
       }
+      for (const k of Object.keys(this.keep)) if (!seen.has(k)) this.keep[k].style.display = 'none';
     }
     needsView(focus, w, h) {
       if (!this.view || this.view.w !== w) return true;
@@ -2486,43 +2657,64 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     for (const k of kids.flat()) if (k != null && k !== false) el.append(k instanceof Node ? k : document.createTextNode(String(k)));
     return el;
   }
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // hide after a short exit animation; showing again cancels a pending hide
+  function softHide(el, ms = 160) {
+    if (el.hidden) return;
+    if (reduced()) { el.hidden = true; return; }
+    clearTimeout(el._outT); el.classList.add('out');
+    el._outT = setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, ms);
+  }
+  function softShow(el) { clearTimeout(el._outT); el.classList.remove('out'); el.hidden = false; }
+  // restart a one-shot CSS animation class
+  function replay(el, cls) { if (!el || reduced()) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
   function toast(msg, ms = 2800) {
-    const t = $('#toast'); t.textContent = msg; t.hidden = false;
-    clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, ms);
+    const t = $('#toast'); t.textContent = msg; softShow(t);
+    clearTimeout(toast.h); toast.h = setTimeout(() => softHide(t), ms);
   }
   function notif(title, body) {
-    $('#notif-t').textContent = title; $('#notif-b').textContent = body; $('#notif').hidden = false;
-    clearTimeout(notif.h); notif.h = setTimeout(() => { $('#notif').hidden = true; }, 5200);
+    const n = $('#notif'), was = !n.hidden && !n.classList.contains('out');
+    $('#notif-t').textContent = title; $('#notif-b').textContent = body; softShow(n);
+    if (was) replay(n, 'renew'); // a new alert over an old one still reads as new
+    clearTimeout(notif.h); notif.h = setTimeout(() => softHide(n, 180), 5200);
   }
   function openSheet(build) {
     const s = $('#sheet'), p = $('#sheet-panel');
     const back = document.activeElement;
+    clearTimeout(s._outT); s.classList.remove('out');
+    const gen = (s._gen = (s._gen || 0) + 1);
     p.textContent = '';
     // sheets build with optional parts; drop the empty ones instead of printing "null"
     if (!p._safeAppend) { p._safeAppend = true; p.append = function (...xs) { return Element.prototype.append.apply(this, xs.filter(x => x != null && x !== false)); }; }
     p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true');
-    const close = () => { s.hidden = true; p.textContent = ''; document.removeEventListener('keydown', esc); if (back && back.focus) try { back.focus(); } catch (e) { /* gone */ } };
+    const close = () => {
+      if (s._gen !== gen) return; // a newer sheet already replaced this one
+      document.removeEventListener('keydown', esc);
+      const done = () => { if (s._gen !== gen) return; s.hidden = true; s.classList.remove('out'); p.textContent = ''; };
+      if (reduced() || s.hidden) done(); else { s.classList.add('out'); s._outT = setTimeout(done, 160); }
+      if (back && back.focus) try { back.focus(); } catch (e) { /* gone */ }
+    };
     const esc = e => { if (e.key === 'Escape') close(); };
     build(p, close);
     const head = p.querySelector('h2'); if (head) { head.id = 'sheet-title'; p.setAttribute('aria-labelledby', 'sheet-title'); }
     s.hidden = false;
     s.onclick = e => { if (e.target === s) close(); };
     document.addEventListener('keydown', esc);
-    requestAnimationFrame(() => { const f = p.querySelector('input,button,a[href],select'); if (f && f.tagName !== 'INPUT') f.focus(); });
+    requestAnimationFrame(() => { const f = p.querySelector('[aria-pressed="true"]') || p.querySelector('input,button,a[href],select'); if (f && f.tagName !== 'INPUT') f.focus(); });
     return close;
   }
   function confirmSheet({ title, body, ok, cancel = 'Cancel', onOk, danger }) {
     openSheet((p, close) => {
       p.append(
-        h('h2', { class: 'train', style: 'font:800 26px/1 var(--f-display);text-transform:uppercase' }, title),
+        h('h2', { class: 'sh' }, title),
         body ? h('p', { class: 'muted' }, body) : null,
         h('div', { class: 'row' },
           h('button', { class: 'btn ' + (danger ? 'primary' : 'primary'), style: 'flex:1', onclick: () => { close(); onOk(); } }, ok),
           h('button', { class: 'btn', style: 'flex:1', onclick: close }, cancel)));
     });
   }
-  async function copyText(text, fallbackEl) {
-    try { await navigator.clipboard.writeText(text); toast('Copied'); }
+  async function copyText(text, fallbackEl, what = 'Copied') {
+    try { await navigator.clipboard.writeText(text); toast(what); }
     catch (e) {
       if (fallbackEl) { const r = document.createRange(); r.selectNodeContents(fallbackEl); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
       toast('Select the text and copy it');
@@ -2533,6 +2725,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const minsText = s => { const m = Math.max(0, Math.round(s / 60)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`; };
   const soonText = s => (s < 45 ? 'under a minute' : minsText(s));
   const distTxt = m => `${L.fmtDist(m, U())} ${uLabel()}`;
+  const rateTxt = r => (Math.abs(r - 1) < 0.01 ? 'Normal' : `${(+r).toFixed(2).replace(/0$/, '')}x`);
+  // A spot on the trail as a phrase: "at 75th St", "between 71st St and 75th St", "near 146th St".
+  // Also takes text saved by older versions, which can be a bare station name.
+  const where = d => { const t = typeof d === 'string' ? d : (d.exact ? `at ${d.text}` : d.text); return /^(at|between|near|on|off) /.test(t) ? t : `near ${t}`; };
   const short = id => (trail.byId[id] || {}).short || '';
   const localDate = tt => { const d = new Date(tt); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const capFirst = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
@@ -2563,16 +2759,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const segs = Object.entries(Records.bestSegments(real)).filter(([k]) => k.split('>').includes(id));
     const facts = FACTS[id] || [];
     openSheet((p, close) => {
-      p.append(h('div', { class: 'eyebrow' }, KIND_LABEL[st.kind] || 'Stop'), h('h2', { style: 'font:800 28px/1 var(--f-display);text-transform:uppercase' }, capFirst(st.name)));
+      p.append(h('div', { class: 'eyebrow' }, KIND_LABEL[st.kind] || 'Stop'), h('h2', { class: 'sh caps' }, capFirst(st.name)));
       if (!board) {
-        const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v', style: 'font-size:20px' }, v));
-        p.append(h('div', { class: 'kv' }, cell('First visit', pp.first[id] ? new Date(pp.first[id]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Not yet'),
+        const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v' }, v));
+        p.append(h('div', { class: 'kv sm' }, cell('First visit', pp.first[id] ? new Date(pp.first[id]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Not yet'),
           cell('Walks here', String(visits)), cell('Best from start', isFinite(bestOut) ? L.fmtDur(bestOut) : '--')));
       }
       facts.forEach(f => p.append(h('p', { class: 'muted small' }, f)));
       if (!board && segs.length) p.append(h('div', { class: 'tg-list' }, segs.map(([k, v]) => h('div', { class: 'tg' }, h('span', null, Records.segName(k, trail)), h('span', { class: 'st' }, `best ${L.fmtDur(v.secs)}`)))));
       const row = h('div', { class: 'row' });
-      if (!board && st.kind !== 'spot' && st.kind !== 'under') row.append(h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { if (W.active) W.changeGoal(id); else { P.goalId = id; P.planTarget = null; saveP(); if (current === 's-depot') Depot.render(); } toast(`Turnaround set: ${st.short}`); close(); } }, 'Make it my turnaround'));
+      if (!board && st.kind !== 'spot' && st.kind !== 'under') row.append(h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { if (W.active) W.changeGoal(id); else { P.goalId = id; P.planTarget = null; saveP(); if (current === 's-depot') Depot.render(); } toast(`Turnaround set: ${st.short}`); close(); } }, 'Turn here tonight'));
       row.append(h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Close'));
       p.append(row);
     });
@@ -2616,6 +2812,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     svg.onfocus = () => put(cur); svg.onblur = off;
     svg.onkeydown = e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); put(cur + (e.key === 'ArrowLeft' ? -1 : 1)); } };
   }
+  // Fade the edge of a sideways-scrolling chip row on whichever side has more chips
+  function edgeFade(el) {
+    if (!el) return;
+    const upd = () => { const l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2; el.dataset.fade = (l ? 'l' : '') + (r ? 'r' : ''); };
+    if (!el._fade) { el._fade = upd; el.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd); }
+    requestAnimationFrame(upd);
+  }
   function tableView(box, head, rows) {
     box.textContent = '';
     const tb = h('table', { class: 'dtable' }, h('thead', null, h('tr', null, head.map(x => h('th', null, x)))), h('tbody', null, rows.map(r => h('tr', null, r.map(c => h('td', null, c))))));
@@ -2631,7 +2834,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const cands = trail.stations.filter(st => dir * (st.s - se) > 150);
     const rt = st => 2 * (conn + Math.abs(st.s - se));
     const forDist = D => cands.reduce((best, st) => (!best || Math.abs(rt(st) - D) < Math.abs(rt(best) - D) ? st : best), null);
-    return { rt, forDist, forTime: secs => forDist(secs * speed), speed };
+    // the farthest stop whose round trip fits in a number of seconds (for a home-by time)
+    const fitsIn = secs => cands.filter(st => st.kind !== 'spot' && rt(st) / speed <= secs).sort((a, b) => Math.abs(b.s - se) - Math.abs(a.s - se))[0] || null;
+    return { rt, forDist, forTime: secs => forDist(secs * speed), fitsIn, speed, usual: pr.farP ? 2 * (conn + pr.farP) : null };
   }
   const hm = secs => { const m = Math.round(secs / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ''}`; };
   // The stretch of trail walked tonight, sampled every 40 m, as [lat, lon] pairs
@@ -2676,7 +2881,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     box.textContent = '';
     const cur = C.VOICES[P.style] ? P.style : 'conductor';
     const blurb = compact ? h('p', { class: 'note' }, C.VOICES[cur].blurb) : null;
-    const row = h('div', { class: compact ? 'chips chips-wrap' : 'voices', role: 'group', 'aria-label': 'Who calls your stops' });
+    const row = h('div', { class: compact ? 'chips voice-grid' : 'voices', role: 'group', 'aria-label': 'Who calls your stops' });
     for (const [id, vc] of Object.entries(C.VOICES)) {
       row.append(h('button', {
         type: 'button', class: compact ? 'chip' : 'voice', 'data-style': id, 'aria-pressed': String(cur === id),
@@ -3036,7 +3241,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       motionAsk.then(st => { this.motion = st; if (st === 'granted') this.stepper.start(); });
       this.demo = demo;
       this.pickup = null; this.acks = []; this.telegrams = []; this.seenWire = new Set(); this.splits = []; this.bellSent = {};
-      this.cheers = 0; this.stopCheck = null; this.okAt = null;
+      this.cheers = 0; this.stopCheck = null; this.okAt = null; this.wakeFail = false; this.wakeTipOff = false; this.wakeSaid = false;
       this.lastPub = 0; this.pubPending = false; this.gpsAt = 0; this.gpsErr = null;
       const pr = priors();
       let goalId = demo ? '86' : (P.goalId || null);
@@ -3131,7 +3336,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     gpsBlocked() {
       if (this.gpsBlockedShown) return; this.gpsBlockedShown = true;
       openSheet((p, close) => {
-        p.append(h('h2', { style: 'font:800 26px/1 var(--f-display);text-transform:uppercase' }, 'Location is off'));
+        p.append(h('h2', { class: 'sh' }, 'Location is off'));
         if (IN_CLAUDE) p.append(h('p', { class: 'muted' }, 'Claude’s preview blocks location. Open the app from its own web address in Safari to track real walks, or ride the demo here.'));
         else p.append(h('p', { class: 'muted' }, 'Allow location for this page. In Safari: tap aA in the address bar, then Website Settings, then Location, then Allow. On iPhone also check Settings, Privacy, Location Services, Safari Websites.'));
         p.append(h('div', { class: 'row' },
@@ -3142,10 +3347,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     async wakeOn() {
       try {
         if ('wakeLock' in navigator && document.visibilityState === 'visible') {
-          this.wake = await navigator.wakeLock.request('screen');
+          this.wake = await navigator.wakeLock.request('screen'); this.wakeFail = false;
           this.wake.addEventListener('release', () => { this.wake = null; if (this.active && !this.demo) Diag.add('screen', 'wake lock released'); });
-        }
-      } catch (e) { this.wake = null; }
+        } else if (!('wakeLock' in navigator)) this.wakeFail = true;
+      } catch (e) { this.wake = null; this.wakeFail = true; }
+      if (this.wakeFail && this.tr && !this.demo && !this.wakeSaid) {
+        this.wakeSaid = true;
+        this.say({ text: 'Heads up: this phone may lock the screen, and that pauses tracking. Set Auto-Lock to Never for tonight, then use Pocket mode.', prio: 2 });
+      }
     },
     stopAll() {
       clearInterval(this.timer); this.timer = null;
@@ -3281,7 +3490,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!this.demo && this.active && (!this._snapAt || Date.now() - this._snapAt > 20000)) this.snapshot();
       if (!this.demo && this.tr.status === 'walking' && Date.now() - (this.wxAt || 0) > 30 * 60000) this.refreshWeather();
       if (document.visibilityState !== 'hidden') Cab.render(now); // nothing to paint while the screen is off
-      document.title = this.tr.status === 'finished' || this.tr.phase === 'home' ? 'Last Train Home' : `Home ${clock(this.tr.eta(now).t)} \u00b7 Last Train Home`;
+      document.title = this.tr.status === 'finished' || this.tr.phase === 'home' ? 'Last Train Home' : `Home at ${clock(this.tr.eta(now).t)} | Last Train Home`;
     },
     // Stopped a long time? Ask at 10 minutes, and alert the watcher at 15 if there's no answer.
     stopWatch(now) {
@@ -3307,7 +3516,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const when = new Date(g.walk.t0).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       if (ge == null) return { ahead: true, text: `Beyond where your best walk from ${when} went. New ground.` };
       const d = Math.round(tr.elapsed(now) - ge), ahead = d < 0, a = Math.abs(d);
-      const mm = `${Math.floor(a / 60)}:${String(a % 60).padStart(2, '0')}`;
+      const mm = a >= 600 ? `${Math.round(a / 60)} min` : a >= 60 ? `${Math.floor(a / 60)} min ${a % 60} s` : `${a} s`;
       return { ahead, d, text: a < 5 ? `Dead even with your best walk (${when}).` : `${mm} ${ahead ? 'ahead of' : 'behind'} your best walk (${when}). The dashed train is its pace.` };
     },
     imFine() {
@@ -3367,12 +3576,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const tr = this.tr, now = this.now(), eta = tr.eta(now), name = P.name || (this.demo ? 'Tom' : 'Walker');
       let title, msg, prio = 3, tags = ['steam_locomotive'];
       if (kind === 'depart') { const g = tr.plan.goalId ? short(tr.plan.goalId) : 'north'; title = `${name} departed`; msg = `Heading for ${g}. Home around ${clock(eta.t)}.`; }
-      else if (kind === 'turn') { title = `${name} turned around`; msg = `At ${tr.turn ? tr.turn.text : 'the trail'}. Home around ${clock(eta.t)}.`; }
+      else if (kind === 'turn') { title = `${name} turned around`; msg = `${tr.turn ? capFirst(where(tr.turn)) : 'On the trail'}. Home around ${clock(eta.t)}.`; }
       else if (kind === 'soon') { title = `${name} is about ${P.soonMin || 10} minutes out`; msg = `Home around ${clock(eta.t)}.`; }
-      else if (kind === 'longstop') { const near = tr.onTrail ? trail.describe(tr.s).text : 'the trail'; title = `${name} has been stopped for 15 minutes`; msg = `Near ${near}. No check-in yet. Open the arrivals board for the map.`; prio = 4; tags = ['warning']; }
+      else if (kind === 'longstop') { const near = tr.onTrail ? where(trail.describe(tr.s)) : 'off the trail'; title = `${name} has been stopped for 15 minutes`; msg = `${capFirst(near)}. No check-in yet. Open the arrivals board for the map.`; prio = 4; tags = ['warning']; }
       else if (kind === 'home') { title = `${name} is home`; msg = `${distTxt(tr.dist)} in ${minsText(tr.elapsed(now))}.`; tags = ['house']; }
       else if (kind === 'late') { title = `${name} is running late`; msg = `Now expected around ${clock(eta.t)}.`; tags = ['hourglass']; }
-      else if (kind === 'pickup') { title = `${name} asked for a pickup`; msg = `Near ${this.pickup && this.pickup.near}. Open the arrivals board for the map.`; prio = 5; tags = ['red_car']; }
+      else if (kind === 'pickup') { title = `${name} asked for a pickup`; msg = `${capFirst(where(this.pickup ? this.pickup.near : 'off the trail'))}. Open the arrivals board for the map.`; prio = 5; tags = ['red_car']; }
       else return;
       if (this.bellWait && this.bellWait[kind] > Date.now()) return;
       this.bellSent[kind] = true;
@@ -3393,10 +3602,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     requestPickup() {
       if (!this.tr) return;
       const tr = this.tr, pos = tr.pos || tr.home;
-      const near = tr.onTrail ? trail.describe(tr.s).text : (tr.phase === 'toTrail' || tr.phase === 'toHome' ? 'the walk to the trail' : 'the trail');
+      const near = tr.onTrail ? where(trail.describe(tr.s)) : (tr.phase === 'toTrail' ? 'on the walk to the trail' : tr.phase === 'toHome' ? 'on the walk home' : 'off the trail');
       this.pickup = { t: this.now(), ll: pos ? [+pos.lat.toFixed(5), +pos.lon.toFixed(5)] : null, near };
       this.bellSent.pickup = false; this.bell('pickup');
-      this.say({ text: `Pickup requested near ${near}. Your location went to the arrivals board.`, prio: 3, chime: 'bell' });
+      this.say({ text: `Pickup requested ${near}. Your location went to the arrivals board.`, prio: 3, chime: 'bell' });
       this.lastPub = 0; this.publish(true);
     },
     reply(text) {
@@ -3413,14 +3622,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!tr.onTrail || tr.s == null) return toast('Get on the trail first, then mark the spot');
       const a = trail.at(tr.s), near = trail.describe(tr.s).text;
       openSheet((p, close) => {
-        const inp = h('input', { class: 'input', maxlength: '28', placeholder: 'For example: the big oak' });
+        const inp = h('input', { class: 'input', maxlength: '28', placeholder: 'For example: the big oak', 'aria-label': 'Name for this spot' });
         const save = () => {
           const name = inp.value.trim(); if (!name) return;
           P.spots = (P.spots || []).concat([{ id: 'spot' + L.randId(6), name, lat: +a.lat.toFixed(5), lon: +a.lon.toFixed(5) }]).slice(-20);
           saveP(); trail.setSpots(P.spots); close();
           this.say({ text: `Marked. I'll call out ${name} from now on.`, prio: 2, chime: 'station' });
         };
-        p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, 'Mark this spot'), h('p', { class: 'muted small' }, `You're ${/^between|^near/.test(near) ? near : 'at ' + near}. Name it and the conductor will call it out on every walk.`), inp,
+        p.append(h('h2', { class: 'sh' }, 'Mark this spot'), h('p', { class: 'muted small' }, `You're ${/^between|^near/.test(near) ? near : 'at ' + near}. Name it and the conductor will call it out on every walk.`), inp,
           h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: save }, 'Save spot'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Cancel')));
         inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
         setTimeout(() => inp.focus(), 50);
@@ -3515,12 +3724,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   /* ------------------------------------------------------------ cab rendering */
   const Cab = {
     setup() {
-      this.sun = null; this.hoursDismissed = false;
+      this.sun = null; this.hoursDismissed = false; this.tgSeen = W.telegrams.length;
       $('#s-cab').classList.toggle('big', !!P.bigCab);
-      $('#c-big').textContent = P.bigCab ? 'Normal view' : 'Big view';
+      segSet('#c-big', 'v', P.bigCab ? '1' : '0');
       $('#c-train').textContent = W.demo ? 'Demo run' : (P.train || 'The Night Local');
       $('#c-demo').hidden = !W.demo;
-      $('#c-voice').textContent = W.voiceOn ? 'Voice on' : 'Voice off';
+      segSet('#c-voice', 'v', W.voiceOn ? '1' : '0');
       $('#c-caption').textContent = '';
       this.stripW = 0;
     },
@@ -3538,7 +3747,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       setPill('#c-share', sh[0], sh[1]);
       const wp = $('#c-wx'), wx = W.wx;
       if (wx) {
-        wp.hidden = false; wp.querySelector('b').textContent = `${wx.temp}\u00b0${wx.u} ${Weather.desc(wx.code)}`;
+        const soon = wx.rain && wx.rain.inMin <= 60 && !Weather.wet(wx.code), notable = soon || Weather.wet(wx.code) || Weather.snowy(wx.code) || wx.code === 45 || wx.code === 48;
+        wp.hidden = false; wp.querySelector('b').textContent = notable ? `${wx.temp}\u00b0 ${soon ? 'rain soon' : Weather.desc(wx.code)}` : `${wx.temp}\u00b0${wx.u}`;
+        wp.title = `${wx.temp}\u00b0${wx.u}, ${Weather.desc(wx.code)}`;
         wp.className = 'pill' + (Weather.wet(wx.code) || (wx.rain && wx.rain.inMin <= 60) ? ' caution' : '');
       } else wp.hidden = true;
       const gpsAge = Date.now() - W.gpsAt;
@@ -3551,10 +3762,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       // sign
       const sign = this.nextStop(now);
       $('#c-sign-label').textContent = sign.label;
-      $('#c-sign-name').textContent = sign.name;
+      const nm = $('#c-sign-name');
+      if (nm.textContent !== sign.name) { nm.textContent = sign.name; replay(nm, 'flip'); $('#c-live').textContent = `${sign.label}: ${sign.name}`; }
       $('#c-sign-dist').textContent = sign.dist || '';
       $('#c-sign-eta').textContent = sign.eta || '';
-      $('#c-sign-last').textContent = tr.lastStation ? `Last: ${short(tr.lastStation.id)}, ${ago(now - tr.lastStation.t)}` : '';
+      const atLast = tr.lastStation && sign.label === 'Now at' && short(tr.lastStation.id) === sign.name; // don't repeat the sign
+      $('#c-sign-last').textContent = tr.lastStation && !atLast ? `Last: ${short(tr.lastStation.id)}, ${ago(now - tr.lastStation.t)}` : '';
 
       // gauges
       const v = L.fmtDist(tr.dist, U());
@@ -3566,27 +3779,30 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const spd = tr.paceSpeed(now);
       setVal('#c-pace', L.fmtPace(spd, U()), `/${uLabel()}`);
       const eff = Metrics.effort(spd, W.typical);
-      $('#c-pace-s').textContent = tr.moving > 60 ? `${eff ? eff.label + ' · ' : ''}avg ${L.fmtPace(tr.dist / tr.moving, U())}` : ' ';
+      $('#c-pace-s').textContent = tr.moving > 60 ? `${eff ? eff.label + ', ' : ''}avg ${L.fmtPace(tr.dist / tr.moving, U())}` : ' ';
       $('#c-pace').parentElement.dataset.effort = eff ? eff.key : '';
       if (W.demo || W.motion === 'granted') {
         const st = Math.round(W.stepper.steps), cad = W.cadence();
         $('#c-steps').textContent = st.toLocaleString();
         const stride = st > 60 ? tr.dist / st : null;
-        $('#c-steps-s').textContent = [cad ? `${cad}/min` : '', stride ? `${P.unit === 'km' ? stride.toFixed(2) + ' m' : Math.round(stride * 39.37) + ' in'} stride` : ''].filter(Boolean).join(' · ') || 'counting';
+        $('#c-steps-s').textContent = [cad ? `${cad}/min` : '', stride ? `${P.unit === 'km' ? stride.toFixed(2) + ' m' : Math.round(stride * 39.37) + ' in'} stride` : ''].filter(Boolean).join(', ') || 'counting';
       } else {
         $('#c-steps').textContent = '--';
         $('#c-steps-s').textContent = W.motion === 'denied' ? 'Motion access declined' : IN_CLAUDE ? 'Off in this preview' : P.steps === false ? 'Turned off in Settings' : 'Motion sensor off';
       }
       if (W.cal && W.cal.kg) { setVal('#c-kcal', String(Math.round(W.cal.kcal)), 'kcal'); $('#c-kcal-s').textContent = 'estimated'; }
-      else { $('#c-kcal').textContent = '--'; $('#c-kcal-s').textContent = 'Add your weight in Settings'; }
+      else { $('#c-kcal').textContent = '--'; $('#c-kcal-s').textContent = 'Add weight in Settings'; }
       if (tr.phase === 'home' || tr.status === 'finished') { $('#c-eta').textContent = 'Home'; $('#c-eta-s').textContent = tr.arrivedAt ? `arrived ${clock(tr.arrivedAt)}` : ''; }
       else {
         const [hm, ap] = clock(eta.t).split(' ');
         setVal('#c-eta', hm, ap);
         const basis = { goal: `turning at ${short(tr.plan.goalId)}`, usual: 'at your usual turn', now: 'if you turn now', back: 'on your way home' }[eta.basis] || '';
-        $('#c-eta-s').textContent = `${clock(eta.lo).replace(/ [AP]M/, '')}-${clock(eta.hi)} ${basis}`;
+        $('#c-eta-s').textContent = `${clock(eta.lo).replace(/ [AP]M/, '')} to ${clock(eta.hi)} ${basis}`;
       }
 
+      const goalL = $('#c-goal-l'), out = tr.phase === 'toTrail' || tr.phase === 'out';
+      goalL.textContent = !out ? (tr.turn ? `Turned at ${tr.turn.x}` : 'Heading home') : tr.plan.goalId && trail.byId[tr.plan.goalId] ? `Turning at ${short(tr.plan.goalId)}` : 'Turnaround: your call';
+      $('#c-goal-btn').hidden = !out;
       // turn-by
       const tb = tr.turnBy(now), tbEl = $('#c-turnby');
       if (tr.plan.homeBy && tr.phase !== 'home') {
@@ -3628,6 +3844,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ck.append(h('div', { class: 'row between' }, h('h2', null, `Stopped ${minsText((now - W.stopCheck.since) / 1000)}`), h('button', { class: 'btn small primary', onclick: () => W.imFine() }, 'I\u2019m fine')),
           h('p', { class: 'muted' }, `${P.watcher || 'The board'} sees that you've stopped. Tap to let them know all is well, or ask for a pickup.`));
       } else ck.hidden = true;
+      const wk = $('#c-wake');
+      if (W.wakeFail && !W.demo && !W.wakeTipOff && W.active) {
+        if (wk.hidden) {
+          wk.hidden = false; wk.textContent = '';
+          wk.append(h('h2', null, 'The screen may lock'), h('p', { class: 'muted' }, 'This phone did not let the app keep the screen on. If it locks, tracking pauses until you open the app again. For tonight, set Auto-Lock to Never (on iPhone: Settings, Display and Brightness), then use Pocket mode.'),
+            h('div', { class: 'row' }, h('button', { class: 'btn small', onclick: () => { W.wakeTipOff = true; wk.hidden = true; } }, 'Got it')));
+        }
+      } else wk.hidden = true;
       // the drawings change slowly: redraw them every few seconds, or right away after an event
       const heavyKey = `${tr.passes.length}.${tr.phase}.${Math.floor(Date.now() / 3000)}.${W.pickup ? 1 : 0}`;
       if (heavyKey !== this.heavyKey || this.forceHeavy) {
@@ -3640,13 +3864,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const wire = $('#c-wire');
       if (W.telegrams.length) {
         wire.hidden = false;
+        if (this.tgSeen != null && W.telegrams.length > this.tgSeen) replay(wire, 'flash');
+        this.tgSeen = W.telegrams.length;
         const list = $('#c-wire-list'); list.textContent = '';
         W.telegrams.slice(-3).reverse().forEach(t => list.append(h('div', { class: 'tg' }, h('span', null, `${t.from}: ${t.text}`), h('span', { class: 'st' }, clock(t.t)))));
         const rb = $('#c-replies');
-        if (!rb.childElementCount && W.relay) REPLIES.forEach(r => rb.append(h('button', { class: 'chip', onclick: () => W.reply(r) }, r)));
+        if (!rb.childElementCount && W.relay) { REPLIES.forEach(r => rb.append(h('button', { class: 'chip', onclick: () => W.reply(r) }, r))); edgeFade(rb); }
         (W.replies || []).slice(-2).reverse().forEach(r => list.append(h('div', { class: 'tg' }, h('span', { class: 'faint' }, `You: ${r.text}`), h('span', { class: 'st ok' }, clock(r.t)))));
       } else wire.hidden = true;
       $('#k-pause span').textContent = tr.status === 'paused' ? 'Resume' : 'Pause';
+      $('#k-pickup span').textContent = W.pickup ? 'Cancel pickup' : 'Pick me up';
       if (!$('#pocket').hidden) Pocket.render(now, eta, sign);
     },
     map(now) {
@@ -3670,7 +3897,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const marks = [];
       if (goal) marks.push({ ll: [goal.lat, goal.lon], kind: 'goal', label: goal.short });
       if (you) marks.push({ ll: you, kind: 'you' });
-      this.mv.draw({ line: ROUTE.line, done: walkedLine(tr.sEntry, tr.sFar, tr.s), marks, focus });
+      this.mv.draw({ line: ROUTE.line, done: walkedLine(tr.sEntry, tr.sFar, tr.s), marks, focus, label: tr.onTrail && tr.s != null ? `Map. You are ${where(trail.describe(tr.s))}${goal && tr.phase === 'out' ? `, turning at ${goal.short}` : ''}.` : 'Map of your walk' });
     },
     nextStop(now) {
       const tr = W.tr;
@@ -3685,15 +3912,17 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         return { label: 'Last stop', name: 'Home', dist: distTxt(r.m), eta: `about ${minsText(r.m / v)}` };
       }
       if (!tr.onTrail) {
-        const near = tr.detour ? trail.describe(tr.detour.s).text : '';
-        return { label: 'Off the trail', name: 'Rejoin the Monon', dist: tr.lastProj ? distTxt(tr.lastProj.d) : '', eta: near ? `left near ${near}` : '' };
+        const near = tr.detour ? where(trail.describe(tr.detour.s)) : '';
+        return { label: 'Off the trail', name: 'Rejoin the Monon', dist: tr.lastProj ? distTxt(tr.lastProj.d) : '', eta: near ? `left the trail ${near}` : '' };
       }
       const dirMove = tr.phase === 'back' ? -tr.dirUse : tr.dirUse;
       const nx = trail.ahead(tr.s, dirMove, 1)[0];
       if (!nx) return { label: 'End of the mapped trail', name: dirMove > 0 ? 'North of 146th St' : 'South of 10th St' };
       const d = Math.abs(nx.s - tr.s);
-      if (d < 30) return { label: 'Now at', name: nx.short, dist: '', eta: '' };
-      const label = tr.phase === 'back' && nx.id === tr.entryId ? 'Your exit for home' : nx.id === tr.plan.goalId && tr.phase === 'out' ? 'Your turnaround' : 'Next stop';
+      const goal = tr.plan.goalId && trail.byId[tr.plan.goalId];
+      const past = tr.phase === 'out' && goal && dirMove * (tr.s - goal.s) > 40 ? `Past your ${goal.short} turnaround` : null;
+      if (d < 30) return { label: past || 'Now at', name: nx.short, dist: '', eta: '' };
+      const label = past || (tr.phase === 'back' && nx.id === tr.entryId ? 'Your exit for home' : nx.id === tr.plan.goalId && tr.phase === 'out' ? 'Your turnaround' : 'Next stop');
       return { label, name: nx.short, dist: distTxt(d), eta: soonText(d / v) };
     },
     stops(now) {
@@ -3716,6 +3945,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       } else if (tr.phase === 'toHome') rows.push({ n: 'Home', d: tr.remaining().m, tag: '' });
       if (!rows.length) { box.hidden = true; return; }
       box.hidden = false;
+      box.append(h('div', { class: 'stops-head' }, 'Coming up'));
       for (const r of rows) {
         box.append(h('div', { class: 'stop' + (r.goal ? ' goal' : '') + (r.id ? ' tap' : ''), onclick: r.id ? () => stationSheet(r.id) : null },
           h('span', { class: 'n' }, r.n, r.tag ? h('span', { class: 'tag' }, r.tag) : null),
@@ -3757,11 +3987,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const labels = [];
       const place = (x, text, cls, pri) => labels.push({ x, text, cls, pri });
       const inView = trail.stations.filter(st => { const x = X(st.s); return x >= 4 && x <= Wd - 4; });
+      // stations already passed on this leg step back, so the ones ahead stand out
+      const leg = tr.phase === 'back' || tr.phase === 'toHome' ? 'back' : 'out';
+      const passed = new Set(tr.passes.filter(p => p.leg === leg).map(p => p.id));
       for (const st of inView) {
-        const x = X(st.s), big = st.kind !== 'street';
-        svg.append(big ? el('circle', { cx: x, cy: y, r: 4.5, fill: '#0f1217', stroke: '#efe9dd', 'stroke-width': 2 }) : el('line', { x1: x, y1: y - 6, x2: x, y2: y + 6, stroke: '#6d6961', 'stroke-width': 2 }));
+        const x = X(st.s), big = st.kind !== 'street', done = passed.has(st.id);
+        svg.append(big ? el('circle', { cx: x, cy: y, r: done ? 3.5 : 4.5, fill: '#0f1217', stroke: done ? '#6d6961' : '#efe9dd', 'stroke-width': 2 }) : el('line', { x1: x, y1: y - 6, x2: x, y2: y + 6, stroke: done ? '#3f3c38' : '#6d6961', 'stroke-width': 2 }));
         const isGoal = goal && st.id === goal.id;
-        place(x, st.short, isGoal ? 'lbl goal' : big ? 'lbl' : 'lbl dim', isGoal ? 10 : st.id === tr.entryId ? 8 : big ? 6 : 2);
+        place(x, st.short, isGoal ? 'lbl goal' : big && !done ? 'lbl' : 'lbl dim', isGoal ? 10 : st.id === tr.entryId ? 8 : big ? (done ? 4 : 6) : 2);
       }
       if (goal) {
         const x = X(goal.s);
@@ -3813,20 +4046,36 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   /* ------------------------------------------------------------ pocket mode */
   const Pocket = {
     open() {
-      $('#pocket').hidden = false;
+      softShow($('#pocket'));
       if (W.tr) Cab.render(W.now());
       const hold = $('#pk-hold'), ring = $('#pk-ring');
       let t0 = 0, raf = 0;
       const reset = () => { cancelAnimationFrame(raf); t0 = 0; ring.setAttribute('stroke-dashoffset', '238.8'); };
-      const step = () => { const f = Math.min(1, (performance.now() - t0) / 1400); ring.setAttribute('stroke-dashoffset', String(238.8 * (1 - f))); if (f >= 1) { reset(); $('#pocket').hidden = true; return; } raf = requestAnimationFrame(step); };
+      const step = () => { const f = Math.min(1, (performance.now() - t0) / 1400); ring.setAttribute('stroke-dashoffset', String(238.8 * (1 - f))); if (f >= 1) { reset(); softHide($('#pocket'), 200); try { if (navigator.vibrate) navigator.vibrate(15); } catch (e) { /* no vibration */ } return; } raf = requestAnimationFrame(step); };
       hold.onpointerdown = e => { e.preventDefault(); t0 = performance.now(); raf = requestAnimationFrame(step); };
       hold.onpointerup = hold.onpointerleave = hold.onpointercancel = reset;
+      hold.onkeydown = e => { if ((e.key === ' ' || e.key === 'Enter') && !t0) { e.preventDefault(); t0 = performance.now(); raf = requestAnimationFrame(step); } };
+      hold.onkeyup = e => { if (e.key === ' ' || e.key === 'Enter') reset(); };
+      requestAnimationFrame(() => { try { hold.focus({ preventScroll: true }); } catch (e) { /* ignore */ } });
       $('#pocket').oncontextmenu = e => e.preventDefault();
     },
     render(now, eta, sign) {
-      const tr = W.tr;
-      $('#pk-eta').textContent = tr.phase === 'home' ? 'Home' : clock(eta.t);
-      $('#pk-next').textContent = sign ? `${sign.label}: ${sign.name}${sign.dist ? ', ' + sign.dist : ''}` : '';
+      const tr = W.tr, r = tr.remaining(), home = tr.phase === 'home';
+      $('#pk-eta').textContent = home ? 'Home' : clock(eta.t);
+      $('#pk-in').textContent = home ? '' : `in ${minsText(Math.max(0, eta.t - now) / 1000)}`;
+      $('#pk-next').textContent = sign ? `${sign.label}: ${sign.name}${sign.dist ? ', ' + sign.dist : ''}${sign.dist && sign.eta ? ', ' + sign.eta : ''}` : '';
+      $('#pk-stats').textContent = `${L.fmtDist(tr.dist, U())} ${uLabel()} so far, ${minsText(tr.elapsed(now))}`;
+      // the trip as one line: where you are, and where the turnaround falls
+      const total = tr.dist + r.m, f = total > 0 ? Math.min(1, tr.dist / total) : 0;
+      $('#pk-pos').style.left = `${(f * 100).toFixed(1)}%`;
+      const tb = $('#pk-turn'), p = Math.max(tr.p || 0, 0);
+      if (tr.phase === 'out' && r.P != null && r.P > p + 15 && total > 0) { tb.hidden = false; tb.style.left = `${Math.min(100, (tr.dist + r.P - p) / total * 100).toFixed(1)}%`; } else tb.hidden = true;
+      // the one thing that needs him: a check-in, an open pickup, or her latest telegram
+      const tg = W.telegrams[W.telegrams.length - 1], who = P.watcher || 'The board';
+      const text = W.stopCheck && !W.okAt ? `Stopped ${minsText((now - W.stopCheck.since) / 1000)}. ${who} can see it. Unlock and tap I\u2019m fine.`
+        : W.pickup ? `Pickup requested at ${clock(W.pickup.t)}. ${who} has your location.`
+        : tg && now - tg.t < 15 * 60000 ? `${tg.from}: ${tg.text}` : '';
+      const msg = $('#pk-msg'); msg.hidden = !text; msg.textContent = text;
     },
   };
 
@@ -3841,13 +4090,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     (rec.passes || []).forEach(p => { const st = trail.byId[p.id]; if (st && st.kind !== 'street' && p.leg === 'out' && !punches.includes(st.short)) punches.push(st.short); });
     const pace = rec.moving > 60 ? L.fmtPace(rec.dist / rec.moving, rec.unit) : '--';
     return h('div', { class: 'ticket' + (isNew ? ' new' : '') },
-      h('div', { class: 'top' }, h('span', null, rec.demo ? 'Admit one · Demo' : `Admit one · No. ${String(no).padStart(4, '0')}`), h('span', null, d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }))),
+      h('div', { class: 'top' }, h('span', null, 'Admit one'), h('span', null, rec.demo ? 'Demo' : `No. ${String(no).padStart(4, '0')}`)),
       h('div', { class: 'route' }, route),
       h('div', { class: 'facts' },
         h('span', null, `${L.fmtDist(rec.dist, rec.unit)} ${L.unitLabel(rec.unit)}`),
         h('span', null, L.fmtDur(rec.elapsed)),
-        h('span', null, `${pace} /${L.unitLabel(rec.unit)}`),
-        h('span', null, `${clock(rec.t0)} to ${clock(rec.tEnd)}`)),
+        h('span', null, `${pace} /${L.unitLabel(rec.unit)}`)),
+      h('div', { class: 'when' }, `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}, ${clock(rec.t0)} to ${clock(rec.tEnd)}`),
       punches.length ? h('div', { class: 'punch' }, punches.slice(0, 8).map(p => h('span', null, p))) : null,
       (rec.prs && rec.prs.length) || (rec.segPRs && rec.segPRs.length) || (rec.badges && rec.badges.length) || rec.partial ? h('div', { class: 'stamps' },
         rec.partial ? h('span', { class: 'gray' }, 'Unfinished') : null,
@@ -3862,10 +4111,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       this.rec = rec; this.from = opt.from || null; this.demo = !!demo;
       this.no = demo ? 0 : opt.no || walks.filter(w => !w.demo).length;
       show('s-summary');
-      const past = this.from === 'history';
-      $('#u-eyebrow').textContent = past ? 'Ticket book' : 'End of the line';
+      const past = this.from === 'history' || this.from === 'depot';
+      $('#u-eyebrow').textContent = past ? (this.from === 'depot' ? 'Last ticket' : 'Ticket book') : 'End of the line';
       $('#u-title').textContent = past ? new Date(rec.t0).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : demo ? 'Demo complete' : rec.arrived ? 'Welcome home' : rec.partial ? 'Saved, unfinished' : 'Walk saved';
-      $('#u-done').textContent = past ? 'Back to history' : 'Done';
+      $('#u-done').textContent = this.from === 'history' ? 'Back to history' : past ? 'Back' : 'Done';
+      const both = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
+      const prs = past ? [] : (rec.prs || []).map(x => x.label.toLowerCase()), segs = past ? 0 : (rec.segPRs || []).length, bdg = past ? [] : (rec.badges || []).map(badgeName);
+      const cheer = [prs.length ? `New best: ${both(prs)}.` : '', segs ? `${segs} segment record${segs > 1 ? 's' : ''} tonight.` : '', bdg.length ? `Badge earned: ${both(bdg)}.` : ''].filter(Boolean).join(' ');
+      $('#u-cheer').hidden = !cheer; $('#u-cheer').textContent = cheer;
       $('#u-delete').hidden = !past;
       const t = $('#u-ticket'); t.textContent = '';
       t.append(ticket(rec, this.no, !past));
@@ -3880,11 +4133,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       } else mc.hidden = true;
       const kv = $('#u-kv'); kv.textContent = '';
       const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v' }, v));
-      kv.append(cell('Distance', `${L.fmtDist(rec.dist, rec.unit)} ${L.unitLabel(rec.unit)}`), cell('Time', L.fmtDur(rec.elapsed)), cell('Moving', L.fmtDur(rec.moving)),
+      kv.append(...[cell('Distance', `${L.fmtDist(rec.dist, rec.unit)} ${L.unitLabel(rec.unit)}`), cell('Time', L.fmtDur(rec.elapsed)), cell('Moving', L.fmtDur(rec.moving)),
         cell('Avg pace', rec.moving > 60 ? L.fmtPace(rec.dist / rec.moving, rec.unit) : '--'), cell('Farthest', rec.farId ? short(rec.farId) : '--'), cell('Home at', clock(rec.tEnd)),
-        cell('Breaks', rec.breaks && rec.breaks.n ? `${rec.breaks.n} · ${minsText(rec.breaks.total)}` : 'None'),
-        cell('Steps', rec.steps ? rec.steps.toLocaleString() : '--'),
-        cell('Calories', rec.kcal ? `${rec.kcal}` : '--'));
+        rec.breaks && rec.breaks.n ? cell(rec.breaks.n === 1 ? '1 break' : `${rec.breaks.n} breaks`, minsText(rec.breaks.total)) : cell('Breaks', 'None'),
+        rec.steps ? cell('Steps', rec.steps.toLocaleString()) : null,
+        rec.kcal ? cell('Calories', `${rec.kcal}`) : null].filter(Boolean));
       const sp = $('#u-splits'); sp.textContent = '';
       const ss = Metrics.splitStats(rec.splits || []);
       if (ss && rec.splits.length >= 2) {
@@ -3910,61 +4163,79 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     async image() {
       const r = this.rec; if (!r) return;
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) { /* fonts optional */ }
-      const W_ = 1080, H_ = 1350, c = document.createElement('canvas'); c.width = W_; c.height = H_;
-      const g = c.getContext('2d');
+      const W_ = 1080, c = document.createElement('canvas'), g = c.getContext('2d');
       const disp = "800 {s}px 'Big Shoulders Display', 'Arial Narrow', sans-serif", body = "600 {s}px 'Barlow', system-ui, sans-serif";
       const f = (tpl, s) => tpl.replace('{s}', s);
-      g.fillStyle = '#0f1217'; g.fillRect(0, 0, W_, H_);
-      // rail stripe
-      g.fillStyle = '#c8283a'; for (let x = 60; x < W_ - 60; x += 56) g.fillRect(x, 150, 44, 12);
-      g.fillStyle = '#efe9dd'; g.font = f(disp.replace('800', '900'), 104); g.textBaseline = 'alphabetic';
-      g.fillText('LAST TRAIN HOME', 60, 126);
-      // ticket body with side notches
-      const tx = 60, ty = 230, tw = W_ - 120, th = 880;
-      g.fillStyle = '#f1e7d2';
-      g.beginPath(); g.roundRect ? g.roundRect(tx, ty, tw, th, 28) : g.rect(tx, ty, tw, th); g.fill();
-      g.fillStyle = '#0f1217'; // notches punched in the ticket's sides
-      [[tx, ty + th / 2], [tx + tw, ty + th / 2]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 30, 0, Math.PI * 2); g.fill(); });
-      const d = new Date(r.t0);
-      g.fillStyle = '#8a2630'; g.font = f(body.replace('600', '700'), 30);
-      g.fillText(`ADMIT ONE \u00b7 NO. ${String(this.no || 0).padStart(4, '0')}`, tx + 50, ty + 80);
-      const ds = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
-      g.textAlign = 'right'; g.fillText(ds, tx + tw - 50, ty + 80); g.textAlign = 'left';
+      const tx = 60, ty = 230, tw = W_ - 120, inner = tw - 100, X0 = tx + 50;
+      const wrap = (s, max) => { const out = []; let ln = ''; for (const wd of s.split(' ')) { const t = ln ? ln + ' ' + wd : wd; if (g.measureText(t).width > max && ln) { out.push(ln); ln = wd; } else ln = t; } if (ln) out.push(ln); return out; };
+      // what goes on the ticket, measured before anything is drawn so the ticket fits its content
+      const ds = new Date(r.t0).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
       const from = r.entryId ? short(r.entryId) : 'Home', turn = r.farId ? short(r.farId) : r.turn ? short(r.turn.id) : null;
-      const words = (turn ? `${from} to ${turn} and home` : `${from} and home`).toUpperCase().split(' ');
-      g.fillStyle = '#1c1713'; g.font = f(disp.replace('800', '900'), 118);
-      let line = '', y = ty + 220; const lines = [];
-      for (const wd of words) { const test = line ? line + ' ' + wd : wd; if (g.measureText(test).width > tw - 100 && line) { lines.push(line); line = wd; } else line = test; }
-      if (line) lines.push(line);
-      lines.slice(0, 3).forEach(l => { g.fillText(l, tx + 50, y); y += 112; });
-      // stats
-      y += 30;
-      const stats = [[`${L.fmtDist(r.dist, r.unit)}`, L.unitLabel(r.unit)], [L.fmtDur(r.elapsed), 'time'], [r.moving > 60 ? L.fmtPace(r.dist / r.moving, r.unit) : '--', `per ${L.unitLabel(r.unit)}`]];
-      // size the numbers so all three fit on one line with even gaps
-      let size = 84;
-      const widthAt = s => { g.font = f(disp, s); return stats.reduce((a, [v]) => a + g.measureText(v).width, 0); };
-      while (size > 48 && widthAt(size) + 2 * 60 > tw - 100) size -= 4;
-      let sx = tx + 50;
-      stats.forEach(([v, u]) => {
-        g.fillStyle = '#1c1713'; g.font = f(disp, size); g.fillText(v, sx, y);
-        const vw = g.measureText(v).width;
-        g.fillStyle = '#5b4e3c'; g.font = f(body, 28); g.fillText(u.toUpperCase(), sx, y + 42);
-        sx += Math.max(vw, g.measureText(u.toUpperCase()).width) + 60;
-      });
-      y += 120;
-      g.fillStyle = '#5b4e3c'; g.font = f(body, 34); g.fillText(`${clock(r.t0)} to ${clock(r.tEnd)}`, tx + 50, y);
-      // station punches
-      y += 70; let px = tx + 50;
+      g.font = f(disp.replace('800', '900'), 118);
+      const routeLines = wrap((turn ? `${from} to ${turn} and home` : `${from} and home`).toUpperCase(), inner).slice(0, 3);
       const punches = [];
       (r.passes || []).forEach(p => { const st = trail.byId[p.id]; if (st && st.kind !== 'street' && p.leg === 'out' && !punches.includes(st.short)) punches.push(st.short); });
-      g.font = f(body.replace('600', '700'), 26);
-      for (const pn of punches.slice(0, 8)) {
-        const wv = g.measureText(pn.toUpperCase()).width + 36;
-        if (px + wv > tx + tw - 50) { px = tx + 50; y += 58; if (y > ty + th - 40) break; }
+      const stamps = [].concat((r.prs || []).map(x => [x.label, '#8a2630']), (r.badges || []).map(b => [badgeName(b), '#1f4d35']),
+        (r.segPRs || []).length ? [[`${r.segPRs.length} segment record${r.segPRs.length > 1 ? 's' : ''}`, '#8a2630']] : []);
+      const chipFont = f(body.replace('600', '700'), 26);
+      const layChips = (items, pad) => { g.font = chipFont; const out = []; let x = 0, row = 0; for (const [text, col] of items) { const t = text.toUpperCase(), w = g.measureText(t).width + pad; if (x + w > inner && x > 0) { x = 0; row++; } out.push({ x, row, w, t, col }); x += w + 12; } return out; };
+      const pChips = layChips(punches.slice(0, 8).map(p => [p]), 36), sChips = layChips(stamps.slice(0, 6), 32);
+      const rows = a => (a.length ? a[a.length - 1].row + 1 : 0);
+      g.font = f(body, 30);
+      const note = [].concat(FACTS[r.farId] || [], FACTS.general || []).map(s => wrap(s, inner)).find(ls => ls.length <= 3) || null;
+      // vertical layout, in pixels from the top of the ticket
+      const yRoute = 220, yStats = yRoute + (routeLines.length - 1) * 112 + 142, yDate = yStats + 120;
+      const yPunch = yDate + 70, afterPunch = pChips.length ? yPunch + (rows(pChips) - 1) * 58 : yDate;
+      const yStamp = afterPunch + 70, last = sChips.length ? yStamp + (rows(sChips) - 1) * 58 : afterPunch;
+      const yPerf = last + 60, th = note ? yPerf + 110 + (note.length - 1) * 40 + 50 : last + 70;
+      const H_ = ty + th + 240;
+      c.width = W_; c.height = H_;
+      g.fillStyle = '#0f1217'; g.fillRect(0, 0, W_, H_);
+      g.fillStyle = '#c8283a'; for (let x = 60; x + 44 <= W_ - 60; x += 56) g.fillRect(x, 150, 44, 12);
+      g.fillStyle = '#efe9dd'; g.font = f(disp.replace('800', '900'), 104); g.textBaseline = 'alphabetic';
+      g.fillText('LAST TRAIN HOME', 60, 126);
+      g.fillStyle = '#f1e7d2';
+      g.beginPath(); g.roundRect ? g.roundRect(tx, ty, tw, th, 28) : g.rect(tx, ty, tw, th); g.fill();
+      g.fillStyle = '#8a2630'; g.font = f(body.replace('600', '700'), 30);
+      g.fillText('ADMIT ONE', X0, ty + 80);
+      g.textAlign = 'right'; g.fillText(r.demo ? 'DEMO' : `NO. ${String(this.no || 0).padStart(4, '0')}`, tx + tw - 50, ty + 80); g.textAlign = 'left';
+      g.fillStyle = '#1c1713'; g.font = f(disp.replace('800', '900'), 118);
+      routeLines.forEach((l, i) => g.fillText(l, X0, ty + yRoute + i * 112));
+      // stats, sized so all three fit on one line with even gaps
+      const stats = [[`${L.fmtDist(r.dist, r.unit)}`, L.unitLabel(r.unit)], [L.fmtDur(r.elapsed), 'time'], [r.moving > 60 ? L.fmtPace(r.dist / r.moving, r.unit) : '--', `per ${L.unitLabel(r.unit)}`]];
+      let size = 84;
+      const widthAt = s => { g.font = f(disp, s); return stats.reduce((a, [v]) => a + g.measureText(v).width, 0); };
+      while (size > 48 && widthAt(size) + 2 * 60 > inner) size -= 4;
+      let sx = X0;
+      stats.forEach(([v, u]) => {
+        g.fillStyle = '#1c1713'; g.font = f(disp, size); g.fillText(v, sx, ty + yStats);
+        const vw = g.measureText(v).width;
+        g.fillStyle = '#5b4e3c'; g.font = f(body, 28); g.fillText(u.toUpperCase(), sx, ty + yStats + 42);
+        sx += Math.max(vw, g.measureText(u.toUpperCase()).width) + 60;
+      });
+      g.fillStyle = '#5b4e3c'; g.font = f(body, 34); g.fillText(`${ds}, ${clock(r.t0)} to ${clock(r.tEnd)}`, X0, ty + yDate);
+      g.font = chipFont;
+      pChips.forEach(ch => {
+        const x = X0 + ch.x, yy = ty + yPunch + ch.row * 58;
         g.setLineDash([6, 5]); g.strokeStyle = '#b9a98b'; g.lineWidth = 2;
-        g.beginPath(); g.roundRect ? g.roundRect(px, y - 34, wv, 46, 23) : g.rect(px, y - 34, wv, 46); g.stroke(); g.setLineDash([]);
-        g.fillStyle = '#5b4e3c'; g.fillText(pn.toUpperCase(), px + 18, y - 2);
-        px += wv + 12;
+        g.beginPath(); g.roundRect ? g.roundRect(x, yy - 34, ch.w, 46, 23) : g.rect(x, yy - 34, ch.w, 46); g.stroke(); g.setLineDash([]);
+        g.fillStyle = '#5b4e3c'; g.fillText(ch.t, x + 18, yy - 2);
+      });
+      // records and badges, stamped as on the ticket in the app
+      sChips.forEach(ch => {
+        const x = X0 + ch.x, yy = ty + yStamp + ch.row * 58;
+        g.fillStyle = ch.col; g.beginPath(); g.roundRect ? g.roundRect(x, yy - 34, ch.w, 46, 8) : g.rect(x, yy - 34, ch.w, 46); g.fill();
+        g.fillStyle = '#fff4ef'; g.fillText(ch.t, x + 16, yy - 2);
+      });
+      // the tear line, with the notches punched where it meets the edges, and a stub of Monon lore
+      const yN = note ? ty + yPerf : ty + th / 2;
+      g.fillStyle = '#0f1217';
+      [[tx, yN], [tx + tw, yN]].forEach(([x, yy]) => { g.beginPath(); g.arc(x, yy, 30, 0, Math.PI * 2); g.fill(); });
+      if (note) {
+        g.setLineDash([10, 8]); g.strokeStyle = '#b9a98b'; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(tx + 44, yN); g.lineTo(tx + tw - 44, yN); g.stroke(); g.setLineDash([]);
+        g.fillStyle = '#8a2630'; g.font = chipFont; g.fillText('CONDUCTOR’S NOTE', X0, yN + 64);
+        g.fillStyle = '#3a3128'; g.font = f(body, 30); note.forEach((l, i) => g.fillText(l, X0, yN + 110 + i * 40));
       }
       // footer
       g.fillStyle = '#858178'; g.font = f(body, 30);
@@ -3978,7 +4249,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       } catch (e) { if (e && e.name === 'AbortError') return; }
       const url = c.toDataURL('image/png');
       openSheet((p, close) => {
-        p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, 'Your ticket'),
+        p.append(h('h2', { class: 'sh' }, 'Your ticket'),
           h('img', { src: url, alt: 'Ticket stub for this walk', style: 'width:100%;border-radius:12px' }),
           h('p', { class: 'note' }, 'Press and hold the picture to save or share it.'),
           h('div', { class: 'row' }, h('a', { class: 'btn primary', style: 'flex:1', href: url, download: name }, 'Download'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Close')));
@@ -4000,34 +4271,68 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const tot = $('#h-totals'); tot.textContent = '';
       const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v' }, v));
       const total = real.reduce((a, w) => a + w.dist, 0);
-      tot.append(cell('Walks', String(real.length)), cell('Total', `${L.fmtDist(total, U(), 1)} ${uLabel()}`), cell('Streak', `${Records.streak(real, Date.now())} d`));
+      tot.append(cell('Walks', String(real.length)), cell('Total', `${L.fmtDist(total, U(), 1)} ${uLabel()}`), cell('Streak', (n => `${n} day${n === 1 ? '' : 's'}`)(Records.streak(real, Date.now()))));
       const pp = Records.passport(real, trail), box = $('#h-passport'); box.textContent = '';
       $('#h-pass-n').textContent = `${pp.got} of ${pp.total} punched`;
-      pp.stations.forEach(st => box.append(h('button', { type: 'button', class: 'stamp' + (pp.first[st.id] ? ' got' : ''), title: pp.first[st.id] ? `First punched ${new Date(pp.first[st.id]).toLocaleDateString()}` : 'Not yet', onclick: () => stationSheet(st.id) }, st.short)));
+      pp.stations.forEach(st => box.append(h('button', { type: 'button', class: 'stamp' + (pp.first[st.id] ? ' got' : ''), title: pp.first[st.id] ? `First punched ${new Date(pp.first[st.id]).toLocaleDateString()}` : 'Not yet', 'aria-label': pp.first[st.id] ? `${st.short}, punched ${new Date(pp.first[st.id]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `${st.short}, not yet`, onclick: () => stationSheet(st.id) }, st.short)));
       const rec = $('#h-records'); rec.textContent = '';
       const longest = real.reduce((a, w) => (!a || w.dist > a.dist ? w : a), null);
       const far = real.reduce((a, w) => { const st = w.farId && trail.byId[w.farId]; if (!st) return a; return !a || st.s > a.s ? st : a; }, null);
       const quick = real.filter(w => w.dist > 4800 && w.moving > 60).reduce((a, w) => (!a || w.dist / w.moving > a.dist / a.moving ? w : a), null);
-      rec.append(cell('Longest', longest ? `${L.fmtDist(longest.dist, U(), 1)} ${uLabel()}` : '--'), cell('Farthest', far ? far.short : '--'), cell('Best pace', quick ? L.fmtPace(quick.dist / quick.moving, U()) : '--'));
+      const openW = w => Summary.show(w, false, { from: 'history', no: real.indexOf(w) + 1 });
+      const rcell = (l, v, w) => w ? h('button', { type: 'button', class: 'kvbtn', 'aria-label': `${l}: ${v}. Open that walk.`, onclick: () => openW(w) }, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v' }, v)) : cell(l, v);
+      const farW = far ? real.filter(w => w.farId === far.id).sort((a, b) => a.t0 - b.t0)[0] : null;
+      rec.append(rcell('Longest', longest ? `${L.fmtDist(longest.dist, U(), 1)} ${uLabel()}` : '--', longest), rcell('Farthest', far ? far.short : '--', farW), rcell('Best pace', quick ? L.fmtPace(quick.dist / quick.moving, U()) : '--', quick));
       const list = $('#h-list'); list.textContent = '';
       if (!real.length) list.append(h('p', { class: 'note' }, 'Your ticket stubs will collect here, one per walk.'));
-      real.slice().reverse().forEach((w, i) => {
+      let month = '', shown = 0;
+      const all = real.slice().reverse();
+      const moreBtn = h('button', { class: 'btn ghost', onclick: () => chunk(20) });
+      const chunk = n => {
+        moreBtn.remove();
+        all.slice(shown, shown + n).forEach((w, j) => {
+        const i = shown + j;
+        const d = new Date(w.t0), mk = `${d.getFullYear()}-${d.getMonth()}`;
+        if (mk !== month) {
+          month = mk;
+          const inM = real.filter(x => { const e = new Date(x.t0); return e.getFullYear() === d.getFullYear() && e.getMonth() === d.getMonth(); });
+          list.append(h('div', { class: 'month' }, h('h2', null, d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })), h('span', { class: 'note' }, `${inM.length} walk${inM.length === 1 ? '' : 's'}, ${L.fmtDist(inM.reduce((a, x) => a + x.dist, 0), U(), 1)} ${uLabel()}`)));
+        }
         const tk = ticket(w, real.length - i);
         tk.classList.add('tap'); tk.setAttribute('role', 'button'); tk.tabIndex = 0; tk.setAttribute('aria-label', `Open the walk from ${new Date(w.t0).toLocaleDateString()}`);
         const open = () => Summary.show(w, false, { from: 'history', no: real.length - i });
         tk.addEventListener('click', open); tk.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
         list.append(tk);
-      });
+        });
+        shown = Math.min(all.length, shown + n);
+        if (shown < all.length) { moreBtn.textContent = `Show ${Math.min(20, all.length - shown)} more of ${all.length - shown}`; list.append(moreBtn); }
+      };
+      chunk(12);
       this.charts(real);
       const earned = Records.earnedBadges(real, trail), bb = $('#h-badges'); bb.textContent = '';
       $('#h-badges-n').textContent = `${earned.size} of ${Records.BADGES.length}`;
-      Records.BADGES.forEach(b => bb.append(h('div', { class: 'mbadge' + (earned.has(b.id) ? ' got' : ''), role: 'listitem' },
-        h('span', { class: 'medal', 'aria-hidden': 'true' }), h('b', null, b.name), h('span', null, earned.has(b.id) ? 'Earned' : b.how))));
+      const badge = b => h('div', { class: 'mbadge' + (earned.has(b.id) ? ' got' : ''), role: 'listitem' },
+        h('span', { class: 'medal', 'aria-hidden': 'true' }), h('b', null, b.name), h('span', { class: 'how' }, b.how), earned.has(b.id) ? h('span', { class: 'sr' }, 'Earned') : null);
+      const got = Records.BADGES.filter(b => earned.has(b.id)), left = Records.BADGES.filter(b => !earned.has(b.id));
+      got.forEach(b => bb.append(badge(b)));
+      bb.hidden = !got.length;
+      const more = $('#h-badges-more'); more.textContent = '';
+      if (!got.length) more.append(h('p', { class: 'note' }, 'No badges yet. Your first walk earns one.'));
+      if (left.length) { const grid = h('div', { class: 'badges', role: 'list' }); left.forEach(b => grid.append(badge(b))); more.append(h('details', { class: 'more', open: !got.length || null }, h('summary', null, `${left.length} more to earn`), grid)); }
+      this.tab(this.cur || 'tickets');
+    },
+    // L51 three tabs instead of one long scroll
+    tab(name) {
+      this.cur = name;
+      $$('#h-tabs [role="tab"]').forEach(b => { const on = b.dataset.tab === name; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+      ['tickets', 'stats', 'badges'].forEach(n => { $('#h-p-' + n).hidden = n !== name; });
+      if (name === 'stats') this.charts(walks.filter(w => !w.demo));
     },
     // Weekly distance (last 10 weeks) and pace per walk (last 15 walks)
     charts(real) {
       const wk = $('#h-weeks'), pc = $('#h-pace');
       $('#h-charts').hidden = real.length < 2;
+      $('#h-stats-empty').hidden = real.length >= 2;
       if (real.length < 2) return;
       const now = Date.now(), w0 = Records.weekStart(now), WEEK = 7 * 86400000;
       const weeks = [];
@@ -4147,6 +4452,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         const m = pl.rt(goalSt);
         rtEl.textContent = `${mode === 'stop' ? '' : `Turn at ${goalSt.short}. `}${L.fmtDist(m, U(), 1)} ${uLabel()} round trip, about ${minsText(m / pl.speed)}.`;
       } else rtEl.textContent = P.home ? 'Turn wherever you like. The conductor learns your usual.' : '';
+      this.board = { pr, pl, goalSt };
+      this.tickBoard();
+      edgeFade(box);
       const en = $('#d-entry');
       if (pr.entryMode && trail.byId[pr.entryMode] && pr.n >= 2) {
         const c = pr.connBy && pr.connBy[pr.entryMode];
@@ -4164,9 +4472,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         sc.append(h('h2', null, 'Arrivals board'), h('p', { class: 'muted' }, 'Sharing is off. Turn it on in Settings to give someone a live board.'));
       } else {
         const who = P.watcher || 'her';
-        sc.append(h('div', { class: 'row between' }, h('h2', null, `${P.watcher ? P.watcher + '’s' : 'The'} arrivals board`), h('span', { class: 'pill ' + (P.bell ? 'go' : '') }, h('i'), h('b', null, P.bell ? 'Phone alerts on' : 'Board only'))),
+        sc.append(h('div', { class: 'row between' }, h('h2', null, `${P.watcher ? P.watcher + '’s' : 'The'} arrivals board`), h('span', { class: 'pill ' + (P.bell ? 'go' : '') }, h('i'), h('b', null, P.bell ? 'Alerts on' : 'Alerts off'))),
           h('p', { class: 'muted small' }, `Send ${who} the link once. It shows your walk live, your home time, and lets ${who} send telegrams the conductor reads to you.`),
-          h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => shareLink() }, `Send to ${who}`), h('button', { class: 'btn', onclick: () => copyText(boardLink()) }, 'Copy link'), h('button', { class: 'btn ghost', onclick: () => qrSheet() }, 'QR code')));
+          h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => shareLink() }, `Send to ${who}`), h('button', { class: 'btn ghost', onclick: () => copyText(boardLink(), null, 'Board link copied') }, 'Copy link'), h('button', { class: 'btn ghost', onclick: () => qrSheet() }, 'QR code')));
       }
       // resume
       let act = store.get('active', null);
@@ -4182,18 +4490,57 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       // weekly goal
       const wkEl = $('#d-week');
       if (P.weekGoal) {
-        const wk = Records.weekTotal(walks, Date.now()), f = Math.min(1, wk / P.weekGoal);
+        const wk = Records.weekTotal(walks, Date.now()), f = wk / P.weekGoal, scale = Math.max(wk, P.weekGoal), streak = Records.streak(walks, Date.now());
         wkEl.hidden = false; wkEl.textContent = '';
         wkEl.append(h('div', { class: 'row between' }, h('h2', null, 'This week'), h('span', { class: 'note' }, `${L.fmtDist(wk, U(), 1)} of ${L.fmtDist(P.weekGoal, U(), 0)} ${uLabel()}`)),
-          h('div', { class: 'meter', role: 'img', 'aria-label': `${Math.round(f * 100)} percent of your weekly goal` }, h('i', { style: `width:${(f * 100).toFixed(1)}%` })),
-          h('p', { class: 'note' }, f >= 1 ? 'Goal met. Everything else is extra credit.' : `${L.fmtDist(P.weekGoal - wk, U(), 1)} ${uLabel()} to go. Streak: ${Records.streak(walks, Date.now())} day${Records.streak(walks, Date.now()) === 1 ? '' : 's'}.`));
+          h('div', { class: 'meter', role: 'img', 'aria-label': `${Math.round(f * 100)} percent of your weekly goal` }, h('i', { style: `width:${(wk / scale * 100).toFixed(1)}%` }), f > 1 ? h('b', { style: `left:${(P.weekGoal / scale * 100).toFixed(1)}%` }) : null),
+          h('p', { class: 'note' }, f >= 1 ? `Goal met${f > 1.02 ? `, ${L.fmtDist(wk - P.weekGoal, U(), 1)} ${uLabel()} past it` : ''}. Everything else is extra credit.` : `${L.fmtDist(P.weekGoal - wk, U(), 1)} ${uLabel()} to go. Streak: ${streak} day${streak === 1 ? '' : 's'}.`));
       } else wkEl.hidden = true;
       // last walk
       const last = $('#d-last'); last.textContent = '';
       const real = walks.filter(w => !w.demo);
-      if (real.length) last.append(h('div', { class: 'eyebrow', style: 'margin-bottom:8px' }, 'Last ticket'), ticket(real[real.length - 1], real.length));
+      if (real.length) {
+        const w = real[real.length - 1], tk = ticket(w, real.length), open = () => Summary.show(w, false, { from: 'depot', no: real.length });
+        tk.classList.add('tap'); tk.setAttribute('role', 'button'); tk.tabIndex = 0; tk.setAttribute('aria-label', `Open your last walk, from ${new Date(w.t0).toLocaleDateString()}`);
+        tk.addEventListener('click', open); tk.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        last.append(h('div', { class: 'eyebrow', style: 'margin-bottom:8px' }, 'Last ticket'), tk);
+      }
       $('#d-note').textContent = P.home ? 'Starts GPS, keeps your screen on, and calls out every stop. Keep the page open with the phone in your pocket.' : 'Set your home station first so the app can time your trip home.';
     },
+  };
+  // Departures board: where tonight's turn is, the round trip, and when you'd be home leaving now
+  Depot.tickBoard = function () {
+    const b = this.board; if (!b) return;
+    const { pl, goalSt } = b, now = Date.now();
+    $('#d-clock').textContent = clock(now);
+    let to = 'Set home first', rt = null;
+    if (P.home && goalSt) { to = goalSt.short; rt = pl ? pl.rt(goalSt) : null; }
+    else if (P.home) { to = 'Your call'; rt = pl ? pl.usual : null; }
+    $('#d-f-rt-l').textContent = P.home && !goalSt ? 'Usual trip' : 'Round trip';
+    flap($('#d-f-to'), to, 18);
+    flap($('#d-f-rt'), rt ? `${L.fmtDist(rt, U(), 1)} ${uLabel()}` : '--', 9);
+    flap($('#d-f-home'), rt && pl ? clock(now + (rt / pl.speed) * 1000) : '--', 8);
+    this.fit();
+  };
+  // Does tonight's plan make the home-by time? If not, name the farthest stop that does.
+  Depot.fit = function () {
+    const el = $('#d-fit'), hb = this.homeBy(), b = this.board;
+    $('#d-homeby-clear').hidden = !hb;
+    if (!hb || !b || !b.pl || !P.home) { el.hidden = true; return; }
+    const { pl, goalSt } = b, now = Date.now();
+    const rt = goalSt ? pl.rt(goalSt) : pl.usual;
+    el.hidden = false;
+    if (!rt) { el.textContent = `The conductor will tell you when to turn around to be home by ${clock(hb)}.`; el._sig = ''; return; }
+    const diff = Math.round((hb - (now + (rt / pl.speed) * 1000)) / 60000);
+    if (diff >= 0) { el.textContent = `${goalSt ? `Turning at ${goalSt.short}` : 'Your usual walk'} gets you home ${diff < 3 ? 'right about then' : `about ${minsText(diff * 60)} early`}.`; el._sig = ''; return; }
+    const alt = pl.fitsIn((hb - now) / 1000);
+    // rebuild only when the advice changes, so the button never swaps out under a finger
+    const sig = `${diff}|${alt ? alt.id + clock(now + (pl.rt(alt) / pl.speed) * 1000) : ''}|${hb}`;
+    if (el._sig === sig && el.childNodes.length) return;
+    el._sig = sig; el.textContent = '';
+    el.append(`That runs about ${minsText(-diff * 60)} past ${clock(hb)}.`);
+    if (alt) el.append(` ${alt.short} gets you back by ${clock(now + (pl.rt(alt) / pl.speed) * 1000)}. `, h('button', { class: 'linkbtn', onclick: () => { P.goalId = alt.id; P.planTarget = null; P.planMode = 'stop'; saveP(); this.render(); } }, `Turn at ${alt.short}`));
+    else el.append(' Even the nearest turnaround runs late, so head out soon.');
   };
   // Monday recap of the week before, shown once
   Depot.recap = function () {
@@ -4211,13 +4558,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const prevDist = before.reduce((a, w) => a + w.dist, 0);
     const change = prevDist > 0 ? Math.round((dist / prevDist - 1) * 100) : null;
     openSheet((p, close) => {
-      const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v', style: 'font-size:22px' }, v));
-      p.append(h('div', { class: 'eyebrow' }, `Week of ${new Date(prev0).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`), h('h2', { style: 'font:800 28px/1 var(--f-display);text-transform:uppercase' }, 'Last week on the line'),
-        h('div', { class: 'kv' }, cell('Walks', String(last.length)), cell('Distance', `${L.fmtDist(dist, U(), 1)} ${uLabel()}`), cell('Time', minsText(time)),
+      const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v' }, v));
+      p.append(h('div', { class: 'eyebrow' }, `Week of ${new Date(prev0).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`), h('h2', { class: 'sh' }, 'Last week on the line'),
+        h('div', { class: 'kv sm' }, cell('Walks', String(last.length)), cell('Distance', `${L.fmtDist(dist, U(), 1)} ${uLabel()}`), cell('Time', minsText(time)),
           cell('Best pace', quick ? L.fmtPace(quick.dist / quick.moving, U()) : '--'), cell('Farthest', far ? far.short : '--'), cell('Vs week before', change == null ? '--' : `${change > 0 ? '+' : ''}${change}%`)),
         badges.length ? h('p', { class: 'muted small' }, `Badges earned: ${badges.map(badgeName).join(', ')}.`) : null,
         P.weekGoal ? h('p', { class: 'note' }, `Goal this week: ${L.fmtDist(P.weekGoal, U(), 0)} ${uLabel()}.`) : null,
-        h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: close }, 'All aboard')));
+        h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: close }, 'Done')));
     });
   };
   const standalone = () => (navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
@@ -4231,7 +4578,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       { k: 'voice', ok: !!P.done.voice, label: 'Hear the conductor with your volume up', act: () => { Sound.test(); P.done.voice = Date.now(); saveP(); this.render(); } },
       { k: 'link', ok: !!P.done.link || !P.share, label: `Send the arrivals board to ${P.watcher || 'your watcher'}`, act: () => shareLink() },
       { k: 'install', ok: standalone() || !!P.done.install, label: 'Add to your Home Screen so the phone keeps your history', act: () => openSheet((p, close) => {
-        p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, 'Add to Home Screen'),
+        p.append(h('h2', { class: 'sh' }, 'Add to Home Screen'),
           h('p', { class: 'muted' }, 'On iPhone, open this page in Safari, tap Share, then Add to Home Screen. On Android, use the Chrome menu and Add to Home screen. Open the app from that icon from now on: it launches full screen, and the phone won\u2019t clear your saved walks the way Safari can for sites you haven\u2019t opened in a week.'),
           h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { P.done.install = Date.now(); saveP(); close(); this.render(); } }, 'Done'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Later')));
       }) },
@@ -4250,7 +4597,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const box = $('#d-tonight'); box.textContent = '';
     const now = Date.now();
     const sun = L.sunTimes(now, 39.9, -86.14), m = L.moonPhase(now);
-    box.append(h('div', { class: 'row between' }, h('h2', null, 'Dispatch'), h('span', { class: 'note' }, sun.set ? `Sunset ${clock(sun.set)}` : '')));
+    box.append(h('div', { class: 'row between' }, h('h2', null, 'Dispatch'), h('span', { class: 'note' }, !sun.set ? '' : now > sun.set ? `Sun set at ${clock(sun.set)}` : sun.set - now < 90 * 60000 ? `Sunset in ${minsText((sun.set - now) / 1000)}` : `Sunset ${clock(sun.set)}`)));
     const sky = h('div', { class: 'sky' });
     const rise = sun.set ? sun.set + (m.age - 14.77) * 50.5 * 60000 : null;
     const late = !m.waxing && m.illum <= 0.96 && rise && rise - Math.max(now, sun.set) > 3600000;
@@ -4297,7 +4644,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       svg.append(svgEl('rect', { width: size, height: size, fill: '#ffffff' }), svgEl('path', { d, fill: '#000000' }));
     } catch (e) { return toast('Could not make a QR code for this link'); }
     openSheet((p, close) => {
-      p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, `Scan for ${P.watcher ? P.watcher + '\u2019s' : 'the'} board`), svg,
+      p.append(h('h2', { class: 'sh' }, `Scan for ${P.watcher ? P.watcher + '\u2019s' : 'the'} board`), svg,
         h('p', { class: 'note', style: 'text-align:center' }, 'Open the camera on her phone and point it here. Anyone who scans it can follow your walks.'),
         h('button', { class: 'btn', onclick: close }, 'Done'));
     });
@@ -4310,8 +4657,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (navigator.share) navigator.share({ title: 'Arrivals board', text, url }).catch(() => {});
     else openSheet((p, close) => {
       const box = h('div', { class: 'codebox' }, url);
-      p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, `Board link for ${who}`), h('p', { class: 'muted small' }, 'Anyone with this link can follow your walks, so send it to one person.'), box,
-        h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => copyText(url, box) }, 'Copy'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Done')));
+      p.append(h('h2', { class: 'sh' }, `Board link for ${who}`), h('p', { class: 'muted small' }, 'Anyone with this link can follow your walks, so send it to one person.'), box,
+        h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => copyText(url, box, 'Board link copied') }, 'Copy'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Done')));
     });
   }
 
@@ -4327,7 +4674,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!P.home) { s.textContent = 'No home set yet.'; return; }
       const pj = trail.project(P.home.lat, P.home.lon);
       const st = trail.nearest(pj.s, 400);
-      s.textContent = `Home set${P.home.label ? ': ' + P.home.label : ''}. About ${distTxt(pj.d)} from the trail${st ? ' near ' + st.short : ''}.`;
+      const acc = /^set from GPS/.test(P.home.label || '') && (P.home.label.match(/\u00b1(\d+)/) || [])[1];
+      const src = /^set from GPS/.test(P.home.label || '') ? ` from GPS${acc ? `, accurate to about ${acc} m` : ''}` : P.home.label ? ` to ${P.home.label}` : '';
+      s.textContent = `Home set${src}. It's ${distTxt(pj.d)} from the trail${st ? `, near ${st.short}` : ''}.`;
       const ph = $('#p-home'); if (ph) ph.textContent = s.textContent;
     },
     here() {
@@ -4343,18 +4692,18 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     },
     async search() {
       const q = $('#w-addr').value.trim(); if (!q) return;
-      const box = $('#w-addr-results'); box.hidden = false; box.textContent = ''; box.append(h('div', { class: 'stop' }, h('span', { class: 'n' }, 'Searching…')));
+      const box = $('#w-addr-results'); box.hidden = false; box.textContent = ''; box.append(h('div', { class: 'result msg' }, 'Searching\u2026'));
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=us&q=${encodeURIComponent(q)}`);
         const list = await r.json();
         box.textContent = '';
-        if (!list.length) { box.append(h('div', { class: 'stop' }, h('span', { class: 'n' }, 'No matches'))); return; }
-        list.forEach(it => box.append(h('button', { class: 'stop', style: 'background:none;border:0;border-top:1px solid var(--rule);text-align:left;cursor:pointer;width:100%', onclick: () => {
+        if (!list.length) { box.append(h('div', { class: 'result msg' }, 'No matches. Try the street and the city, like Broad Ripple Ave, Indianapolis.')); return; }
+        list.forEach(it => box.append(h('button', { class: 'result', onclick: () => {
           P.home = { lat: +(+it.lat).toFixed(6), lon: +(+it.lon).toFixed(6), label: it.display_name.split(',').slice(0, 2).join(',') };
           saveP(); box.hidden = true; this.homeStatus(); toast('Home station set');
-        } }, h('span', { class: 'n', style: 'font:500 15px/1.3 var(--f-body);text-transform:none' }, it.display_name))));
+        } }, it.display_name)));
       } catch (e) {
-        box.textContent = ''; box.append(h('div', { class: 'stop' }, h('span', { class: 'n', style: 'font:500 15px/1.3 var(--f-body);text-transform:none' }, IN_CLAUDE ? 'Address search is blocked in Claude’s preview.' : 'Search failed. Check your connection.')));
+        box.textContent = ''; box.append(h('div', { class: 'result msg' }, h('span', null, IN_CLAUDE ? 'Address search is blocked in Claude’s preview.' : 'Search failed. Check your connection.')));
       }
     },
     save() {
@@ -4410,7 +4759,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       segSet('#p-units', 'unit', P.unit); segSet('#p-verb', 'v', P.verbosity);
       segSet('#p-facts', 'b', P.facts ? '1' : '0'); segSet('#p-chimes', 'b', P.chimes ? '1' : '0');
       segSet('#p-share', 'b', P.share ? '1' : '0'); segSet('#p-bell', 'b', P.bell ? '1' : '0');
-      $('#p-rate').value = P.rate || 1;
+      $('#p-rate').value = P.rate || 1; $('#p-rate-v').textContent = rateTxt(P.rate || 1);
       segSet('#p-steps', 'b', P.steps === false ? '0' : '1');
       $('#p-weight-l').textContent = `Body weight for calories, optional (${P.unit === 'km' ? 'kg' : 'lb'})`;
       $('#p-weight').value = P.weightKg ? String(Math.round(P.unit === 'km' ? P.weightKg : P.weightKg * 2.20462)) : '';
@@ -4427,10 +4776,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     spots() {
       const box = $('#p-spots'); box.textContent = '';
       const list = P.spots || [];
-      if (!list.length) { box.append(h('p', { class: 'note' }, 'None yet. While walking, tap Mark spot to name a place on the trail, like a friend\u2019s street or a favorite bench.')); return; }
+      if (!list.length) { box.append(h('p', { class: 'note' }, 'None yet. While walking, tap Mark this spot to name a place on the trail, like a friend\u2019s street or a favorite bench.')); return; }
       list.forEach(sp => {
-        const st = trail.byId[sp.id], near = st ? trail.describe(st.s).text : 'off the mapped trail';
-        box.append(h('div', { class: 'tg' }, h('span', null, `${sp.name} `, h('span', { class: 'faint' }, `near ${near.replace(/^near /, '')}`)),
+        const st = trail.byId[sp.id], near = st ? where(trail.describe(st.s)) : 'off the mapped trail';
+        box.append(h('div', { class: 'tg' }, h('span', null, `${sp.name} `, h('span', { class: 'faint' }, near)),
           h('button', { class: 'btn small ghost', onclick: () => { P.spots = P.spots.filter(x => x.id !== sp.id); saveP(); trail.setSpots(P.spots); this.spots(); } }, 'Remove')));
       });
     },
@@ -4477,6 +4826,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       this.timer = setInterval(() => this.render(), 1000);
       const pre = $('#b-presets'); pre.textContent = '';
       PRESETS.forEach(t => pre.append(h('button', { class: 'chip', onclick: () => this.send(t) }, t)));
+      edgeFade(pre);
       this.renderAlerts();
       this.renderHeads();
       this.renderIntro(demo);
@@ -4489,7 +4839,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       box.append(h('h2', null, 'How this board works'),
         h('p', { class: 'muted small' }, 'It follows his walk live: where he is on the Monon, how far out he is, and when he\u2019ll be home. It wakes up on its own when he leaves.'),
         h('p', { class: 'muted small' }, 'Send a telegram or a cheer and the conductor reads it in his earbuds. Guess his arrival time for bragging rights.'),
-        h('p', { class: 'muted small' }, 'Tap Turn on arrival sounds at the bottom to hear when he turns around and when he\u2019s close. For alerts while this page is closed, set up Phone alerts near the bottom.'),
+        h('p', { class: 'muted small' }, 'Turn on sounds to hear a chime when he turns around and when he\u2019s close. Phone alerts reach you even with this page closed.'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn', onclick: e => { B.soundOn = true; Sound.unlock(); segSet('#b-sound', 'v', '1'); Sound.chime('station'); e.target.textContent = 'Sounds on'; e.target.disabled = true; } }, 'Turn on sounds'),
+          h('button', { class: 'btn ghost', onclick: () => $('#b-alerts-card').scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'Set up phone alerts')),
         h('p', { class: 'note' }, 'Tip: add this page to your Home Screen from the Share menu so it\u2019s one tap away.'),
         h('button', { class: 'btn primary', onclick: () => { store.set('boardIntro', true); box.hidden = true; } }, 'Got it'));
     },
@@ -4501,6 +4854,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (this.p && p.t0 === this.p.t0 && !p.seq && p.t < this.p.t) return;
       const prev = this.p;
       this.p = p; this.recvAt = Date.now(); this.serverT = m && m.time ? m.time * 1000 : null; this.heavyKey = null;
+      replay($('#b-fresh i'), 'ping');
       // sound cues
       const now = this.now();
       if (this.soundOn && p.st === 'walking') {
@@ -4540,7 +4894,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const now = this.now();
       $('#b-clock').textContent = clock(now).replace(' ', ' ');
       const p = this.p;
-      $('#b-sub').textContent = this.demo ? 'Monon Trail · demo' : 'Monon Trail';
+      $('#b-sub').textContent = this.demo ? 'Monon Trail (demo)' : 'Monon Trail';
       const fresh = $('#b-fresh');
       if (!p) {
         flap($('#b-f-train'), (this.watch && this.watch.name) ? this.watch.name : 'NIGHT LOCAL', 17);
@@ -4549,6 +4903,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         $('#b-status').textContent = this.connState === 'badkey' ? 'This board link is incomplete. Ask for the link again.' : this.connState === 'open' ? 'No walk yet. The board wakes up when he departs.' : 'Connecting to the relay…';
         fresh.className = 'fresh'; fresh.lastChild.textContent = this.connState === 'open' ? 'Connected, waiting for a departure' : 'Connecting';
         $('#b-kv').textContent = ''; $('#b-line').textContent = ''; $('#b-pickup').hidden = true;
+        ['#b-eta-box', '#b-kv-card', '#b-line-card', '#b-guess', '#b-map-card', '#b-prof-card', '#b-tl-card'].forEach(s => { $(s).hidden = true; });
+        // connected and nothing on the line means no walk; still connecting means we can't tell, so messages may queue
+        $('#b-talk').hidden = this.connState === 'open';
         return;
       }
       const age = this.age();
@@ -4556,6 +4913,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const done = p.ph === 'home' || p.st === 'finished' || p.st === 'arrived';
       const stale = walking && age > 3 * 60000;
       const sEst = this.estS();
+      $('#b-eta-box').hidden = false; $('#b-kv-card').hidden = false; $('#b-line-card').hidden = false; $('#b-guess').hidden = false;
+      $('#b-talk').hidden = done || !walking; // telegrams only reach him while he is out
       // status word
       let status = { toTrail: 'DEPARTED', out: 'OUTBOUND', back: 'INBOUND', toHome: 'ARRIVING', home: 'ARRIVED' }[p.ph] || 'EN ROUTE';
       if (p.st === 'paused') status = 'PAUSED';
@@ -4573,8 +4932,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (done) { atLabel = 'Arrived'; at = 'HOME'; }
       else if (p.ph === 'toTrail') { atLabel = 'Now'; at = 'TO THE TRAIL'; }
       else if (p.ph === 'toHome') { atLabel = 'Now'; at = 'LAST LEG HOME'; }
-      else if (p.dt != null && !p.on) { atLabel = 'Left the trail near'; const d = trail.describe(p.dt); at = d.exact ? d.text : d.text.replace('between ', '').replace(' and ', '-'); }
-      else if (sEst != null) { const d = trail.describe(sEst); at = d.exact ? d.text : d.text.replace('between ', '').replace(' and ', '-'); atLabel = age > 60000 ? 'Probably near' : 'Now at'; }
+      else if (p.dt != null && !p.on) { atLabel = 'Left the trail near'; const d = trail.describe(p.dt); at = d.exact ? d.text : (trail.byId[d.id] || { short: d.text }).short; }
+      else if (sEst != null) {
+        const d = trail.describe(sEst), maybe = age > 60000;
+        const m = !d.exact && d.text.match(/^between (.+) and (.+)$/), pair = m ? `${m[1].replace(/ St$/, '')} and ${m[2].replace(/ St$/, '')}` : '';
+        if (d.exact) { at = d.text; atLabel = maybe ? 'Probably near' : 'Now at'; }
+        else if (pair && pair.length <= 17) { at = pair; atLabel = maybe ? 'Probably between' : 'Between'; }
+        else { at = (trail.byId[d.id] || { short: d.text.replace(/^near /, '') }).short; atLabel = maybe ? 'Probably near' : 'Near'; }
+      }
       $('#b-f-at-l').textContent = atLabel;
       flap($('#b-f-at'), at, 17);
       // big eta
@@ -4616,7 +4981,6 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const moving = p.sp > 0.5 && !p.stp;
       const paceV = moving ? p.sp : (p.mv > 60 ? p.d / p.mv : 0);
       kv.append(cell('Walked', `${L.fmtDist(p.d, p.u)} ${L.unitLabel(p.u)}`), cell('Time out', L.fmtDur(p.el)), cell(moving ? 'Pace' : 'Avg pace', `${L.fmtPace(paceV, p.u)}`));
-      if (p.sc) kv.append(cell('Steps', p.sc.toLocaleString()), cell('Per minute', p.cad ? String(p.cad) : '--'), cell('Calories', p.kc != null ? String(p.kc) : '--'));
       this.renderPickup(p);
       this.renderCheck(p, now);
       const heavyKey = `${p.seq || p.t}.${Math.floor(Date.now() / 5000)}.${this.age() > 60000 ? 1 : 0}`;
@@ -4628,7 +4992,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         this.renderTimeline(p);
         this.renderGuess(p, now);
       }
-      document.title = done ? `${p.n} is home \u00b7 Arrivals` : stale ? 'No signal \u00b7 Arrivals' : `${p.n} home in ${Math.max(0, Math.round((p.eta.t - now) / 60000))} min \u00b7 Arrivals`;
+      document.title = done ? `${p.n} is home | Arrivals` : stale ? 'No signal | Arrivals' : `${p.n} home in ${Math.max(0, Math.round((p.eta.t - now) / 60000))} min | Arrivals`;
       this.renderSent(p);
       this.renderAlerts();
     },
@@ -4637,13 +5001,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!p.pk) { box.hidden = true; return; }
       box.hidden = false; box.textContent = '';
       const [la, lo] = p.pk.ll || p.ll || [null, null];
-      box.append(h('h2', null, `${p.n} asked for a pickup`), h('p', { class: 'muted' }, `Sent ${clock(p.pk.t)}, near ${p.pk.near}.`));
+      box.append(h('h2', null, `${p.n} asked for a pickup`), h('p', { class: 'muted' }, `Sent ${clock(p.pk.t)}, ${where(p.pk.near || 'off the trail')}.`));
       if (la != null) {
         const coords = `${la}, ${lo}`, cb = h('div', { class: 'codebox' }, coords);
         box.append(cb, h('div', { class: 'row' },
           h('a', { class: 'btn primary', href: `https://maps.apple.com/?daddr=${la},${lo}`, target: '_blank', rel: 'noopener' }, 'Apple Maps'),
           h('a', { class: 'btn', href: `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`, target: '_blank', rel: 'noopener' }, 'Google Maps'),
-          h('button', { class: 'btn ghost', onclick: () => copyText(coords, cb) }, 'Copy')));
+          h('button', { class: 'btn ghost', onclick: () => copyText(coords, cb, 'Coordinates copied') }, 'Copy')));
       }
     },
     renderCheck(p, now) {
@@ -4652,14 +5016,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const mins = p.stp && walking ? (now - p.stp) / 60000 : 0;
       if (!(mins >= 10 || (p.ok && p.stp && p.ok >= p.stp && walking))) { box.hidden = true; return; }
       box.hidden = false; box.textContent = '';
-      const near = p.on && p.s != null ? trail.describe(p.s).text : (p.dt != null ? trail.describe(p.dt).text : 'the trail');
+      const near = p.on && p.s != null ? where(trail.describe(p.s)) : (p.dt != null ? where(trail.describe(p.dt)) : 'off the trail');
       if (p.ok && p.ok >= p.stp) {
         box.className = 'card ok';
-        box.append(h('h2', null, `${p.n} says all is well`), h('p', { class: 'muted' }, `Checked in at ${clock(p.ok)}, stopped near ${near}.`));
+        box.append(h('h2', null, `${p.n} says all is well`), h('p', { class: 'muted' }, `Checked in at ${clock(p.ok)}, stopped ${near}.`));
         return;
       }
       box.className = 'card alert';
-      box.append(h('h2', null, `Stopped ${minsText(mins * 60)}`), h('p', { class: 'muted' }, `${p.n} has been stopped near ${near} since ${clock(p.stp)}${p.lc ? ' and has not checked in yet' : ''}.`));
+      box.append(h('h2', null, `Stopped ${minsText(mins * 60)}`), h('p', { class: 'muted' }, `${p.n} has been stopped ${near} since ${clock(p.stp)}${p.lc ? ' and has not checked in yet' : ''}.`));
       const row = h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => this.send('Everything OK?') }, 'Ask if he\u2019s OK'));
       if (p.ll) row.append(h('a', { class: 'btn', href: `https://maps.apple.com/?q=${p.ll[0]},${p.ll[1]}`, target: '_blank', rel: 'noopener' }, 'Open in Maps'));
       box.append(row);
@@ -4689,7 +5053,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (p.turn) { const a = trail.at(p.turn.s); marks.push({ ll: [a.lat, a.lon], kind: 'turn', label: 'Turned' }); }
       if (p.pk && p.pk.ll) marks.push({ ll: p.pk.ll, kind: 'pickup', label: 'Pickup' });
       if (you) marks.push({ ll: you, kind: this.age() > 60000 ? 'est' : 'you', label: p.n });
-      this.map.draw({ line: ROUTE.line, done: walkedLine(p.se, p.far ? p.far.s : null, p.on ? sEst : null), marks, focus });
+      this.map.draw({ line: ROUTE.line, done: walkedLine(p.se, p.far ? p.far.s : null, p.on ? sEst : null), marks, focus, label: sEst != null && !done ? `Map. ${p.n} is ${this.age() > 60000 ? 'probably ' : ''}${where(trail.describe(sEst))}${goal && p.ph === 'out' && !p.turn ? `, heading for ${goal.short}` : ''}.` : 'Map of tonight\u2019s walk' });
       $('#b-map-note').textContent = done ? 'Tonight\u2019s route' : this.age() > 60000 ? 'Estimated between updates' : 'Live';
       const mapsA = $('#b-map-open');
       if (you && !done) { mapsA.hidden = false; mapsA.href = `https://maps.apple.com/?q=${encodeURIComponent(p.n)}&ll=${you[0].toFixed(5)},${you[1].toFixed(5)}`; } else mapsA.hidden = true;
@@ -4926,15 +5290,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const on = this.p && this.p.bell;
       if (box._on === on && box.childElementCount) return;
       box._on = on; box.textContent = '';
-      box.append(h('div', { class: 'row between' }, h('h2', null, 'Phone alerts'), h('span', { class: 'pill ' + (on ? 'go' : '') }, h('i'), h('b', null, on ? 'On' : 'Off'))));
+      box.append(h('div', { class: 'row between' }, h('span', { class: 'flabel' }, 'Phone alerts when this page is closed'), h('span', { class: 'pill ' + (on ? 'go' : '') }, h('i'), h('b', null, on ? 'On' : 'Off'))));
       if (this.demo) { box.append(h('p', { class: 'note' }, 'In the demo, alerts show as banners at the top of the screen.')); return; }
       const topic = this.watch ? this.watch.chan + 'B' : '';
       const cb = h('div', { class: 'codebox' }, topic);
       const custom = this.relay && this.relay.base !== DEFAULT_RELAY ? this.relay.base : null;
       box.append(h('p', { class: 'muted small' }, 'Get a buzz when he departs, turns around, is close to home, gets home, stops for a long time, or asks for a pickup.'),
-        h('p', { class: 'note' }, `1. Install the free ntfy app from the App Store. 2. Tap +, paste this topic${custom ? `, turn on Use another server and enter ${custom}` : ''}, and subscribe. 3. Tap the button below.`),
+        h('ol', { class: 'guide' }, h('li', null, 'Install the free ntfy app from the App Store.'), h('li', null, `Tap +, paste this topic${custom ? `, turn on Use another server and enter ${custom}` : ''}, and subscribe.`), h('li', null, 'Come back and tap I subscribed.')),
         cb,
-        h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => copyText(topic, cb) }, 'Copy topic'),
+        h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => copyText(topic, cb, 'Topic copied. Paste it in ntfy.') }, 'Copy topic'),
           h('button', { class: 'btn primary', onclick: () => this.setBell(true) }, 'I subscribed'),
           on ? h('button', { class: 'btn ghost', onclick: () => this.setBell(false) }, 'Turn off') : null));
     },
@@ -4950,11 +5314,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function show(id) {
     if (current === 's-settings' && id !== 's-settings') Settings.save();
     previous = current; current = id;
+    // a sheet belongs to the screen it opened on; changing screens closes it
+    const sh = $('#sheet'); if (!sh.hidden) { sh._gen = (sh._gen || 0) + 1; clearTimeout(sh._outT); sh.hidden = true; sh.classList.remove('out'); $('#sheet-panel').textContent = ''; }
     MAINS.forEach(m => { $('#' + m).hidden = m !== id; });
     $('#dock').hidden = id !== 's-cab';
     $('#c-demo').hidden = !(W.demo && Sim.running && (id === 's-cab' || id === 's-board'));
     if (id !== 's-board' && !(W.demo && Sim.running)) B.active && B.stopAll();
     window.scrollTo(0, 0);
+    $$(`#${id} .chips`).forEach(c => c._fade && requestAnimationFrame(c._fade));
   }
   function go(id) {
     if (id === 's-depot') { if (IN_CLAUDE && !P.home && !W.active) return show('s-preview'); Depot.render(); }
@@ -4967,6 +5334,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
   const About = {
     render() {
+      const ph = $('#a-phone');
+      if (!IN_CLAUDE) {
+        ph.textContent = '';
+        ph.append(h('h2', null, 'On your Home Screen'), h('p', { class: 'muted' }, standalone()
+          ? 'You are running it from your Home Screen, which keeps your walks safe. Walks live only on this phone, so save a backup in Settings now and then.'
+          : 'Open this page in Safari, tap Share, then Add to Home Screen, and use that icon from now on. It opens full screen, and Safari will not clear your saved walks the way it can for sites you have not opened in a week.'));
+      }
       const box = $('#a-sources'); if (box.childElementCount) return;
       SOURCES.forEach(([what, name, url]) => box.append(h('div', { class: 'tg' }, h('span', null, `${what}: `, h('a', { href: url, target: '_blank', rel: 'noopener' }, name)))));
       box.append(h('p', { class: 'note' }, 'Station positions come from county GIS layers, not from a survey walk. Expect callouts within a few seconds of each crossing.'));
@@ -4984,7 +5358,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ['Open it on your phone', 'After a minute or two, open https://YOUR-USERNAME.github.io/last-train-home/ in Safari. Allow location when asked.'],
         ['Add it to your Home Screen', 'Tap Share, then Add to Home Screen. Launch it from that icon from now on.'],
       ];
-      p.append(h('h2', { style: 'font:800 26px/1 var(--f-display);text-transform:uppercase' }, 'Put it on your phone'),
+      p.append(h('h2', { class: 'sh' }, 'Put it on your phone'),
         h('p', { class: 'muted small' }, 'Claude\u2019s preview can\u2019t use GPS, so the real app needs its own web address. GitHub Pages hosts a single file for free. The file holds no personal data: your home, settings and walks stay on your phone.'),
         h('ol', { class: 'guide' }, steps.map(([a, b]) => h('li', null, h('b', null, a), h('span', null, b)))),
         h('p', { class: 'note' }, 'Any static host works the same way, such as Netlify or Cloudflare Pages.'),
@@ -5010,13 +5384,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   /* ------------------------------------------------------------ events */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-act],[data-go],[data-unit],[data-v],[data-b],[data-speed],[data-plan]');
+    const t = e.target.closest('[data-act],[data-go],[data-unit],[data-v],[data-b],[data-speed],[data-plan],[data-tab]');
     if (!t) return;
+    if (t.dataset.tab) { History.tab(t.dataset.tab); return; }
     if (t.dataset.go) { go(t.dataset.go); return; }
     if (t.closest('.seg') && (t.dataset.unit || t.dataset.v || t.dataset.b)) {
       $$('button', t.closest('.seg')).forEach(b => b.setAttribute('aria-pressed', String(b === t)));
       if (current === 's-settings') Settings.save();
-      return;
+      if (!t.dataset.act) return;
     }
     if (t.dataset.speed) { Sim.setSpeed(+t.dataset.speed); segSet('#c-speed', 'speed', t.dataset.speed); return; }
     if (t.dataset.plan) { P.planMode = t.dataset.plan; saveP(); Depot.render(); return; }
@@ -5029,7 +5404,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       case 'home-here': Setup.here(); break;
       case 'home-search': Setup.search(); break;
       case 'welcome-save': Setup.save(); break;
-      case 'homeby-clear': $('#d-homeby').value = ''; break;
+      case 'homeby-clear': $('#d-homeby').value = ''; Depot.fit(); break;
       case 'depart':
         if (!P.home) { toast('Set your home station first'); go('s-welcome'); return; }
         if (IN_CLAUDE) { W.gpsBlocked(); return; }
@@ -5042,10 +5417,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         confirmSheet({ title: 'Ask for a pickup?', body: `Your exact location goes to ${P.watcher || 'the arrivals board'}${P.bell || W.demo ? ' with a phone alert' : ''}.`, ok: 'Send pickup request', onOk: () => W.requestPickup() });
         break;
       case 'finish': confirmSheet({ title: 'End this walk?', body: 'Your ticket is saved and the board shows the walk as finished.', ok: 'End walk', cancel: 'Keep walking', onOk: () => W.finish() }); break;
-      case 'voice-toggle': W.voiceOn = !W.voiceOn; Sound.enabled = W.voiceOn; $('#c-voice').textContent = W.voiceOn ? 'Voice on' : 'Voice off'; break;
+      case 'voice-set': W.voiceOn = t.dataset.v === '1'; Sound.enabled = W.voiceOn; segSet('#c-voice', 'v', t.dataset.v); if (W.voiceOn) Sound.test(P.style); break;
+      case 'view-set': P.bigCab = t.dataset.v === '1'; saveP(); Cab.setup(); Cab.render(W.now()); break;
       case 'change-goal':
         openSheet((p, close) => {
-          p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, 'Change turnaround'));
+          p.append(h('h2', { class: 'sh' }, 'Change turnaround'));
           const chips = h('div', { class: 'chips', style: 'flex-wrap:wrap' });
           goalChoices(priors(), W.tr ? W.tr.sEntry : null, W.tr ? W.tr.dirUse : null).forEach(id => chips.append(h('button', { class: 'chip', 'aria-pressed': String(W.tr && W.tr.plan.goalId === id), onclick: () => { W.changeGoal(id); close(); } }, short(id))));
           chips.append(h('button', { class: 'chip', onclick: () => { W.changeGoal(null); close(); } }, 'Decide on the way'));
@@ -5065,14 +5441,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       case 'diag': openSheet((p, close) => {
         const box = h('div', { class: 'codebox', style: 'max-height:50vh;overflow:auto;white-space:pre-wrap;user-select:text' }, Diag.text() || 'Nothing logged yet.');
         const summary = `Last Train Home diagnostics\nWalks saved: ${walks.filter(w => !w.demo).length}\nRelay: ${relayOf() || DEFAULT_RELAY}\nRelay messages today: ${Quota.get()}\nVoice: ${P.style}, rate ${P.rate}\nApp: ${IN_CLAUDE ? 'Claude preview' : 'hosted'}\n\n`;
-        p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, 'Diagnostics'),
+        p.append(h('h2', { class: 'sh' }, 'Diagnostics'),
           h('p', { class: 'note' }, 'What the app noticed on recent walks. No locations are recorded here.'), box,
-          h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => copyText(summary + Diag.text(300), box) }, 'Copy report'),
+          h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => copyText(summary + Diag.text(300), box, 'Report copied') }, 'Copy report'),
             h('button', { class: 'btn ghost', onclick: () => { Diag.log = []; Diag.save(); box.textContent = 'Cleared.'; } }, 'Clear'),
             h('button', { class: 'btn', onclick: close }, 'Close')));
       }); break;
       case 'new-link': confirmSheet({ title: 'Make a new board link?', body: 'The old link stops working. Send the new one again.', ok: 'Make new link', onOk: () => { P.chan = null; P.key = null; ensureChannel(); toast('New link ready'); shareLink(); } }); break;
-      case 'erase-all': confirmSheet({ title: 'Erase everything?', body: 'Removes your settings, history, and board link from this phone.', ok: 'Erase', onOk: () => { ['profile', 'walks', 'active', 'watch', 'quota', 'watchName'].forEach(k => store.del(k)); location.reload(); } }); break;
+      case 'erase-all':
+        openSheet((p, close) => p.append(h('h2', { class: 'sh' }, 'Erase everything?'),
+          h('p', { class: 'muted' }, `Removes your settings, ${walks.filter(w => !w.demo).length} saved walks and the board link from this phone. If you might want the walks again, save a backup first.`),
+          h('button', { class: 'btn', onclick: () => Backup.save() }, 'Save a backup first'),
+          h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { ['profile', 'walks', 'active', 'watch', 'quota', 'watchName'].forEach(k => store.del(k)); location.reload(); } }, 'Erase'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Cancel'))));
+        break;
       case 'back': go(previous && previous !== 's-about' ? previous : (IN_CLAUDE && !P.home ? 's-preview' : 's-depot')); break;
       case 'b-send': B.send($('#b-msg').value); break;
       case 'b-homeby': B.askHomeBy(); break;
@@ -5081,13 +5462,20 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       case 'mark-spot': W.markSpot(); break;
       case 'cab-big': P.bigCab = !P.bigCab; saveP(); Cab.setup(); Cab.render(W.now()); break;
       case 'cab-map': P.cabMap = P.cabMap === false; saveP(); Cab.render(W.now()); break;
-      case 'b-sound': B.soundOn = !B.soundOn; Sound.unlock(); $('#b-sound').textContent = B.soundOn ? 'Arrival sounds on' : 'Turn on arrival sounds'; if (B.soundOn) Sound.chime('station'); break;
+      case 'b-sound-set': B.soundOn = t.dataset.v === '1'; Sound.unlock(); segSet('#b-sound', 'v', t.dataset.v); if (B.soundOn) Sound.chime('station'); break;
       case 'b-leave': store.del('watch'); history.replaceState(null, '', location.pathname + location.search); B.stopAll(); boot(true); break;
     }
   });
   $('#b-msg').addEventListener('keydown', e => { if (e.key === 'Enter') B.send(e.target.value); });
+  $('#d-homeby').addEventListener('input', () => Depot.fit());
+  $('#h-tabs').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const tabs = ['tickets', 'stats', 'badges'], i = tabs.indexOf(History.cur || 'tickets'), n = tabs[(i + (e.key === 'ArrowRight' ? 1 : 2)) % 3];
+    e.preventDefault(); History.tab(n); $(`#h-tabs [data-tab="${n}"]`).focus();
+  });
   $('#p-voice').addEventListener('change', () => Settings.save());
   $('#p-rate').addEventListener('change', () => Settings.save());
+  $('#p-rate').addEventListener('input', () => { $('#p-rate-v').textContent = rateTxt(+$('#p-rate').value); });
   $('#p-weight').addEventListener('change', () => Settings.save());
   $('#p-weekgoal').addEventListener('change', () => Settings.save());
   $('#p-relay').addEventListener('change', () => Settings.save());
@@ -5120,8 +5508,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const nameAsk = !demo && !store.get('watchName', '');
     if (nameAsk) {
       openSheet((p, close) => {
-        const inp = h('input', { class: 'input', id: 'b-me', maxlength: '24', placeholder: 'Your name' });
-        p.append(h('h2', { style: 'font:800 24px/1 var(--f-display);text-transform:uppercase' }, 'Who’s watching?'), h('p', { class: 'muted small' }, 'Your telegrams will say they’re from you.'), inp,
+        const inp = h('input', { class: 'input', id: 'b-me', maxlength: '24', placeholder: 'Your name', 'aria-label': 'Your name' });
+        p.append(h('h2', { class: 'sh' }, 'Who’s watching?'), h('p', { class: 'muted small' }, 'Your telegrams will say they’re from you.'), inp,
           h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { store.set('watchName', inp.value.trim() || 'Home'); close(); } }, 'Save'), h('button', { class: 'btn', style: 'flex:1', onclick: () => { store.set('watchName', 'Home'); close(); } }, 'Skip')));
       });
     }
@@ -5147,6 +5535,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     go('s-depot');
   }
   boot();
+  setInterval(() => { if (current === 's-depot') Depot.tickBoard(); }, 15000);
   // test hooks for automated checks
   window.__lth = { W, B, Sim, trail, store, go, Sound, get P() { return P; } };
 })();
