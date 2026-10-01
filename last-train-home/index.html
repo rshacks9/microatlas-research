@@ -1106,7 +1106,7 @@ const LTH = (() => {
         passes: [], lastPass: {}, approached: {}, lastStation: null,
         mileNext: 1, hist: [], histNext: t0, samples: [], reanchor: false,
         arrivedAt: null, nearHomeSaid: false, trackPts: [], pausedAt: null, pausedMs: 0,
-        breaks: [], seq: 0, hwHist: [],
+        breaks: [], seq: 0, hwHist: [], hw: null,
       });
     }
     get dirUse() { return this.dir || this.prior.dir || 1; }
@@ -1274,7 +1274,11 @@ const LTH = (() => {
             if (this.phase === 'toTrail') this.phase = 'out';
             ev.push({ type: 'onTrail', first: true, s: proj.s, st });
           } else {
-            if (this.phase === 'toHome') this.phase = 'back';
+            if (this.phase === 'toHome') {
+              // back on the trail before a street walk home was confirmed: it was a detour after all
+              if (this.hw && !this.hw.sure) { this.phase = this.hw.from; this.turn = this.hw.turn; this.hw = null; ev.push({ type: 'homewardOff' }); }
+              else this.phase = 'back';
+            }
             const wasDetour = !!this.detour;
             this.detour = null;
             ev.push({ type: 'onTrail', first: false, s: proj.s, detour: wasDetour, st: this.trail.nearest(proj.s, 250) });
@@ -1405,6 +1409,7 @@ const LTH = (() => {
     // From then on the trip home is the walk from here, not the way back along the trail.
     _homeward(t, ev) {
       if (this.phase === 'toTrail' && this.home && this.pos) return this._returning(t);
+      if (this.phase === 'toHome' && this.hw && !this.hw.sure && this.home && this.pos) return this._homewardWatch(t, ev);
       if (!this.home || !this.pos || !(this.phase === 'out' || this.phase === 'back')) { this.hwHist.length = 0; return; }
       const dHome = hav(this.pos, this.home), h = this.hwHist;
       h.push([t, dHome]);
@@ -1412,8 +1417,11 @@ const LTH = (() => {
       const off = this.lastProj ? this.lastProj.d : 0;
       let peak = 0;
       for (const [tt, d] of h) if (tt <= t - 60000 && d > peak) peak = d;
-      if (off > 120 && h[0][0] <= t - 90000 && peak - dHome >= 250) {
+      const span = h[0][0] <= t - 90000, closing = peak - dHome;
+      // clearly closing on home well off the trail, or so far off it (500 m+) that the trail is no longer the way back
+      if (span && ((off > 120 && closing >= 250) || (off > 500 && closing >= 80))) {
         const from = this.phase;
+        this.hw = { from, t, d0: dHome, min: dHome, detour: this.detour, turn: this.turn, sure: false };
         this.phase = 'toHome'; this.detour = null; this.nearHomeSaid = false;
         if (from === 'out' && !this.turn && this.sFar != null) {
           const w = this.trail.describe(this.sFar);
@@ -1421,6 +1429,18 @@ const LTH = (() => {
         }
         h.length = 0;
         ev.push({ type: 'homeward', from });
+      }
+    }
+    // A likely walk home by the streets is confirmed once he keeps closing on home, and taken back quietly if he
+    // stops for a while or turns away first (a shop or a friend's on the way, not home)
+    _homewardWatch(t, ev) {
+      const hw = this.hw, dHome = hav(this.pos, this.home);
+      hw.min = Math.min(hw.min, dHome);
+      if (hw.d0 - dHome >= 300 || dHome < 500) { hw.sure = true; ev.push({ type: 'homewardSure' }); return; }
+      const stoppedLong = this.stopped && this.stopSince && t - this.stopSince >= 150000;
+      if (dHome - hw.min >= 150 || stoppedLong) {
+        this.hw = null; this.phase = hw.from; this.detour = hw.detour; this.turn = hw.turn; this.hwHist.length = 0;
+        ev.push({ type: 'homewardOff' });
       }
     }
 
@@ -2383,7 +2403,7 @@ const Conductor = (() => {
           }[style] || `Turnaround ${where}. ${out1}. Home around ${home}.`, 3, 'bell');
           break;
         }
-        case 'homeward': {
+        case 'homewardSure': {
           const eta = tr.eta(now), rem = tr.remaining();
           say({
             coach: `Heading home by the streets. ${this.dist(rem.m)} to go. Bring it home.`,
@@ -3214,11 +3234,22 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   })();
 
   /* ------------------------------------------------------------ relay: ntfy.sh (live) and a local bus (demo) */
+  // ntfy.sh allows 250 messages a day per internet address and resets the count at midnight UTC, so this tally keys
+  // on the UTC date. Others on the same address (a shared cellular address) count too, so the relay's own
+  // "daily quota reached" answer resets the tally to the cap.
   const Quota = {
+    CAP: 250,
     day() { return new Date().toISOString().slice(0, 10); },
     get() { const q = store.get('quota', { d: '', n: 0 }); return q.d === this.day() ? q.n : 0; },
     bump() { const d = this.day(); const q = store.get('quota', { d, n: 0 }); store.set('quota', q.d === d ? { d, n: q.n + 1 } : { d, n: 1 }); },
+    max() { store.set('quota', { d: this.day(), n: this.CAP }); },
   };
+  // A refused send says why: the daily quota, or just too many requests at once
+  async function relayError(r, what) {
+    const e = new Error(what + ' ' + r.status); e.status = r.status;
+    if (r.status === 429) { let t = ''; try { t = await r.text(); } catch (err) { /* no body */ } e.daily = /daily|quota/i.test(t); if (e.daily) Quota.max(); }
+    return e;
+  }
   class Relay {
     constructor(chan, key, base) { this.chan = chan; this.keyStr = key; this.key = null; this.base = (isLocalHost(location.hostname) && store.get('relayBase', null)) || base || DEFAULT_RELAY; }
     async ready() { if (!this.key) this.key = await L.importKey(this.keyStr); return this; }
@@ -3228,14 +3259,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (body.length > 3900 && obj.hs) { const hs = obj.hs; obj = { ...obj, hs: hs.slice(-40), ho: Math.max(0, hs.length - 40), ps: (obj.ps || []).slice(-10) }; body = await L.seal(this.key, obj); }
       const r = await fetch(this.base + this.chan + kind, { method: 'POST', body });
       Quota.bump();
-      if (!r.ok) { const e = new Error('relay ' + r.status); e.status = r.status; throw e; }
+      if (!r.ok) throw await relayError(r, 'relay');
       return true;
     }
     async bell(title, message, tags = [], prio = 3) {
       const q = new URLSearchParams({ title, tags: tags.join(','), priority: String(prio) });
       const r = await fetch(`${this.base}${this.chan}B?${q.toString()}`, { method: 'POST', body: message });
       Quota.bump();
-      if (!r.ok) { const e = new Error('bell ' + r.status); e.status = r.status; throw e; }
+      if (!r.ok) throw await relayError(r, 'bell');
     }
     listen(kind, since, onObj, onState) {
       const seen = new Set(); let lastId = null, es = null, alive = Date.now(), stopped = false, good = 0, bad = 0;
@@ -3628,7 +3659,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         for (const l of this.an.handle(e, this.tr, now)) this.say(l);
         switch (e.type) {
           case 'mile': this.splits.push(Math.round(this.tr.elapsed(now))); break;
-          case 'turnaround': case 'homeward': this.publish(true, true); this.bell('turn'); break;
+          case 'turnaround': case 'homewardSure': this.publish(true, true); this.bell('turn'); break;
+          case 'homeward': case 'homewardOff': this.publish(true, true); break; // the board updates now; the alert waits for proof
           case 'direction': if (this.ghost && this.ghost.walk.dir && this.ghost.walk.dir !== e.dir) this.repickGhost(); break;
           case 'onTrail': if (e.first && this.tr.entryId && (!this.ghost || this.ghost.walk.entryId !== this.tr.entryId)) this.repickGhost(); this.publish(true); break;
           case 'stopped': case 'resumed': case 'offTrail': this.publish(true); break;
@@ -3672,6 +3704,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     onWire(obj) {
       if (!obj || !obj.id || this.seenWire.has(obj.id)) return;
       this.seenWire.add(obj.id);
+      if ((obj.type === 'bell' || obj.type === 'notify') && !this.freshSetting(obj)) return; // a replayed setting: not her doing
       if (!this.tr || this.tr.status === 'finished') return;
       // settings apply in the order she made them, so an old message replayed by the relay can't undo a newer one
       const newer = k => !(+obj.t < ((P.setT || {})[k] || 0)) && +obj.t > Date.now() - 24 * 3600000;
@@ -3712,6 +3745,17 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       this.publish(true);
     },
 
+    // A setting stamped with a phone id and counter is fresh only if the counter beats the last one heard from that phone.
+    // Settings from boards without stamps fall back to the time rules.
+    freshSetting(obj) {
+      if (typeof obj.dv !== 'string' || !Number.isFinite(+obj.n)) return true;
+      const dv = obj.dv.slice(0, 16), seen = (P.devSeen || {})[dv] || 0;
+      if (+obj.n <= seen) { Diag.add('wire', 'ignored a setting that was not newer than the last one from that phone'); return false; }
+      const m = Object.assign({}, P.devSeen, { [dv]: +obj.n }), keys = Object.keys(m);
+      if (keys.length > 8) delete m[keys[0]];
+      P.devSeen = m; saveP();
+      return true;
+    },
     tick() {
       if (!this.tr) return;
       const now = this.now();
@@ -3793,11 +3837,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       this.relay.pub('L', this.payload(now))
         .then(() => { this.share = this.demo ? 'demo' : 'live'; if (this.pubFail) Diag.add('relay', `back online after ${this.pubFail} failed updates`); this.pubFail = 0; this.retryAt = 0; })
         .catch(e => {
-          const limited = e && e.status === 429;
-          this.share = limited ? 'limited' : 'error';
+          const limited = e && e.status === 429, daily = limited && e.daily;
+          this.share = daily ? 'limited' : 'error';
           this.pubFail = (this.pubFail || 0) + 1;
-          // newest state wins, so there is nothing to queue: just try again with backoff
-          this.retryAt = Date.now() + (limited ? 10 * 60000 : Math.min(120000, 10000 * Math.pow(2, this.pubFail - 1)));
+          // newest state wins, so there is nothing to queue: just try again with backoff. The daily quota waits
+          // longer; a burst limit refills a request every 5 seconds, so a short wait is enough.
+          this.retryAt = Date.now() + (daily ? 10 * 60000 : limited ? 15000 : Math.min(120000, 10000 * Math.pow(2, this.pubFail - 1)));
           Diag.add('relay', `update failed (${e && e.status ? e.status : 'network'}), retry in ${Math.round((this.retryAt - Date.now()) / 1000)} s`);
         })
         .finally(() => { this.pubBusy = false; });
@@ -3982,12 +4027,26 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     },
   };
 
+  // The farthest stop of a walk: the one at its farthest point, else the farthest stop it passed on the way out
+  function farthestStop(tr) {
+    if (tr.sFar == null) return null;
+    const near = trail.nearest(tr.sFar, 200);
+    if (near) return near.id;
+    let best = null, bp = -Infinity;
+    for (const p of tr.passes) {
+      const st = p.leg === 'out' && trail.byId[p.id];
+      if (!st || st.kind === 'spot' || tr.sEntry == null) continue;
+      const pp = tr.dirUse * (st.s - tr.sEntry);
+      if (pp > bp) { bp = pp; best = st.id; }
+    }
+    return best;
+  }
   // One saved walk from a tracker's state (used at the finish, and to rescue an unfinished walk)
   function recordFrom(tr, now, { splits = [], steps = 0, kcal = null, segPRs = [], demo = false, partial = false, wx = null } = {}) {
     return {
       wx: wx ? [wx.temp, wx.code] : null,
       id: L.randId(8), t0: tr.t0, tEnd: tr.tEnd || now, dist: Math.round(tr.dist), elapsed: Math.round(tr.elapsed(now)), moving: Math.round(tr.moving),
-      entryId: tr.entryId, dir: tr.dir, farP: Math.round(tr.pFar), farId: tr.sFar != null ? (trail.nearest(tr.sFar, 200) || {}).id || null : null,
+      entryId: tr.entryId, dir: tr.dir, farP: Math.round(tr.pFar), farId: farthestStop(tr),
       turn: tr.turn ? { id: tr.turn.id, text: tr.turn.text, t: tr.turn.t } : null, goalId: tr.plan.goalId,
       conn: Math.round(tr.conn), connBack: Math.round(tr.connBack), passes: tr.passes.map(p => ({ id: p.id, el: p.el, leg: p.leg })),
       splits: splits.slice(), unit: P.unit, demo, arrived: !!tr.arrivedAt, partial: partial || undefined, breaks: tr.breakStats(),
@@ -5449,7 +5508,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const turnAt = p.turn ? `${trail.byId[p.turn.id] && !/^between|^near/.test(p.turn.x) ? 'at ' : ''}${p.turn.x}` : '';
       if (p.turn && p.turn.sw) bits.push(`Left the trail ${turnAt} at ${clock(p.turn.t)} and is walking home by the streets.`);
       else if (p.turn) bits.push(`Turned around ${turnAt} at ${clock(p.turn.t)}.`);
-      else if (p.ph === 'out' && p.goal) bits.push(`Heading for ${short(p.goal)}.`);
+      else if (p.ph === 'out' && p.goal && !done) bits.push(`Heading for ${short(p.goal)}.`);
       if (p.last && walking && (p.last.nm || short(p.last.id))) bits.push(`Passed ${p.last.nm || short(p.last.id)} ${ago(now - p.last.t)}.`);
       if (p.rv && p.rv !== ROUTE_V) bits.push('His app is a different version from this page. Reload this page if positions look off.');
       if (!done) bits.push(`Left at ${clock(p.t0)}.`);
@@ -5802,10 +5861,17 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       box.textContent = '';
       [5, 10, 15, 20].forEach(m => box.append(h('button', { class: 'chip', 'aria-pressed': String(cur === m), onclick: () => this.setHeads(m) }, `${m} min`)));
     },
+    // Her settings carry this phone's id and a rising counter, so his phone can tell a replayed old setting from a new one
+    stamp(msg) {
+      let dv = store.get('devId', null);
+      if (typeof dv !== 'string' || !dv) { dv = L.randId(10); store.set('devId', dv); }
+      const n = (+store.get('devN', 0) || 0) + 1; store.set('devN', n);
+      return Object.assign(msg, { dv, n });
+    },
     setHeads(m) {
       store.set('watchSoon', { m, at: this.now() }); this.cues.soon = false; this.renderHeads();
       if (!this.relay) return;
-      this.post({ id: L.randId(10), type: 'notify', min: m, from: store.get('watchName', '') || 'Home', t: this.now() }, null);
+      this.post(this.stamp({ id: L.randId(10), type: 'notify', min: m, from: store.get('watchName', '') || 'Home', t: this.now() }), null);
       toast(`You'll get a heads up ${m} minutes out`);
     },
     askHomeBy() {
@@ -5834,7 +5900,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     },
     setBell(on) {
       if (!this.relay) return;
-      this.relay.pub('W', { id: L.randId(10), type: 'bell', on, from: store.get('watchName', '') || 'Home', t: this.now() }).then(() => toast(on ? 'Alerts will start with his next update' : 'Alerts turned off')).catch(() => toast('Could not send. Check your connection.'));
+      this.relay.pub('W', this.stamp({ id: L.randId(10), type: 'bell', on, from: store.get('watchName', '') || 'Home', t: this.now() })).then(() => toast(on ? 'Alerts will start with his next update' : 'Alerts turned off')).catch(() => toast('Could not send. Check your connection.'));
     },
   };
 
