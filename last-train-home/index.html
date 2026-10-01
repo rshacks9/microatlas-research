@@ -265,6 +265,7 @@ body.demo-bar .notif { top: calc(66px + env(safe-area-inset-top, 0px)); }
 .lore { display: grid; gap: 4px; border-top: 1px dashed var(--rule); padding-top: 10px; }
 .changelog { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .note.ghost { margin-top: -6px; }
+.note.warn { color: var(--caution); }
 .note.ghost.up { color: var(--go); }
 .note.ghost.down { color: var(--ink-2); }
 .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
@@ -331,6 +332,18 @@ details.more > summary { padding: 8px 0 4px; font-size: 15px; }
 .mm-label { font: 700 12px var(--f-body); fill: var(--ink); paint-order: stroke; stroke: #07080b; stroke-width: 3px; stroke-linejoin: round; }
 .mm-attr { position: absolute; right: 4px; bottom: 3px; font: 500 11px/1.4 var(--f-body); color: #9a9a9a; background: rgba(0, 0, 0, 0.6); padding: 0 5px; border-radius: 4px; }
 .mm-attr a { color: #c4c4c4; text-decoration: none; }
+.mm-attr { max-width: calc(100% - 8px); }
+.mm-canvas, .mm-back, .mm-front { position: absolute; inset: 0; }
+.minimap.sat .mm-tiles { filter: brightness(0.8) saturate(0.85) contrast(1.05); }
+.minimap.sat .mm-line-case { opacity: 0.85; }
+.mm-done-case { fill: none; stroke: #07080b; stroke-width: 7.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
+.mm-stn { fill: #ece6d8; stroke: #07080b; stroke-width: 1.5; }
+.mm-stn-label { font: 600 11px var(--f-body); fill: #ddd7c9; paint-order: stroke; stroke: #07080b; stroke-width: 3px; stroke-linejoin: round; }
+.mm-mode { position: absolute; top: 2px; right: 4px; display: flex; align-items: center; min-height: 44px; padding: 6px 4px; border: 0; background: none; cursor: pointer; }
+.mm-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(12, 14, 18, 0.8); color: var(--ink); font: 600 13px/1 var(--f-body); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.mm-mode[aria-pressed="true"] .mm-pill { background: var(--amber); border-color: transparent; color: #1a1206; }
+.mm-mode:focus-visible { outline: none; }
+.mm-mode:focus-visible .mm-pill { outline: 2px solid var(--amber); outline-offset: 2px; }
 /* trip profile */
 .profile { display: block; width: 100%; height: 132px; overflow: visible; }
 .pf-base { stroke: var(--rule); stroke-width: 1; }
@@ -512,6 +525,7 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
 <main id="s-welcome" class="wrap" hidden>
   <header><h1 class="wordmark">Last Train<br>Home<span class="rail"></span></h1></header>
   <p class="muted">A conductor for your Monon walks, and an arrivals board for the person waiting at home. Set it up once.</p>
+  <p class="banner" id="w-ios" hidden></p>
   <section class="card">
     <div class="field"><label for="w-name">Your name</label><input id="w-name" class="input" autocomplete="given-name" maxlength="24" placeholder="First name"></div>
     <div class="field"><label for="w-train">Name your train</label><input id="w-train" class="input" maxlength="32" placeholder="The Night Local"></div>
@@ -528,7 +542,8 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <p id="w-home-status" class="note">No home set yet.</p>
   </section>
   <button class="btn primary big" data-act="welcome-save">Save and continue</button>
-  <div class="linkrow"><button class="linkbtn" data-act="demo-cab">Try the demo first</button></div>
+  <div class="linkrow"><button class="linkbtn" data-act="demo-cab">Try the demo first</button><button class="linkbtn" data-act="restore">Restore from a backup</button></div>
+  <p class="note" id="w-watch" hidden>Here to watch someone’s walk? Open the board link they sent you.</p>
 </main>
 
 <!-- ============ DEPOT (ready to depart) ============ -->
@@ -708,6 +723,11 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
     <button class="btn" data-act="new-link">Make a new board link</button>
   </section>
   <section class="card">
+    <h2>Maps</h2>
+    <p class="note">Maps open on satellite pictures, which need no setup. The street map comes from CARTO, which now asks for a free key: get one at <a href="https://carto.com/basemaps/apikey/" target="_blank" rel="noopener">carto.com/basemaps/apikey</a>, paste it here, and the arrivals board uses it too. Without a key the street choice shows a plain line map.</p>
+    <div class="field"><label for="p-mapkey">Street map key, optional</label><input id="p-mapkey" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" placeholder="Paste a CARTO key"></div>
+  </section>
+  <section class="card">
     <h2>Backup</h2>
     <p class="note">Walks live only on this phone. Save a backup file now and then, or before switching phones.</p>
     <div class="row"><button class="btn" data-act="backup">Save a backup</button><button class="btn ghost" data-act="restore">Restore</button></div>
@@ -735,13 +755,15 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
   <section class="card plain">
     <h2>What's new</h2>
     <ul class="muted small changelog">
+      <li>Satellite view on every map, from Indiana’s statewide aerial photos, with station names along the line. The switch on each map flips to the street map.</li>
+      <li>On iPhone, setup points to the Home Screen icon first, and a backup carries your walks from Safari to the icon.</li>
       <li>Alerts and the last update of a walk keep trying until they land, and the pickup card says whether her phone got the alert.</li>
       <li>Heading home by the streets ends the walk at your door, and a pause no longer looks like a long stop.</li>
       <li>Her board tells a walk that ended away from home apart from one that ended at home, and shows last night's walk as history.</li>
-      <li>Resuming a walk after a reload no longer reads old telegrams aloud, and an unfinished walk is saved before a new one starts.</li>
     </ul>
     <details class="more"><summary>Earlier updates</summary>
     <ul class="muted small changelog">
+      <li>Resuming a walk after a reload no longer reads old telegrams aloud, and an unfinished walk is saved before a new one starts.</li>
       <li>A Departures board on the depot: tonight's turn, the round trip, and when you'd be home if you left now. All aboard stays in reach, and a home-by time gets a yes or a nearer stop.</li>
       <li>A red enamel station sign, one instrument cluster, and clear On and Off controls in the cab. The sign says if you walk past your turnaround.</li>
       <li>Pocket mode shows a countdown, a progress rail, her latest telegram and any check-in, in a red you can actually read.</li>
@@ -769,11 +791,12 @@ button.stamp { background: none; cursor: pointer; font-family: var(--f-body); }
   </section>
   <section class="card plain">
     <h2>Privacy</h2>
-    <p class="muted">Your walks, history and settings stay on this phone. Five services see a little, and only when used:</p>
+    <p class="muted">Your walks, history and settings stay on this phone. These services see a little, and only when used:</p>
     <ul class="muted small changelog">
       <li><b>ntfy.sh</b> carries live board updates, encrypted on this phone first. The key lives only in the board link, so anyone with the link can see your walk: send it to one person. The relay can see when updates are sent and from which internet address, but not what they say. Phone alerts, if she turns them on, are plain text with status, times and the nearest cross street, never your exact position.</li>
       <li><b>Open-Meteo</b> gets your location rounded to about a kilometer, for the weather on the Depot and during walks.</li>
-      <li><b>CARTO</b> serves the map pictures and sees which part of town is on screen.</li>
+      <li><b>Indiana’s imagery service</b> (on Esri’s ArcGIS cloud), with the <b>U.S. Geological Survey</b> as a backup, serves the satellite pictures and sees which part of town is on screen.</li>
+      <li><b>CARTO</b> serves the street map pictures, only once you add a key, and sees which part of town is on screen.</li>
       <li><b>OpenStreetMap Nominatim</b> gets the address you type, only if you search for your home.</li>
       <li><b>Google Fonts</b> serves the typefaces, so Google sees this page’s internet address when they load.</li>
     </ul>
@@ -967,7 +990,9 @@ const SOURCES = [
   ['Park and boulevard system', 'Wikipedia: Indianapolis Park and Boulevard System', 'https://en.wikipedia.org/wiki/Indianapolis_Park_and_Boulevard_System'],
   ['Calories', '2024 Adult Compendium of Physical Activities: Walking', 'https://pacompendium.com/walking/'],
   ['Weather', 'Open-Meteo forecast API (non-commercial use)', 'https://open-meteo.com/en/docs'],
-  ['Map tiles', 'CARTO basemaps with OpenStreetMap data', 'https://carto.com/attributions'],
+  ['Satellite view', 'Indiana Geographic Information Office: Indiana Current Imagery, 6 inch orthophotos (CC0)', 'https://www.indianamap.org/datasets/INMap::indiana-current-imagery/about'],
+  ['Satellite view outside Indiana', 'USGS The National Map: Orthoimagery (public domain)', 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer'],
+  ['Street map, with your key', 'CARTO basemaps with OpenStreetMap data', 'https://carto.com/attributions'],
   ['Address search', 'OpenStreetMap Nominatim, data \u00a9 OpenStreetMap contributors', 'https://nominatim.org/'],
   ['Moon phase', 'Mean synodic month from the new moon of January 6, 2000 (Meeus, Astronomical Algorithms)', 'https://en.wikipedia.org/wiki/Lunar_phase'],
 ];
@@ -2561,13 +2586,28 @@ const Conductor = (() => {
 if (typeof module !== 'undefined') module.exports = Conductor;
 
 /* A small live map without a mapping library.
-   Web Mercator math, CARTO's dark raster tiles underneath (hosted app only), and an SVG overlay
-   for the trail, the stretch walked tonight, and markers. The view only moves when the walker
-   nears its edge, so tiles stay put between updates. */
+   Web Mercator math, an SVG overlay for the trail, the stretch walked tonight, its stations and markers, and one of
+   two pictures underneath (hosted app only):
+   - Satellite, the default: Indiana's statewide orthophotos (6 inch, some 3 inch, released under CC0) as pre-rendered
+     tiles, with the USGS National Map's public-domain imagery behind any tile that fails or lies outside Indiana.
+   - Street: CARTO's dark map, which now needs a key (each map asks its page for one). Without a key the street
+     choice is a plain line map, never a watermarked one.
+   Station names are drawn whenever the picture underneath has no street names of its own. The view only moves when
+   the walker nears its edge, so tiles stay put between updates. */
 const MiniMap = (() => {
   'use strict';
   const TILE = 256, SUBS = 'abcd';
   const NS = 'http://www.w3.org/2000/svg';
+  // Indiana Geographic Information Office orthoimagery, cached to level 19, and the cache's extent in Web Mercator meters
+  const IN_TILES = 'https://di-ingov.img.arcgis.com/arcgis/rest/services/CacheWebMercator/IndianaCurrentImageryCacheL19v4/MapServer/tile/';
+  const IN_EXT = [-9823995.61, 4543010.89, -9432544.87, 5135334.27];
+  // USGS The National Map orthoimagery, sharp to level 16
+  const US_TILES = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/';
+  const US_MAX = 16, IMG_MAX = 19, HALF = Math.PI * 6378137;
+  const KEY_RE = /^[A-Za-z0-9_.-]{6,256}$/;
+  let mode = 'sat'; // shared by every map on this phone
+  const views = new Set();
+
   function world(lat, lon, z) {
     const n = TILE * Math.pow(2, z);
     const s = Math.sin(Math.max(-85, Math.min(85, lat)) * Math.PI / 180);
@@ -2592,32 +2632,86 @@ const MiniMap = (() => {
     if (parent) parent.append(e);
     return e;
   }
+  // A tile's corners in Web Mercator meters, and whether Indiana's cache covers any of it
+  function inIndiana(tx, ty, z) {
+    const m = (2 * HALF) / Math.pow(2, z);
+    const x1 = tx * m - HALF, x2 = x1 + m, y2 = HALF - ty * m, y1 = y2 - m;
+    return x2 > IN_EXT[0] && x1 < IN_EXT[2] && y2 > IN_EXT[1] && y1 < IN_EXT[3];
+  }
+  function tileImg(src, left, top, size) {
+    const img = document.createElement('img');
+    img.alt = ''; img.decoding = 'async'; img.loading = 'eager'; img.draggable = false;
+    img.style.left = left + 'px'; img.style.top = top + 'px';
+    if (size !== TILE) { img.style.width = size + 'px'; img.style.height = size + 'px'; }
+    img.onerror = () => img.remove();
+    img.src = src;
+    return img;
+  }
+  const wrap = (v, n) => ((v % n) + n) % n;
 
   class View {
-    constructor(host, { tiles = true, height = 220, label = 'Map' } = {}) {
+    // streetKey: a function that returns the CARTO key to use, if any. lineNote: what the line map says about itself.
+    constructor(host, { tiles = true, height = 220, label = 'Map', streetKey = null, lineNote = '' } = {}) {
       this.host = host; this.tiles = tiles; this.height = height;
+      this.keyFn = typeof streetKey === 'function' ? streetKey : () => ''; this.note = lineNote;
+      this.curKey = this.key(); this.tilesDrawn = false;
       host.classList.add('minimap');
       host.style.height = height + 'px';
-      host.setAttribute('role', 'img'); host.setAttribute('aria-label', label);
+      // the picture is one image to a screen reader; the switch and the credits stay reachable beside it
+      this.canvas = document.createElement('div'); this.canvas.className = 'mm-canvas';
+      this.canvas.setAttribute('role', 'img'); this.canvas.setAttribute('aria-label', label);
       this.tileLayer = document.createElement('div'); this.tileLayer.className = 'mm-tiles';
       this.svg = el('svg', { class: 'mm-over' });
-      host.append(this.tileLayer, this.svg);
+      this.canvas.append(this.tileLayer, this.svg);
+      host.append(this.canvas);
       if (tiles) {
-        const a = document.createElement('div'); a.className = 'mm-attr';
-        a.innerHTML = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
-        host.append(a);
+        this.attr = document.createElement('div'); this.attr.className = 'mm-attr';
+        this.modeBtn = document.createElement('button');
+        this.modeBtn.type = 'button'; this.modeBtn.className = 'mm-mode';
+        const pill = document.createElement('span'); pill.className = 'mm-pill'; pill.textContent = 'Satellite';
+        this.modeBtn.append(pill);
+        this.modeBtn.addEventListener('click', () => setMode(mode === 'sat' ? 'map' : 'sat'));
+        host.append(this.attr, this.modeBtn);
       }
-      this.view = null; this.focusKey = ''; this.base = el('g', {}, this.svg); this.keep = {};
+      this.view = null; this.focusKey = ''; this.base = el('g', {}, this.svg); this.keep = {}; this.last = null;
+      views.add(this);
+      this.chrome();
     }
-    // opts: { line: [[lat,lon]..], done: [[lat,lon]..], marks: [{ll:[lat,lon], kind, label}], focus: [[lat,lon]..] }
+    key() { let k = ''; try { k = this.keyFn(); } catch (e) { /* no key */ } return typeof k === 'string' && KEY_RE.test(k.trim()) ? k.trim() : ''; }
+    // The switch, the credits and the look that go with the current picture
+    chrome() {
+      const sat = mode === 'sat', street = !sat && !!this.curKey;
+      this.host.classList.toggle('sat', this.tiles && sat);
+      if (!this.tiles) return;
+      this.modeBtn.setAttribute('aria-pressed', String(sat));
+      const a = this.attr; a.hidden = false;
+      if (sat) a.innerHTML = 'Imagery: <a href="https://www.indianamap.org/datasets/INMap::indiana-current-imagery/about" target="_blank" rel="noopener">Indiana GIO</a>, <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS</a>';
+      else if (street) a.innerHTML = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
+      else if (this.note) a.textContent = this.note;
+      else { a.textContent = ''; a.hidden = true; }
+    }
+    // Redraw after the picture choice or the street key changed
+    refresh() {
+      this.chrome();
+      if (!this.host.clientWidth) { this.view = null; return; } // off screen: drawn fresh the next time it shows
+      this.tilesDrawn = false;
+      if (this.last) this.draw(this.last);
+      if (this.view && !this.tilesDrawn) this.drawTiles();
+    }
+    // opts: { line: [[lat,lon]..], done: [[lat,lon]..], marks: [{ll:[lat,lon], kind, label}], focus: [[lat,lon]..],
+    //         stations: [{ll:[lat,lon], name, rank}] (rank 0 is labeled first) }
     draw(opts) {
+      this.last = opts;
       const w = this.host.clientWidth || 320, h = this.height;
       if (!w) return;
-      if (opts.label && this.host.getAttribute('aria-label') !== opts.label) this.host.setAttribute('aria-label', opts.label);
+      const k = this.key(), keyChanged = k !== this.curKey;
+      if (keyChanged) { this.curKey = k; this.chrome(); }
+      if (opts.label && this.canvas.getAttribute('aria-label') !== opts.label) this.canvas.setAttribute('aria-label', opts.label);
       const focus = (opts.focus || []).filter(p => p && isFinite(p[0]) && isFinite(p[1]));
       if (!focus.length) return;
       const moved = this.needsView(focus, w, h);
       if (moved) this.setView(focus, w, h);
+      else if (keyChanged) this.drawTiles();
       const { z, x0, y0 } = this.view;
       const P = ([lat, lon]) => { const [x, y] = world(lat, lon, z); return [x - x0, y - y0]; };
       const path = pts => pts.map((p, i) => { const [x, y] = P(p); return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`; }).join('');
@@ -2625,17 +2719,26 @@ const MiniMap = (() => {
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('width', w); svg.setAttribute('height', h);
       // a new view jumps; within a view, the live marker glides to its next spot
       if (moved) { svg.classList.add('snap'); requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('snap'))); }
+      const gLines = el('g', {}, base), gTicks = el('g', {}, base), gMarks = el('g', {}, base), gNames = el('g', {}, base);
       const seen = new Set();
       if (opts.line && opts.line.length > 1) {
-        el('path', { d: path(opts.line), class: 'mm-line-case' }, base);
-        el('path', { d: path(opts.line), class: 'mm-line' }, base);
+        el('path', { d: path(opts.line), class: 'mm-line-case' }, gLines);
+        el('path', { d: path(opts.line), class: 'mm-line' }, gLines);
       }
-      if (opts.spur && opts.spur.length > 1) el('path', { d: path(opts.spur), class: 'mm-spur' }, base);
-      if (opts.done && opts.done.length > 1) el('path', { d: path(opts.done), class: 'mm-done' }, base);
+      if (opts.spur && opts.spur.length > 1) el('path', { d: path(opts.spur), class: 'mm-spur' }, gLines);
+      if (opts.done && opts.done.length > 1) {
+        el('path', { d: path(opts.done), class: 'mm-done-case' }, gLines);
+        el('path', { d: path(opts.done), class: 'mm-done' }, gLines);
+      }
+      // boxes the station names must stay clear of: markers, their labels, the switch and the credits
+      const boxes = [];
+      if (this.tiles) boxes.push([w - 110, 0, w, 46]);
+      if (this.tiles && this.attr && !this.attr.hidden) boxes.push([w * 0.3, h - 20, w, h]);
       for (const m of opts.marks || []) {
         if (!m || !m.ll) continue;
         const [x, y] = P(m.ll);
         const live = m.kind === 'you' || m.kind === 'est';
+        boxes.push([x - 14, y - 14, x + 14, y + 14]);
         let g;
         if (live) {
           seen.add(m.kind);
@@ -2643,7 +2746,7 @@ const MiniMap = (() => {
           if (!g) { g = this.keep[m.kind] = el('g', { class: `mm-mark mm-${m.kind} glide` }, svg); el('circle', { r: 13, class: 'mm-halo' }, g); el('circle', { r: 7, class: 'mm-dot' }, g); }
           g.style.display = ''; g.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
           const old = g.querySelector('.mm-label'); if (old) old.remove();
-        } else g = el('g', { class: `mm-mark mm-${m.kind}`, transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` }, base);
+        } else g = el('g', { class: `mm-mark mm-${m.kind}`, transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` }, gMarks);
         if (live) {
           // drawn once above
         } else if (m.kind === 'home') {
@@ -2657,10 +2760,38 @@ const MiniMap = (() => {
         if (m.label) {
           const tx = el('text', { x: 11, y: 4, class: 'mm-label' }, g);
           tx.textContent = m.label;
-          if (x > w - 90) { tx.setAttribute('x', -11); tx.setAttribute('text-anchor', 'end'); }
+          const lw = m.label.length * 7.2 + 4;
+          if (x > w - 90) { tx.setAttribute('x', -11); tx.setAttribute('text-anchor', 'end'); boxes.push([x - 11 - lw, y - 10, x - 11, y + 7]); }
+          else boxes.push([x + 11, y - 10, x + 11 + lw, y + 7]);
         }
       }
-      for (const k of Object.keys(this.keep)) if (!seen.has(k)) this.keep[k].style.display = 'none';
+      for (const kind of Object.keys(this.keep)) if (!seen.has(kind)) this.keep[kind].style.display = 'none';
+      if (opts.stations && (!this.tiles || mode === 'sat' || !this.curKey)) this.stations(opts.stations, P, w, h, boxes, gTicks, gNames);
+    }
+    // Stations as small ticks on the line, named where a name fits without covering anything else
+    stations(list, P, w, h, boxes, gTicks, gNames) {
+      const vis = [];
+      for (const st of list) {
+        if (!st || !st.ll || !st.name) continue;
+        const [x, y] = P(st.ll);
+        if (x < -8 || x > w + 8 || y < -8 || y > h + 8) continue;
+        vis.push({ st, x, y });
+        el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: 2.6, class: 'mm-stn' }, gTicks);
+      }
+      vis.sort((a, b) => (a.st.rank || 0) - (b.st.rank || 0));
+      const hit = b => boxes.some(o => b[0] < o[2] + 2 && b[2] > o[0] - 2 && b[1] < o[3] + 2 && b[3] > o[1] - 2);
+      for (const { st, x, y } of vis) {
+        const lw = st.name.length * 6.4 + 2;
+        for (const side of x + 8 + lw < w - 4 ? [1, -1] : [-1, 1]) {
+          const b = side > 0 ? [x + 6, y - 9, x + 6 + lw, y + 5] : [x - 6 - lw, y - 9, x - 6, y + 5];
+          if (b[0] < 2 || b[2] > w - 2 || b[1] < 2 || b[3] > h - 2 || hit(b)) continue;
+          boxes.push(b);
+          const t = el('text', { x: (side > 0 ? x + 6 : x - 6).toFixed(1), y: (y + 4).toFixed(1), class: 'mm-stn-label' }, gNames);
+          if (side < 0) t.setAttribute('text-anchor', 'end');
+          t.textContent = st.name;
+          break;
+        }
+      }
     }
     needsView(focus, w, h) {
       if (!this.view || this.view.w !== w) return true;
@@ -2679,22 +2810,60 @@ const MiniMap = (() => {
     }
     drawTiles() {
       const layer = this.tileLayer; layer.textContent = '';
-      if (!this.tiles) return;
-      const { z, x0, y0, w, h } = this.view, n = Math.pow(2, z);
+      this.tilesDrawn = true;
+      if (!this.tiles || !this.view) return;
+      const { z, x0, y0, w, h } = this.view;
+      if (mode === 'sat') return this.imagery(layer, z, x0, y0, w, h);
+      if (!this.curKey) return; // the plain line map
+      const n = Math.pow(2, z), key = encodeURIComponent(this.curKey);
       for (let tx = Math.floor(x0 / TILE); tx <= Math.floor((x0 + w) / TILE); tx++) {
         for (let ty = Math.floor(y0 / TILE); ty <= Math.floor((y0 + h) / TILE); ty++) {
           if (ty < 0 || ty >= n) continue;
-          const img = document.createElement('img');
-          img.alt = ''; img.decoding = 'async'; img.loading = 'eager'; img.draggable = false;
-          img.style.left = (tx * TILE - x0) + 'px'; img.style.top = (ty * TILE - y0) + 'px';
-          img.onerror = () => img.remove();
-          img.src = `https://${SUBS[(tx + ty) % 4]}.basemaps.cartocdn.com/dark_all/${z}/${((tx % n) + n) % n}/${ty}@2x.png`;
-          layer.append(img);
+          layer.append(tileImg(`https://${SUBS[wrap(tx + ty, 4)]}.basemaps.cartocdn.com/dark_all/${z}/${wrap(tx, n)}/${ty}@2x.png?key=${key}`, tx * TILE - x0, ty * TILE - y0, TILE));
+        }
+      }
+    }
+    // Imagery one level deeper than the view, at half size, so it stays sharp on high-density screens
+    imagery(layer, z, x0, y0, w, h) {
+      const zi = Math.min(IMG_MAX, z + 1), S = TILE / Math.pow(2, zi - z), n = Math.pow(2, zi);
+      const back = document.createElement('div'), front = document.createElement('div');
+      back.className = 'mm-back'; front.className = 'mm-front';
+      layer.append(back, front);
+      const seenBack = new Set();
+      // the USGS tile under this one, at level 16 at most (one tile can sit under several)
+      const backup = (tx, ty) => {
+        const up = Math.max(0, zi - US_MAX), pz = zi - up, px = Math.floor(tx / Math.pow(2, up)), py = Math.floor(ty / Math.pow(2, up)), id = `${pz}/${px}/${py}`;
+        if (seenBack.has(id)) return;
+        seenBack.add(id);
+        const size = S * Math.pow(2, up);
+        back.append(tileImg(`${US_TILES}${pz}/${py}/${wrap(px, Math.pow(2, pz))}`, px * size - x0, py * size - y0, size));
+      };
+      for (let tx = Math.floor(x0 / S); tx <= Math.floor((x0 + w) / S); tx++) {
+        for (let ty = Math.floor(y0 / S); ty <= Math.floor((y0 + h) / S); ty++) {
+          if (ty < 0 || ty >= n) continue;
+          const wx = wrap(tx, n);
+          if (!inIndiana(wx, ty, zi)) { backup(tx, ty); continue; }
+          const img = tileImg(`${IN_TILES}${zi}/${ty}/${wx}`, tx * S - x0, ty * S - y0, S);
+          img.onerror = () => { img.remove(); backup(tx, ty); };
+          front.append(img);
         }
       }
     }
   }
-  return { View, world, fitZoom, bbox };
+  function setMode(m, quiet) {
+    mode = m === 'map' ? 'map' : 'sat';
+    views.forEach(v => v.refresh());
+    if (!quiet && typeof api.onMode === 'function') api.onMode(mode);
+  }
+  // After a page's street key changed (Settings), so every map picks it up now rather than at its next update
+  function refreshAll() { views.forEach(x => x.refresh()); }
+  const api = {
+    View, world, fitZoom, bbox, setMode, refreshAll,
+    validKey: k => typeof k === 'string' && KEY_RE.test(k.trim()),
+    onMode: null, // called with the new choice when someone flips the switch
+    get mode() { return mode; },
+  };
+  return api;
 })();
 
 /* QR Code Generator for JavaScript. Copyright (c) 2009 Kazuhiko Arase. MIT license: http://www.opensource.org/licenses/mit-license.php. The word QR Code is a registered trademark of DENSO WAVE INCORPORATED. */
@@ -3009,6 +3178,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
   const hm = secs => { const m = Math.round(secs / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ''}`; };
   // The stretch of trail walked tonight, sampled every 40 m, as [lat, lon] pairs
+  // Stations for the maps: the big crossings are named first, then streets and named spots, then bridges and water
+  const mapStations = () => trail.stations.filter(st => Number.isFinite(st.lat) && Number.isFinite(st.lon))
+    .map(st => ({ ll: [st.lat, st.lon], name: st.short || st.name, rank: st.kind === 'major' ? 0 : ['street', 'spot', 'place'].includes(st.kind) ? 1 : 2 }));
+  const LINE_NOTE = 'Line map. A free key in Settings adds streets.';
   function walkedLine(se, far, s) {
     const xs = [se, far, s].filter(v => v != null && isFinite(v));
     if (xs.length < 2) return null;
@@ -3875,6 +4048,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         sm: P.soonMin || 10, ok: x.okAt || null, lc: x.stopCheck ? x.stopCheck.at : null, ch: x.cheers || 0,
         rp: (x.replies || []).slice(-3), gs: x.guess ? x.guess.t : null,
         ui: live ? (demo ? 90000 : this.pubEvery()) : 0, wid: live ? this.walkId : null,
+        mk: MiniMap.validKey(P.mapKey || '') ? P.mapKey.trim() : undefined, // his street map key, so her board shows streets too
       };
     },
     // The last update of a walk is kept on the phone and retried until it lands, so her board never hangs on No signal
@@ -4270,7 +4444,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       $('#c-map-toggle').textContent = show ? 'Hide' : 'Show';
       $('#c-map').hidden = !show;
       if (!show) return;
-      if (!this.mv) this.mv = new MiniMap.View($('#c-map'), { tiles: !IN_CLAUDE, height: 190, label: 'Map of your walk' });
+      if (!this.mv) this.mv = new MiniMap.View($('#c-map'), { tiles: !IN_CLAUDE, height: 190, label: 'Map of your walk', streetKey: () => P.mapKey, lineNote: LINE_NOTE });
       const tr = W.tr;
       const pos = tr.pos ? [tr.pos.lat, tr.pos.lon] : null;
       const you = tr.onTrail && tr.s != null ? (a => [a.lat, a.lon])(trail.at(tr.s)) : pos;
@@ -4285,7 +4459,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const marks = [];
       if (goal) marks.push({ ll: [goal.lat, goal.lon], kind: 'goal', label: goal.short });
       if (you) marks.push({ ll: you, kind: 'you' });
-      this.mv.draw({ line: ROUTE.line, done: walkedLine(tr.sEntry, tr.sFar, tr.s), marks, focus, label: tr.onTrail && tr.s != null ? `Map. You are ${where(trail.describe(tr.s))}${goal && tr.phase === 'out' ? `, turning at ${goal.short}` : ''}.` : 'Map of your walk' });
+      this.mv.draw({ line: ROUTE.line, done: walkedLine(tr.sEntry, tr.sFar, tr.s), marks, focus, stations: mapStations(), label: tr.onTrail && tr.s != null ? `Map. You are ${where(trail.describe(tr.s))}${goal && tr.phase === 'out' ? `, turning at ${goal.short}` : ''}.` : 'Map of your walk' });
     },
     nextStop(now) {
       const tr = W.tr;
@@ -4519,9 +4693,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const trk = (rec.track || []).map(q => [q[0], q[1]]);
       if (trk.length > 1) {
         mc.hidden = false;
-        if (!this.mv) this.mv = new MiniMap.View($('#u-map'), { tiles: !IN_CLAUDE, height: 230, label: 'Map of this walk' });
+        if (!this.mv) this.mv = new MiniMap.View($('#u-map'), { tiles: !IN_CLAUDE, height: 230, label: 'Map of this walk', streetKey: () => P.mapKey, lineNote: LINE_NOTE });
         const turn = rec.farId && trail.byId[rec.farId];
-        requestAnimationFrame(() => this.mv.draw({ line: ROUTE.line, done: trk, marks: turn ? [{ ll: [turn.lat, turn.lon], kind: 'turn', label: turn.short }] : [], focus: trk }));
+        requestAnimationFrame(() => this.mv.draw({ line: ROUTE.line, done: trk, marks: turn ? [{ ll: [turn.lat, turn.lon], kind: 'turn', label: turn.short }] : [], focus: trk, stations: mapStations() }));
       } else mc.hidden = true;
       const kv = $('#u-kv'); kv.textContent = '';
       const cell = (l, v) => h('div', null, h('span', { class: 'eyebrow' }, l), h('span', { class: 'v' }, v));
@@ -4860,10 +5034,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       } else if (!P.share) {
         sc.append(h('h2', null, 'Arrivals board'), h('p', { class: 'muted' }, 'Sharing is off. Turn it on in Settings to give someone a live board.'));
       } else {
-        const who = P.watcher || 'her';
-        sc.append(h('div', { class: 'row between' }, h('h2', null, `${P.watcher ? P.watcher + '’s' : 'The'} arrivals board`), h('span', { class: 'pill ' + (P.bell ? 'go' : '') }, h('i'), h('b', null, P.bell ? 'Alerts on' : 'Alerts off'))),
+        const who = P.watcher || 'her', resend = !!P.done.moved && !P.done.link;
+        sc.append(...[h('div', { class: 'row between' }, h('h2', null, `${P.watcher ? P.watcher + '’s' : 'The'} arrivals board`), h('span', { class: 'pill ' + (P.bell ? 'go' : '') }, h('i'), h('b', null, P.bell ? 'Alerts on' : 'Alerts off'))),
           h('p', { class: 'muted small' }, `Send ${who} the link once. It shows your walk live, your home time, and lets ${who} send telegrams the conductor reads to you.`),
-          h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => shareLink() }, `Send to ${who}`), h('button', { class: 'btn ghost', onclick: () => copyText(boardLink(), null, 'Board link copied') }, 'Copy link'), h('button', { class: 'btn ghost', onclick: () => qrSheet() }, 'QR code')));
+          // restored onto a fresh install: the old link belongs to the other copy
+          resend && h('p', { class: 'note warn', id: 'd-share-resend' }, `This phone has its own board link. Send it to ${who} again: the old link won\u2019t show walks from here.`),
+          h('div', { class: 'row' }, h('button', { class: resend ? 'btn primary' : 'btn', onclick: () => shareLink() }, `Send to ${who}`), h('button', { class: 'btn ghost', onclick: () => { copyText(boardLink(), null, 'Board link copied'); linkSent(); } }, 'Copy link'), h('button', { class: 'btn ghost', onclick: () => qrSheet() }, 'QR code'))].filter(Boolean));
       }
       // resume
       let act = store.get('active', null);
@@ -4973,9 +5149,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       { k: 'voice', ok: !!P.done.voice, label: 'Hear the conductor with your volume up', act: () => { Sound.test(); P.done.voice = Date.now(); saveP(); this.render(); } },
       { k: 'link', ok: !!P.done.link || !P.share, label: `Send the arrivals board to ${P.watcher || 'your watcher'}`, act: () => shareLink() },
       { k: 'install', ok: standalone() || !!P.done.install, label: 'Add to your Home Screen so the phone keeps your history', act: () => openSheet((p, close) => {
-        p.append(h('h2', { class: 'sh' }, 'Add to Home Screen'),
+        const iPhone = navigator.standalone === false; // a Safari tab on iPhone or iPad
+        p.append(...[h('h2', { class: 'sh' }, 'Add to Home Screen'),
           h('p', { class: 'muted' }, 'On iPhone, open this page in Safari, tap Share, then Add to Home Screen. On Android, use the Chrome menu and Add to Home screen. Open the app from that icon from now on: it launches full screen, and the phone won\u2019t clear your saved walks the way Safari can for sites you haven\u2019t opened in a week.'),
-          h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { P.done.install = Date.now(); saveP(); close(); this.render(); } }, 'Done'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Later')));
+          iPhone && h('p', { class: 'muted', id: 'install-ios' }, 'On iPhone the icon starts with its own empty copy. Save a backup here first, then open the icon, tap Restore from a backup, and send the new board link.'),
+          iPhone && h('button', { class: 'btn', onclick: () => Backup.save() }, 'Save a backup'),
+          h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { P.done.install = Date.now(); saveP(); close(); this.render(); } }, 'Done'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Later'))].filter(Boolean));
       }) },
       { k: 'demo', ok: !!P.done.demo, label: 'Ride the demo to see what the board shows', act: () => startDemo('cab') },
     ];
@@ -5043,19 +5222,23 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         h('p', { class: 'note', style: 'text-align:center' }, `Open the camera on ${P.watcher ? P.watcher + '’s' : 'their'} phone and point it here. Anyone who scans it can follow your walks.`),
         h('button', { class: 'btn', onclick: close }, 'Done'));
     });
+    linkSent();
+  }
+  // Sharing, copying or showing the QR code all count as sending the link
+  function linkSent() {
     P.done.link = Date.now(); saveP();
+    const n = document.getElementById('d-share-resend'); if (n) n.remove();
     if (current === 's-depot') Depot.renderChecklist();
   }
   function shareLink() {
-    P.done.link = Date.now(); saveP();
-    if (current === 's-depot') Depot.renderChecklist();
+    linkSent();
     const url = boardLink();
     const text = `Here’s my arrivals board. Open it anytime I’m out walking to see where I am and when I’ll be home. You can send me telegrams and cheers, and I’ll hear them.`;
     if (navigator.share) navigator.share({ title: 'Arrivals board', text, url }).catch(() => {});
     else openSheet((p, close) => {
       const box = h('div', { class: 'codebox' }, url);
       p.append(h('h2', { class: 'sh' }, P.watcher ? `Board link for ${P.watcher}` : 'Your board link'), h('p', { class: 'muted small' }, 'Anyone with this link can follow your walks, so send it to one person.'), box,
-        h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => copyText(url, box, 'Board link copied') }, 'Copy'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Done')));
+        h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { copyText(url, box, 'Board link copied'); linkSent(); } }, 'Copy'), h('button', { class: 'btn', style: 'flex:1', onclick: close }, 'Done')));
     });
   }
 
@@ -5065,6 +5248,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       $('#w-name').value = P.name || ''; $('#w-train').value = P.train === DEFAULTS.train ? '' : P.train; $('#w-watcher').value = P.watcher || '';
       segSet('#w-units', 'unit', P.unit);
       this.homeStatus();
+      // First run only. navigator.standalone exists only on iPhone and iPad: false in a Safari tab, true from the Home Screen.
+      const fresh = !store.get('profile', null) && !IN_CLAUDE, sa = navigator.standalone, ios = $('#w-ios');
+      ios.hidden = !fresh || (sa !== true && sa !== false);
+      ios.textContent = sa === false
+        ? 'On iPhone, add this page to your Home Screen first (tap Share, then Add to Home Screen) and set up from that icon. Safari and the icon keep separate copies of your walks.'
+        : 'Set up in Safari already? This icon keeps its own copy. In Safari, open Settings and tap Save a backup, then come back here and tap Restore from a backup.';
+      $('#w-watch').hidden = !fresh;
     },
     homeStatus() {
       const s = $('#w-home-status');
@@ -5145,10 +5335,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       trail.setSpots(P.spots); // back to this phone's spots until the restore is confirmed
       const haveId = new Set(walks.map(w => w.id)), haveT0 = new Set(walks.map(w => w.t0)), seen = new Set();
       const fresh = clean.filter(w => !haveId.has(w.id) && !haveT0.has(w.t0) && !seen.has(w.t0) && seen.add(w.t0));
-      const skipped = data.walks.length - clean.length, when = new Date(data.at);
+      const skipped = data.walks.length - clean.length, when = new Date(data.at), freshInstall = !P.home;
       confirmSheet({
         title: 'Restore this backup?',
-        body: `${fresh.length} new walk${fresh.length === 1 ? '' : 's'} to add from ${isNaN(when) ? 'this file' : when.toLocaleDateString()}${clean.length - fresh.length ? `, ${clean.length - fresh.length} already here` : ''}${skipped ? `, ${skipped} unreadable and skipped` : ''}. Your settings and spots come back too. Your board link and relay stay as they are.`,
+        body: `${fresh.length} new walk${fresh.length === 1 ? '' : 's'} to add from ${isNaN(when) ? 'this file' : when.toLocaleDateString()}${clean.length - fresh.length ? `, ${clean.length - fresh.length} already here` : ''}${skipped ? `, ${skipped} unreadable and skipped` : ''}. Your settings and spots come back too. Your board link and relay stay as they are${freshInstall && P.share ? ', so send this phone\u2019s board link again afterwards' : ''}.`,
         ok: 'Restore',
         onOk: () => {
           walks = walks.concat(fresh).sort((a, b) => a.t0 - b.t0);
@@ -5156,6 +5346,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           P.walkNo = walks.length ? walks[walks.length - 1].no : P.walkNo;
           capWalks(); saveWalks();
           if (prof) { P = Object.assign({}, P, prof); }
+          if (freshInstall) P.done = Object.assign({}, P.done, { moved: Date.now() }); // this install's board link is new
           saveP(); trail.setSpots(P.spots);
           toast(`Restored ${fresh.length} walk${fresh.length === 1 ? '' : 's'}`);
           if (current === 's-settings') Settings.fill(); else go('s-depot');
@@ -5178,6 +5369,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (C.VOICES[s.style]) o.style = s.style;
     if ([5, 10, 15, 20, 30].includes(+s.soonMin)) o.soonMin = +s.soonMin;
     if (['stop', 'dist', 'time'].includes(s.planMode)) o.planMode = s.planMode;
+    if (typeof s.mapKey === 'string' && (s.mapKey === '' || MiniMap.validKey(s.mapKey))) o.mapKey = s.mapKey.trim();
     if (s.home && numIn(s.home.lat, -90, 90) != null && numIn(s.home.lon, -180, 180) != null) o.home = { lat: +s.home.lat, lon: +s.home.lon, label: strOf(s.home.label, 80) || '' };
     if (Array.isArray(s.spots)) {
       const all = new Map((P.spots || []).map(x => [x.id, x]));
@@ -5186,7 +5378,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       o.spots = [...all.values()].slice(-20);
     }
     if (s.factIdx && typeof s.factIdx === 'object') { o.factIdx = {}; for (const [k, v] of Object.entries(s.factIdx)) if (numIn(v, 0, 1e6) != null) o.factIdx[k.slice(0, 24)] = Math.floor(+v); }
-    if (s.done && typeof s.done === 'object') { o.done = Object.assign({}, P.done); for (const [k, v] of Object.entries(s.done)) if (numIn(v, 0, 9e15) != null) o.done[k.slice(0, 24)] = +v; }
+    // ticks that belong to this install (board link sent, added to the Home Screen) stay as they are on this phone
+    if (s.done && typeof s.done === 'object') { o.done = Object.assign({}, P.done); for (const [k, v] of Object.entries(s.done)) if (k !== 'link' && k !== 'install' && k !== 'moved' && numIn(v, 0, 9e15) != null) o.done[k.slice(0, 24)] = +v; }
     return o;
   }
   const Settings = {
@@ -5206,6 +5399,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       voicePicker($('#p-style'));
       this.spots();
       $('#p-relay').value = P.relay || '';
+      $('#p-mapkey').value = P.mapKey || '';
       this.relayNote();
       Setup.homeStatus();
       if (!P.home) $('#p-home').textContent = 'No home set.';
@@ -5244,6 +5438,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (rv === null) toast('That relay address doesn\u2019t look right. Keeping the old one.');
       else if (rv !== (P.relay || '')) { P.relay = rv === DEFAULT_RELAY ? '' : rv; toast('Relay changed. Send the board link again.'); }
       this.relayNote();
+      const mk = $('#p-mapkey').value.trim();
+      if (mk && !MiniMap.validKey(mk)) toast('That doesn\u2019t look like a CARTO key. Keeping the old one.');
+      else if (mk !== (P.mapKey || '')) { P.mapKey = mk; MiniMap.refreshAll(); toast(mk ? 'Street map key saved. Her board picks it up with the next update.' : 'Street map key removed'); }
       const wv = parseFloat($('#p-weight').value);
       P.weightKg = wv > 20 && wv < 700 ? +(P.unit === 'km' ? wv : wv / 2.20462).toFixed(1) : null;
       const gv = parseFloat($('#p-weekgoal').value);
@@ -5290,6 +5487,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     o.ui = p.ui === undefined ? undefined : n(p.ui, 0, 3600000);
     o.seq = n(p.seq, 0) || 0; o.conn = n(p.conn, 0, 1e5) || 0; o.prog = n(p.prog, 0, 1e5); o.gs = n(p.gs, 0); o.ch = n(p.ch, 0, 1e4) || 0;
     o.tg = Array.isArray(p.tg) ? p.tg.filter(x => typeof x === 'string') : [];
+    o.mk = typeof p.mk === 'string' && MiniMap.validKey(p.mk) ? p.mk.trim() : null;
     return o;
   }
   // Where a walk ended that didn't end at home, as a flap and as a phrase
@@ -5609,14 +5807,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (you) focus.push(you);
       if (!focus.length) { card.hidden = true; return; }
       card.hidden = false;
-      if (!this.map) this.map = new MiniMap.View($('#b-map'), { tiles: !IN_CLAUDE, height: 230, label: 'Map of the walk' });
+      if (!this.map) this.map = new MiniMap.View($('#b-map'), { tiles: !IN_CLAUDE, height: 230, label: 'Map of the walk', streetKey: () => (this.p && this.p.mk) || '' });
       const marks = [];
       if (entry) marks.push({ ll: [entry.lat, entry.lon], kind: 'entry' });
       if (goal && !p.turn) marks.push({ ll: [goal.lat, goal.lon], kind: 'goal', label: goal.short });
       if (p.turn) { const a = trail.at(p.turn.s); marks.push({ ll: [a.lat, a.lon], kind: 'turn', label: 'Turned' }); }
       if (p.pk && p.pk.ll) marks.push({ ll: p.pk.ll, kind: 'pickup', label: 'Pickup' });
       if (you) marks.push({ ll: you, kind: this.age() > 60000 ? 'est' : 'you', label: p.n });
-      this.map.draw({ line: ROUTE.line, done: walkedLine(p.se, p.far ? p.far.s : null, p.on ? sEst : null), marks, focus, label: sEst != null && !done ? `Map. ${p.n} is ${this.age() > 60000 ? 'probably ' : ''}${where(trail.describe(sEst))}${goal && p.ph === 'out' && !p.turn ? `, heading for ${goal.short}` : ''}.` : 'Map of tonight\u2019s walk' });
+      this.map.draw({ line: ROUTE.line, done: walkedLine(p.se, p.far ? p.far.s : null, p.on ? sEst : null), marks, focus, stations: mapStations(), label: sEst != null && !done ? `Map. ${p.n} is ${this.age() > 60000 ? 'probably ' : ''}${where(trail.describe(sEst))}${goal && p.ph === 'out' && !p.turn ? `, heading for ${goal.short}` : ''}.` : 'Map of tonight\u2019s walk' });
       $('#b-map-note').textContent = done ? 'Tonight\u2019s route' : this.age() > 60000 ? 'Estimated between updates' : 'Live';
       const mapsA = $('#b-map-open');
       if (you && !done) { mapsA.hidden = false; mapsA.href = `https://maps.apple.com/?q=${encodeURIComponent(p.n)}&ll=${you[0].toFixed(5)},${you[1].toFixed(5)}`; } else mapsA.hidden = true;
@@ -5936,7 +6134,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ph.textContent = '';
         ph.append(h('h2', null, 'On your Home Screen'), h('p', { class: 'muted' }, standalone()
           ? 'You are running it from your Home Screen, which keeps your walks safe. Walks live only on this phone, so save a backup in Settings now and then.'
-          : 'Open this page in Safari, tap Share, then Add to Home Screen, and use that icon from now on. It opens full screen, and Safari will not clear your saved walks the way it can for sites you have not opened in a week.'));
+          : 'Open this page in Safari, tap Share, then Add to Home Screen, and use that icon from now on. It opens full screen, and Safari will not clear your saved walks the way it can for sites you have not opened in a week. On iPhone the icon keeps its own copy, so save a backup here first and restore it in the icon.'));
       }
       const box = $('#a-sources'); if (box.childElementCount) return;
       SOURCES.forEach(([what, name, url]) => box.append(h('div', { class: 'tg' }, h('span', null, `${what}: `, h('a', { href: url, target: '_blank', rel: 'noopener' }, name)))));
@@ -5952,13 +6150,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ['Make a free GitHub repository', 'On github.com, sign in, tap New repository, name it last-train-home, choose Public, then Create repository.'],
         ['Upload the file', 'Tap uploading an existing file, drop in index.html, then Commit changes.'],
         ['Turn on Pages', 'Open Settings, then Pages. Under Build and deployment choose Deploy from a branch, pick main and /(root), then Save.'],
-        ['Open it on your phone', 'After a minute or two, open https://YOUR-USERNAME.github.io/last-train-home/ in Safari. Allow location when asked.'],
-        ['Add it to your Home Screen', 'Tap Share, then Add to Home Screen. Launch it from that icon from now on.'],
+        ['Open it on your phone', 'After a minute or two, open https://YOUR-USERNAME.github.io/last-train-home/ in Safari.'],
+        ['Add it to your Home Screen', 'Tap Share, then Add to Home Screen. Set it up from that icon and launch it from there from now on, since Safari and the icon keep separate copies. Allow location when asked.'],
       ];
       p.append(h('h2', { class: 'sh' }, 'Put it on your phone'),
         h('p', { class: 'muted small' }, 'Claude\u2019s preview can\u2019t use GPS, so the real app needs its own web address. GitHub Pages hosts a single file for free. The file holds no personal data: your home, settings and walks stay on your phone.'),
         h('ol', { class: 'guide' }, steps.map(([a, b]) => h('li', null, h('b', null, a), h('span', null, b)))),
-        h('p', { class: 'note' }, 'Any static host works the same way, such as Netlify or Cloudflare Pages.'),
+        h('p', { class: 'note' }, 'Any static host works the same way. Netlify or Cloudflare Pages give the app an address of its own, which keeps its storage apart from your other sites; GitHub Pages shares one address across all the sites on an account.'),
         h('button', { class: 'btn primary', onclick: close }, 'Got it'));
     });
   }
@@ -6078,6 +6276,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   $('#p-weight').addEventListener('change', () => Settings.save());
   $('#p-weekgoal').addEventListener('change', () => Settings.save());
   $('#p-relay').addEventListener('change', () => Settings.save());
+  $('#p-mapkey').addEventListener('change', () => Settings.save());
   $('#w-addr').addEventListener('keydown', e => { if (e.key === 'Enter') Setup.search(); });
   $('#p-addr').addEventListener('keydown', e => { if (e.key === 'Enter') Setup.search('#p-addr', '#p-addr-results'); });
   window.addEventListener('online', () => {
@@ -6163,6 +6362,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
   function boot(forceWalker) {
     pwaSetup();
+    // every map on this phone opens on satellite unless the street map was chosen here last
+    MiniMap.setMode(store.get('mapMode', 'sat'), true);
+    MiniMap.onMode = m => store.set('mapMode', m);
     // static sample flaps
     $$('[data-flap]').forEach(el => flap(el, el.dataset.flap));
     voicePicker($('#pv-voices'), { compact: true });
