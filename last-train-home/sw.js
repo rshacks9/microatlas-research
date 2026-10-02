@@ -1,5 +1,6 @@
 /* Last Train Home: keeps the app opening with no signal.
-   The page comes from the network whenever it can, so updates land right away, and from this cache when it can't.
+   The page comes from the network whenever it can, so updates land right away, and from this cache when it can't
+   or when the signal is too weak to bring it in 3 seconds.
    Typefaces and the app's own icons are cached on first use. Nothing personal is ever cached: the relay, the weather,
    map tiles and address search always go straight to the network. */
 const CACHE = 'lth-shell-v1';
@@ -22,11 +23,24 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   const own = url.origin === self.location.origin;
-  // the app itself: network first, the saved copy when offline
+  // the app itself: network first, the saved copy when offline. A weak signal can't hold the app back: if the whole
+  // page hasn't arrived in 3 seconds, the saved copy opens and the download finishes in the background for next time.
   if (req.mode === 'navigate' || (own && /\/(index\.html)?$/.test(url.pathname))) {
-    e.respondWith(fetch(req)
-      .then(res => (res.ok ? keep('./index.html', res) : res))
-      .catch(() => caches.match('./index.html').then(hit => hit || caches.match('./'))));
+    let saving = Promise.resolve();
+    const net = fetch(req).then(res => {
+      if (!res.ok) return res;
+      const copy = res.clone(), whole = res.clone();
+      saving = caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+      return whole.arrayBuffer().then(() => res); // ready once every byte is here; a dropped download falls back below
+    });
+    const saved = () => caches.match('./index.html').then(hit => hit || caches.match('./'));
+    e.respondWith(new Promise(resolve => {
+      let sent = false;
+      const send = r => { if (!sent && r) { sent = true; resolve(r); } };
+      const slow = setTimeout(() => saved().then(send), 3000);
+      net.then(res => { clearTimeout(slow); send(res); }, () => { clearTimeout(slow); saved().then(hit => send(hit || Response.error())); });
+    }));
+    e.waitUntil(net.then(() => saving, () => {}));
     return;
   }
   // typefaces never change: cache first
