@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-zxsmZat/+kmHsQ7Mh2jz8rGTPOsESy3bWGbwszqHvWQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#0f1217">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -238,7 +239,7 @@ body.demo-bar .notif { top: calc(66px + env(safe-area-inset-top, 0px)); }
 .ticket { position: relative; background: #f1e7d2; color: #1c1713; border-radius: 10px; padding: 14px 16px 14px 18px; display: grid; gap: 8px;
   -webkit-mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) , radial-gradient(circle 8px at 100% 50%, transparent 98%, #000);
   -webkit-mask-composite: source-in; mask-composite: intersect; }
-.ticket .top { display: flex; justify-content: space-between; gap: 10px; font: 700 0.6875rem/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: #8a2630; }
+.ticket .top { display: flex; justify-content: space-between; gap: 10px; font: 700 0.75rem/1 var(--f-body); letter-spacing: 0.16em; text-transform: uppercase; color: #8a2630; }
 .ticket .route { font: 900 1.625rem/0.95 var(--f-display); text-transform: uppercase; text-wrap: balance; }
 .ticket .facts { display: flex; gap: 16px; flex-wrap: wrap; font: 600 0.9375rem/1.2 var(--f-body); font-variant-numeric: tabular-nums; }
 .ticket .when { font: 600 0.8125rem/1.2 var(--f-body); color: #5b4e3c; font-variant-numeric: tabular-nums; margin-top: -2px; }
@@ -540,6 +541,120 @@ html { scroll-padding-top: 5.5rem; scroll-padding-bottom: calc(6.5rem + env(safe
 .linemap .lm-row { height: auto; min-height: 1.875rem; }
 .check { grid-template-columns: 1.625rem 1fr; }
 .check .box { width: 1.375rem; height: 1.375rem; }
+
+/* The Depot, wave 4 design pass (ext/depot.js names the parts styled here).
+   One lit object, the split-flap Departures board, and one red action, All aboard. Tonight's plan is the only other
+   panel. Everything else reads as notices on the platform wall: no box, a rule above, the same 20 px titles, and the
+   rare ones show their headline until opened. The wave 3 parts share the same language:
+   - radii by hierarchy: 16 for panels and All aboard, 12 for the board, buttons and choice cards, 10 for small
+     buttons, segments, inputs and ticket stubs, pills for chips; a notice has no box at all
+   - a solid rule between notices, a dashed rule to start a part inside a panel
+   - titles in the display face at 20 px, figures at 26 px, text in Barlow at 15 px, notes and labels at 13 px
+   - solid amber only for tonight's turnaround; a set-once choice (who calls the stops, the ghost) takes the quiet amber
+     outline; caution yellow for what could change tonight's plan, its fix one amber text button on its own line
+   No new colors or fonts. Selectors carry the screen's id because these rules load before the modules they adjust. */
+
+/* ------------------------------------------------ titles: smaller than the board, one size for every card */
+#s-depot .card h2 { font-size: 1.25rem; line-height: 1.1; }
+
+/* ------------------------------------------------ tonight's plan: the one panel under the board */
+#s-depot .d-plan { gap: 12px; padding: 16px; }
+#s-depot #d-roundtrip { font-size: 0.9375rem; line-height: 1.4; color: var(--ink-2); }
+#s-depot .d-homeby-row { border-top: 1px dashed var(--rule); padding-top: 12px; margin-top: 2px; }
+#s-depot .d-homeby-row > label { font: 600 0.8125rem/1.25 var(--f-body); color: var(--ink-2); }
+/* the answers under the plan read like the board's remarks: 15 px, caution yellow when they would change the plan */
+#s-depot #d-fit, #s-depot #d-hours { font-size: 0.9375rem; line-height: 1.4; color: var(--ink-2); text-wrap: pretty; }
+#s-depot #d-fit.late, #s-depot #d-hours, #s-depot #d-hours span { color: var(--caution); }
+#s-depot #d-hours { display: block; }
+#s-depot #d-hours svg { display: none; }
+/* the fix on its own line, the same amber text button as the board's Turn at; both start flush with the lines above
+   them (the focus ring draws outside the button, so it needs no padding to show) */
+#s-depot #d-fit .linkbtn { display: flex; align-items: center; width: fit-content; margin: -6px 0 -4px; padding: 0; font-size: 0.9375rem; font-weight: 600; color: var(--amber); }
+#s-depot #d-wx .wx-act { padding-inline: 0; }
+
+/* ------------------------------------------------ choices that carry over from night to night (the ghost, who calls the
+   stops): small cards side by side with the quiet amber outline of Settings' voice cards, so solid amber stays with
+   tonight's turnaround. One row for the ghost at any width, instead of a pill per row on a 320 px phone. */
+#s-depot #d-ghost { border-top: 1px dashed var(--rule); padding-top: 12px; margin-top: 2px; gap: 8px; }
+#s-depot #d-ghost .chips { flex-wrap: nowrap; gap: 8px; }
+#s-depot #d-ghost .chip { flex: 1 1 0; min-width: 0; padding: 6px 8px; white-space: normal; text-wrap: balance; text-align: center; font-size: 0.8125rem; line-height: 1.2; border-radius: 12px; }
+#s-depot .voice-grid .chip { border-radius: 12px; }
+#s-depot #d-ghost .chip[aria-pressed="true"] { background: linear-gradient(160deg, #2a2112, var(--panel-2) 70%); border-color: var(--amber); color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+/* quiet choices take an amber ring outside their edge: the dark inner ring that suits solid amber would vanish here */
+#s-depot :is(#d-ghost, .voice-grid) .chip:focus-visible { outline-color: var(--amber); outline-offset: 2px; }
+
+/* ------------------------------------------------ notices: read when there's a minute, quieter than the plan */
+#s-depot > :is(#d-tonight, #d-week, #ins-memory, #d-share, #rc-card) { background: none; border: 0; border-top: 1px solid var(--rule); border-radius: 0; padding: 14px 0 0; }
+#s-depot > #d-last:not(:empty) { border-top: 1px solid var(--rule); padding-top: 14px; }
+/* a part inside a notice is labeled like a part of the plan */
+#s-depot #d-tonight :is(.st-depot, .lore) > .eyebrow { color: var(--ink-2); }
+
+/* Calling your stops, folded to one line that names the voice */
+#s-depot #d-voice > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding-block: 0; list-style: none; color: var(--ink); font-size: 0.9375rem; line-height: 1.25; }
+#s-depot #d-voice > summary::-webkit-details-marker { display: none; }
+#s-depot #d-voice > summary::after { content: ''; flex: none; width: 8px; height: 8px; margin: -4px 6px 0 auto; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(45deg); transition: transform 140ms ease; }
+#s-depot #d-voice[open] > summary::after { margin-top: 4px; transform: rotate(-135deg); }
+#s-depot .d-voice-l { font: 600 0.8125rem/1.25 var(--f-body); color: var(--ink-2); }
+#s-depot .d-voice-v { font: 600 0.9375rem/1.25 var(--f-body); color: var(--ink); }
+#s-depot #d-voice > .field { padding-bottom: 2px; }
+
+/* the recap ticket shows its headline numbers; the punches and the poster wait behind Open recap */
+#s-depot #rc-card { gap: 10px; }
+#s-depot #rc-card .rc-stub-b { display: none; }
+#s-depot #rc-card .rc-stub-a { border-radius: 10px; padding-block: 12px 14px;
+  -webkit-mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000), radial-gradient(circle 8px at 100% 50%, transparent 98%, #000);
+  mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000), radial-gradient(circle 8px at 100% 50%, transparent 98%, #000);
+  -webkit-mask-composite: source-in; mask-composite: intersect; }
+#s-depot #rc-card .rc-fig b { font-size: 1.625rem; }
+
+/* On this night, a rare notice kept short: each memory is its title with Open that walk beside it, then its one line */
+#s-depot #ins-memory .ins-mem { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 4px; }
+#s-depot #ins-memory .ins-mem > h2 { grid-column: 1; grid-row: 1; }
+#s-depot #ins-memory .ins-mem > .row { grid-column: 2; grid-row: 1; margin-top: 0; }
+#s-depot #ins-memory .ins-mem > p { grid-column: 1 / -1; }
+#s-depot #ins-memory .ins-mem .btn { padding-inline: 12px; font-size: 0.8125rem; }
+
+/* the last ticket is the stub without its station punches: a tap opens the whole walk */
+#s-depot #d-last .ticket .punch { display: none; }
+
+/* once the board link is out, the card is its name, the alerts pill and the ways to send it again: only the line right
+   under its title, which explains what the link does, folds away; any other note in the card stays */
+#s-depot #d-share.d-sent > .row.between + p.muted { display: none; }
+
+/* ------------------------------------------------ the ghost's result on any ticket: when it wraps, the ring stays on the
+   first line and the two lines balance, so a time like 1 min 40 s is less likely to break across them */
+#app .ticket .gh-line { align-items: flex-start; }
+#app .ticket .gh-line .gh-icon { margin-top: 0.15em; }
+#app .ticket .gh-line > span { text-wrap: balance; }
+
+/* ------------------------------------------------ Settings, Maps: offline maps in Settings' own language */
+#s-settings .ofl { border-top-style: dashed; padding-top: 12px; margin-top: 2px; }
+#s-settings .ofl-h { font: 600 0.8125rem/1.25 var(--f-body); color: var(--ink-2); }
+#s-settings .ofl-size { font: 800 1.625rem/1 var(--f-display); letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+#s-settings .ofl-used { font: 500 0.8125rem/1.3 var(--f-body); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  #s-depot #d-voice > summary::after { transition: none; }
+}
+
+/* First run: the map for picking home, and the ticket the first walk will print */
+.fr-mapwrap { position: relative; }
+.fr-map { touch-action: none; cursor: crosshair; }
+.fr-map:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.fr-map .mm-canvas { will-change: transform; }
+.fr-map .mm-home .mm-dot { fill: var(--cream); stroke: #07080b; stroke-width: 2; } /* as on the full-screen map */
+.fr-zooms { position: absolute; right: 8px; bottom: 28px; display: grid; gap: 8px; }
+.fr-zoom { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--rule); background: rgba(15, 18, 23, 0.88); color: var(--ink);
+  font: 600 1.5rem/1 var(--f-body); display: grid; place-items: center; cursor: pointer; }
+.fr-zoom:disabled { color: var(--ink-3); cursor: default; }
+.fr-zoom:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.fr-offer { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; color: var(--ink-2); }
+.fr-offer .linkbtn { color: var(--amber); padding: 2px 0; }
+#fr-map-w svg { flex: none; }
+/* the unprinted ticket: the shape of a ticket, drawn in outline on the dark page */
+.ticket.fr-stub { background: transparent; color: var(--ink-2); border: 2px dashed var(--rule); }
+.ticket.fr-stub .top { color: var(--ink-3); }
+.ticket.fr-stub .when { color: var(--ink-3); }
 
 /* Tonight's window: the Weather row on the Departures board and the plain lines under it, read like the remarks
    at the foot of a station board. No new colors or fonts: caution yellow for what needs acting on, amber for the
@@ -1134,7 +1249,7 @@ body.stn-on { overflow: hidden; }
   <section class="flapboard" aria-label="Sample arrivals board">
     <div class="row between" style="margin-bottom:10px"><span class="eyebrow">Sample arrivals</span><span class="eyebrow">Monon Trail</span></div>
     <div class="flapgrid">
-      <div class="flapfield wide"><span class="eyebrow">Train</span><div class="flaprow" data-flap="TOM  NIGHT LOCAL"></div></div>
+      <div class="flapfield wide"><span class="eyebrow">Train</span><div class="flaprow" data-flap="THE NIGHT LOCAL"></div></div>
       <div class="flapfield"><span class="eyebrow">Status</span><div class="flaprow" data-flap="INBOUND"></div></div>
       <div class="flapfield"><span class="eyebrow">Home at</span><div class="flaprow" data-flap="9:42 PM"></div></div>
       <div class="flapfield wide"><span class="eyebrow">Now passing</span><div class="flaprow" data-flap="75TH ST"></div></div>
@@ -1147,7 +1262,7 @@ body.stn-on { overflow: hidden; }
   </section>
   <section class="card"><h2>Who calls the stops?</h2><div id="pv-voices"></div></section>
   <button class="btn primary big" data-act="demo-cab">Ride the demo walk</button>
-  <button class="btn big" data-act="demo-board">See her arrivals board</button>
+  <button class="btn big" data-act="demo-board">See the arrivals board</button>
   <p class="note">Turn your sound on. The demo runs 30 times faster than a real walk.</p>
   <div class="linkrow"><button class="linkbtn" data-act="phone-guide">Put it on your phone</button><button class="linkbtn" data-go="s-about">How it works</button><button class="linkbtn" data-go="s-welcome">Set up anyway</button></div>
 </main>
@@ -1155,18 +1270,19 @@ body.stn-on { overflow: hidden; }
 <!-- ============ WELCOME / SETUP ============ -->
 <main id="s-welcome" class="wrap" hidden>
   <header><h1 class="wordmark">Last Train<br>Home<span class="rail"></span></h1></header>
-  <p class="muted">A conductor for your Monon walks, and an arrivals board for the person waiting at home. Set it up once.</p>
+  <p class="muted">A conductor for your walks on the Monon Trail, and an arrivals board for the person waiting at home. Set it up once.</p>
+  <p class="note" id="w-trail">The Monon Trail follows the old Monon Railroad line. The app knows it from 10th Street in Indianapolis, north through Broad Ripple, to 146th Street in Carmel.</p>
   <p class="banner" id="w-ios" hidden></p>
   <section class="card">
     <div class="field"><label for="w-name">Your name</label><input id="w-name" class="input" autocomplete="given-name" maxlength="24" placeholder="First name"></div>
-    <div class="field"><label for="w-train">Name your train</label><input id="w-train" class="input" maxlength="32" placeholder="The Night Local"></div>
-    <div class="field"><label for="w-watcher">Who's watching the board?</label><input id="w-watcher" class="input" maxlength="24" placeholder="Their first name"></div>
+    <div class="field"><label for="w-train">Name your train</label><input id="w-train" class="input" maxlength="32" placeholder="The Night Local" aria-describedby="w-train-n"><p class="note" id="w-train-n">Optional. It shows on the arrivals board next to your name.</p></div>
+    <div class="field"><label for="w-watcher">Who waits for you at home?</label><input id="w-watcher" class="input" maxlength="24" placeholder="Their first name" aria-describedby="w-watcher-n"><p class="note" id="w-watcher-n">Optional. They follow your walks on a live arrivals board, from a link you send them.</p></div>
     <div class="row between"><span class="flabel" id="w-units-l">Units</span>
       <div class="seg" id="w-units" role="group" aria-labelledby="w-units-l"><button data-unit="mi" aria-pressed="true">Miles</button><button data-unit="km" aria-pressed="false">Kilometers</button></div></div>
   </section>
   <section class="card">
     <h2>Home station</h2>
-    <p class="muted small">The walk starts and ends here. Stand at home and tap the first button, or search your address.</p>
+    <p class="muted small">Where your walks start and end. The app times the trip home from here, and saves it only on this phone.</p>
     <div class="row"><button class="btn" data-act="home-here"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>I'm home now, use my location</button></div>
     <div class="row"><input id="w-addr" class="input" style="flex:1;min-width:0" placeholder="Search an address" aria-label="Home address" autocomplete="street-address"><button class="btn" data-act="home-search">Search</button></div>
     <div id="w-addr-results" class="stops" aria-live="polite" hidden></div>
@@ -1351,6 +1467,7 @@ body.stn-on { overflow: hidden; }
     <p class="note">These switch on when the watcher subscribes from their board. Off stops every phone alert from this phone.</p>
     <p class="note" id="p-relay-note"></p>
     <details class="more"><summary>Advanced: relay server</summary><div class="field"><label for="p-relay">Relay server address</label><input id="p-relay" class="input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://ntfy.sh/"><p class="note">Leave blank to use ntfy.sh. A custom relay is written into the board link you send, so her board follows it.</p></div></details>
+    <p class="note">Anyone with your board link can follow your walks. If it reaches someone it shouldn’t, make a new one: the old link stops following at once, even mid-walk.</p>
     <button class="btn" data-act="new-link">Make a new board link</button>
   </section>
   <section class="card">
@@ -1361,6 +1478,7 @@ body.stn-on { overflow: hidden; }
   <section class="card">
     <h2>Backup</h2>
     <p class="note">Walks live only on this phone. Save a backup file now and then, or before switching phones.</p>
+    <p class="note" id="p-backup-what">The file holds your home location, every walk with its route from your door, your named spots and your settings, so keep it somewhere private. It doesn’t hold your board link.</p>
     <div class="row"><button class="btn" data-act="backup">Save a backup</button><button class="btn ghost" data-act="restore">Restore</button></div>
   </section>
   <div class="linkrow"><button class="linkbtn" data-act="diag">Diagnostics</button><button class="linkbtn" data-act="erase-all">Erase everything on this phone</button></div>
@@ -1386,14 +1504,18 @@ body.stn-on { overflow: hidden; }
   <section class="card plain">
     <h2>What's new</h2>
     <ul class="muted small changelog">
+      <li>If the phone pauses the conductor’s voice after a locked screen or a call, the app now wakes it and says the line again, so telegrams and the home-by warning still get through.</li>
+      <li>Making a new board link cuts off the old one at once, even in the middle of a walk, and the old board says the link was replaced.</li>
+      <li>The Depot is calmer: the Departures board and All aboard lead, and choices you set once, like the voice, fold away until you open them.</li>
+      <li>Setting up a new phone is easier: home can be picked on a map, the first turnaround makes a walk of about four miles, and the board link carries your name, so the board says whose walk it is from the first open.</li>
+    </ul>
+    <details class="more"><summary>Earlier updates</summary>
+    <ul class="muted small changelog">
       <li>The Departures board reads the weather for the hours your walk takes, with the latest time to leave and still be home dry, or a nearer turnaround that is.</li>
       <li>Race a ghost you can see: pick your best or your last walk to tonight’s turnaround, watch it on the map, and get the result on your ticket.</li>
       <li>A recap ticket appears on the Depot when a month or season ends, the recap can step back through earlier ones, and December brings a year in review.</li>
       <li>Telegrams and alerts now cut into a long story part between sentences, and the captions show times and distances as you would write them.</li>
       <li>Maps keep showing in the trail’s weak spots: tiles along the trail stay on this phone, and Settings can save the whole trail for offline.</li>
-    </ul>
-    <details class="more"><summary>Earlier updates</summary>
-    <ul class="muted small changelog">
       <li>All aboard opens a ready check of GPS, sound, the live board, the screen and the battery. When everything is clear it departs after a two-second countdown, and Wait stops it. Settings can switch the check off.</li>
       <li>Monon Chronicles tells the railroad’s story in eight chapters, a part every few minutes on your walks. Story so far replays any chapter you have heard.</li>
       <li>The Ticket book’s Stats tab adds a calendar of your nights on the line, trail heat, segment times, and a recap of the month, season or year with a poster to share.</li>
@@ -1434,14 +1556,15 @@ body.stn-on { overflow: hidden; }
   </section>
   <section class="card plain">
     <h2>Privacy</h2>
-    <p class="muted">Your walks, history and settings stay on this phone. These services see a little, and only when used:</p>
+    <p class="muted">Your walks, history and settings stay on this phone. These services see a little, and only when used. Each one sees this phone’s internet address when it is used:</p>
     <ul class="muted small changelog">
-      <li><b>ntfy.sh</b> carries live board updates, encrypted on this phone first. The key lives only in the board link, so anyone with the link can see your walk: send it to one person. The relay can see when updates are sent and from which internet address, but not what they say. Phone alerts, if she turns them on, are plain text with status, times and the nearest cross street, never your exact position.</li>
+      <li><b>ntfy.sh</b> carries live board updates, encrypted on this phone first. The key lives only in the board link, so anyone with the link can follow your walks from your door, and send you telegrams: send it to one person. If it reaches anyone else, Make a new board link in Settings cuts the old one off at once. The relay can see when updates are sent, but not what they say. Phone alerts, if she turns them on, are plain text the relay can read: your first name, the walk’s status, times and the nearest cross street or landmark on the trail, never your exact position. Before you leave, the ready check asks the relay whether it is up, and sends nothing else.</li>
       <li><b>Open-Meteo</b> gets your location rounded to about a kilometer, for the weather on the Depot and during walks.</li>
-      <li><b>Indiana’s imagery service</b> (on Esri’s ArcGIS cloud), with the <b>U.S. Geological Survey</b> as a backup, serves the satellite pictures and sees which part of town is on screen. Tiles along the trail are kept on this phone, as you look at them or all at once with Save trail maps for offline, so the maps show where the signal is weak. They cover the trail and a strip beside it, the same for everyone, so they show the trail area, not your home. Delete them in Settings, under Maps.</li>
-      <li><b>CARTO</b> serves the street map pictures, only once you add a key, and sees which part of town is on screen.</li>
+      <li><b>Indiana’s imagery service</b> (on Esri’s ArcGIS cloud), with the <b>U.S. Geological Survey</b> as a backup, serves the satellite pictures and sees which part of town is on screen. Tiles inside a strip along the trail are kept on this phone, as you look at them or all at once with Save trail maps for offline, so the maps show where the signal is weak; tiles outside the strip are never kept. The strip follows the trail’s line and is the same for everyone. It reaches a few hundred meters either side in close-ups and farther in the overview maps, so if you live near the trail, some kept tiles show your street. The arrivals board keeps the tiles it shows the same way, on the watcher’s phone. Delete them in Settings, under Maps.</li>
+      <li><b>CARTO</b> serves the street map pictures, only once you add a key, and sees which part of town is on screen. The arrivals board uses your key too.</li>
       <li><b>OpenStreetMap Nominatim</b> gets the address you type, only if you search for your home.</li>
-      <li><b>Google Fonts</b> serves the typefaces, so Google sees this page’s internet address when they load.</li>
+      <li><b>Google Fonts</b> serves the typefaces when they load.</li>
+      <li><b>Apple Maps</b> or <b>Google Maps</b> gets your position only if the watcher taps one of the map links on the arrivals board.</li>
     </ul>
   </section>
   <section class="card plain">
@@ -1478,15 +1601,15 @@ body.stn-on { overflow: hidden; }
   <section class="card" id="b-map-card" hidden><div class="row between"><h2>Map</h2><span class="note" id="b-map-note"></span></div><div id="b-map"></div><a class="linkbtn" id="b-map-open" target="_blank" rel="noopener" hidden>Open his spot in Maps</a></section>
   <section class="card" id="b-talk" hidden>
     <h2>Send a telegram</h2>
-    <p class="note">The conductor reads it aloud in his earbuds.</p>
+    <p class="note" id="b-talk-note">The conductor reads it aloud in his earbuds.</p>
     <button class="btn cheer" data-act="b-cheer" id="b-cheer">Send a cheer</button>
     <div class="chips" id="b-presets" role="group" aria-label="Ready-made telegrams"></div>
     <div class="row"><input id="b-msg" class="input" style="flex:1;min-width:0" maxlength="120" placeholder="Write your own" aria-label="Telegram message"><button class="btn primary" data-act="b-send">Send</button></div>
     <div class="tg-list" id="b-sent"></div>
     <div class="subrow">
-      <label for="b-hb" class="flabel">Ask him to be home by</label>
+      <label for="b-hb" class="flabel" id="b-hb-l">Ask him to be home by</label>
       <div class="row"><input id="b-hb" type="time" class="input" style="width:auto;min-width:0"><button class="btn" data-act="b-homeby">Ask</button></div>
-      <p class="note">He hears when to turn around to make it.</p>
+      <p class="note" id="b-hb-note">He hears when to turn around to make it.</p>
     </div>
   </section>
   <section class="card" id="b-guess" hidden></section>
@@ -1496,7 +1619,7 @@ body.stn-on { overflow: hidden; }
   <section class="card" id="b-line-card" hidden><div class="row between"><h2>The line</h2><span class="note" id="b-line-note"></span></div><div class="linemap" id="b-line"></div></section>
   <section class="card" id="b-alerts-card">
     <h2>Alerts</h2>
-    <div class="field"><span class="flabel">Heads-up when he's this close to home</span><div class="chips" id="b-heads-chips" role="group" aria-label="Heads-up time"></div></div>
+    <div class="field"><span class="flabel" id="b-heads-l">Heads-up when he's this close to home</span><div class="chips" id="b-heads-chips" role="group" aria-label="Heads-up time"></div></div>
     <div class="row between"><span class="flabel" id="b-sound-l">Sounds on this page</span><div class="seg small" id="b-sound" role="group" aria-labelledby="b-sound-l"><button data-act="b-sound-set" data-v="1" aria-pressed="false">On</button><button data-act="b-sound-set" data-v="0" aria-pressed="true">Off</button></div></div>
     <div class="subrow" id="b-alerts"></div>
   </section>
@@ -1666,6 +1789,8 @@ const SOURCES = [
   ['Satellite view outside Indiana', 'USGS The National Map: Orthoimagery (public domain)', 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer'],
   ['Street map, with your key', 'CARTO basemaps with OpenStreetMap data', 'https://carto.com/attributions'],
   ['Address search', 'OpenStreetMap Nominatim, data \u00a9 OpenStreetMap contributors', 'https://nominatim.org/'],
+  ['Live board and phone alerts', 'ntfy.sh, the relay that carries the encrypted board updates and the plain-text alerts', 'https://ntfy.sh/'],
+  ['Typefaces', 'Google Fonts: Big Shoulders Display, Barlow and Chivo Mono', 'https://fonts.google.com/'],
   ['Moon phase', 'Mean synodic month from the new moon of January 6, 2000 (Meeus, Astronomical Algorithms)', 'https://en.wikipedia.org/wiki/Lunar_phase'],
 ];
 if (typeof module !== 'undefined') module.exports = { FACTS, SOURCES };
@@ -1701,7 +1826,7 @@ const LTH = (() => {
       this.stations = route.stations
         .map(st => ({ ...st, s: this.project(st.lat, st.lon).s }))
         .sort((a, b) => a.s - b.s);
-      this.byId = {};
+      this.byId = Object.create(null); // no prototype: ids read from payloads and backups ("__proto__", "constructor") find nothing
       this.stations.forEach((st, i) => { st.idx = i; this.byId[st.id] = st; });
     }
     project(lat, lon, hint = null, win = Infinity) {
@@ -1736,7 +1861,7 @@ const LTH = (() => {
         this.stations.push({ id: sp.id, name: sp.name, short: sp.name, kind: 'spot', lat: sp.lat, lon: sp.lon, s: pr.s });
       }
       this.stations.sort((a, b) => a.s - b.s);
-      this.byId = {};
+      this.byId = Object.create(null);
       this.stations.forEach((st, i) => { st.idx = i; this.byId[st.id] = st; });
     }
     nearest(s, max = Infinity) {
@@ -3970,11 +4095,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   if (!P.factIdx || typeof P.factIdx !== 'object') P.factIdx = {};
   P.spots = Array.isArray(P.spots) ? P.spots.filter(x => x && typeof x.name === 'string' && Number.isFinite(+x.lat) && Number.isFinite(+x.lon)) : [];
   if (P.home && !(Number.isFinite(+P.home.lat) && Number.isFinite(+P.home.lon))) P.home = null;
+  // How the board speaks of the walker (P.pron): 'n' by name, the choice for every phone set up from here on, or 'he' or
+  // 'she'. A profile saved before the choice existed has none and keeps the words it always had: he for the walker, her
+  // for the watcher, and the same updates and board link as before.
+  if (store.get('profile', null) == null) P.pron = 'n';
   trail.setSpots(P.spots);
   const saveP = () => store.set('profile', P);
   // A saved walk with only known fields of the right types. Anything unreadable is dropped instead of breaking the app.
   const numIn = (v, lo, hi) => (v !== null && v !== '' && typeof v !== 'boolean' && Number.isFinite(+v) && +v >= lo && +v <= hi ? +v : null);
   const strOf = (v, n) => (typeof v === 'string' ? v.slice(0, n) : null);
+  // Words from the other phone, before anyone hears or reads them: control characters (which could make the voice say
+  // one thing while the caption shows another) and direction overrides (which can make a name read backwards) become
+  // spaces, and the length is capped
+  const cleanText = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '');
   const stId = v => (typeof v === 'string' && trail.byId[v] ? v : null);
   function cleanWalk(w) {
     if (!w || typeof w !== 'object') return null;
@@ -4027,20 +4160,26 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (!u) return '';
     try {
       const x = new URL(u);
-      // updates carry his position (encrypted) and alerts carry plain text, so the relay must be https; http only on this computer
-      if (!(x.protocol === 'https:' || (x.protocol === 'http:' && isLocalHost(x.hostname)))) return null;
+      // updates carry his position (encrypted) and alerts carry plain text, so the relay must be https; http only on this
+      // computer, and only for a page running on this computer (a board link can't point a hosted page at her own phone)
+      if (!(x.protocol === 'https:' || (x.protocol === 'http:' && isLocalHost(x.hostname) && isLocalHost(location.hostname)))) return null;
       if (x.username || x.password || x.search || x.hash) return null;
       return x.origin + (x.pathname.endsWith('/') ? x.pathname : x.pathname + '/');
     } catch (e) { return null; }
   }
   const relayOf = () => (P.relay && P.relay !== DEFAULT_RELAY ? P.relay : '');
-  const boardLink = () => { ensureChannel(); const r = relayOf(); return `${location.href.split('#')[0]}#board.${P.chan}.${P.key}${r ? '.' + L.b64u.enc(new TextEncoder().encode(r)) : ''}`; };
+  // A board link from a phone with P.pron also carries the walker's name, and the train when it was renamed, so the board
+  // can say whose it is before the first walk. Like the key, it rides in the fragment, which never leaves the phone.
+  const whoTag = (pn, name, tn) => (pn && name ? '~' + L.b64u.enc(new TextEncoder().encode([pn, name.slice(0, 24)].concat(tn && tn !== DEFAULTS.train ? [tn.slice(0, 32)] : []).join('\n'))) : '');
+  const boardLink = () => { ensureChannel(); const r = relayOf(); return `${location.href.split('#')[0]}#board.${P.chan}.${P.key}${r ? '.' + L.b64u.enc(new TextEncoder().encode(r)) : ''}${whoTag(P.pron, P.name, P.train)}`; };
   function parseBoardHash(hash) {
-    const m = /^#board\.([A-Za-z0-9]{12,64})\.([A-Za-z0-9_-]{43})(?:\.([A-Za-z0-9_-]{4,400}))?$/.exec(hash || '');
+    const m = /^#board\.([A-Za-z0-9]{12,64})\.([A-Za-z0-9_-]{43})(?:\.([A-Za-z0-9_-]{4,400}))?(?:~([A-Za-z0-9_-]{2,400}))?$/.exec(hash || '');
     if (!m) return null;
     let base = null;
     if (m[3]) { try { base = normRelay(new TextDecoder().decode(L.b64u.dec(m[3]))); } catch (e) { base = null; } }
-    return { chan: m[1], key: m[2], base: base || null };
+    const out = { chan: m[1], key: m[2], base: base || null };
+    if (m[4]) { try { const [pn, name, tn] = new TextDecoder().decode(L.b64u.dec(m[4])).split('\n'); if (['n', 'he', 'she'].includes(pn) && cleanText(name, 24)) Object.assign(out, { pn, name: cleanText(name, 24) }, cleanText(tn, 32) ? { tn: cleanText(tn, 32) } : {}); } catch (e) { /* no name, no harm */ } }
+    return out;
   }
   const U = () => P.unit;
   const uLabel = () => L.unitLabel(P.unit);
@@ -4135,6 +4274,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const short = id => (trail.byId[id] || {}).short || '';
   const localDate = tt => { const d = new Date(tt); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const capFirst = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
+  // The board's words for the walker: the name ('n'), she, or he, which every board said before names were chosen and
+  // still says for a walker app that sends no choice
+  function walkerWords(n, pn) {
+    const x = n || 'the walker', X = capFirst(x);
+    if (pn === 'n') return { n: x, he: x, his: `${x}’s`, him: x, He: X, His: `${X}’s`, named: true };
+    return pn === 'she' ? { n: x, he: 'she', his: 'her', him: 'her', He: 'She', His: 'Her', named: false } : { n: x, he: 'he', his: 'his', him: 'him', He: 'He', His: 'His', named: false };
+  }
+  // The train field of a split-flap board: name and train, then with one space, then the name alone
+  const trainFlap = (n, tn, max = 17) => { const t = String(tn || DEFAULTS.train).replace(/^the /i, ''); return [`${n}  ${t}`, `${n} ${t}`].find(s => s.length <= max) || String(n); };
   const nightOf = t => new Date(t - 4 * 3600000).toDateString(); // the evening a moment belongs to: days turn over at 4 AM
   // [time, meters from home] through the evening from the board's 2-minute history
   function tripProfile(p) {
@@ -4311,7 +4459,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   /* ------------------------------------------------------------ split flap */
   function flap(el, text, max) {
-    text = String(text || '').toUpperCase().replace(/[^A-Z0-9:.\- ]/g, ' ');
+    text = String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9:.\- ]/g, ' '); // José flips as JOSE, not JOS
     if (max) text = text.slice(0, max);
     if (el._text === text) return;
     const prev = el._text || '';
@@ -4519,9 +4667,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         e.phase = 'gap'; e.nextT = setTimeout(() => { if (cur === e && my === gen) speak(e); }, 120);
       });
     }
+    // iOS can leave the speech engine paused after the page was hidden: whatever is spoken then waits in silence
+    // (nudge: resume anyway, for a sentence in the air when the page comes back, as Safari may not set the flag)
+    function wake(nudge) { try { if (speechSynthesis.paused) { speechSynthesis.resume(); Diag.add('sound', 'the speech engine was paused, so it was resumed'); } else if (nudge) speechSynthesis.resume(); } catch (err) { /* no engine */ } }
+    if ('speechSynthesis' in window) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wake(!!cur && cur.phase === 'speak'); });
     function speak(e) {
       if (cur !== e) return;
-      const my = ++gen, text = (e.bridge || '') + e.chunks[e.i];
+      const my = ++gen, text = (e.bridge || '') + e.chunks[e.i], heardBefore = e.heard;
       e.bridge = ''; e.phase = 'speak'; e.heard = true;
       const fin = ok => { if (my !== gen) return; gen++; clearTimeout(e.guard); sentenceDone(e, ok); };
       e.utterAt = Date.now(); e.utterMs = 400;
@@ -4541,12 +4693,25 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         let more = 6;
         const guard = wait => { e.guard = setTimeout(() => {
           if (my !== gen) return;
-          let talking = false; try { talking = !!speechSynthesis.speaking; } catch (err) { /* no engine */ }
-          if (talking && more-- > 0) return guard(2000);
+          // this queue keeps one utterance at a time in the engine, so one still pending there never started
+          let talking = false, held = false;
+          try { held = !!(speechSynthesis.paused || speechSynthesis.pending); talking = !held && !!speechSynthesis.speaking; } catch (err) { /* no engine */ }
+          // overdue: a nudge, as Safari can pause the voice under the hood without saying so (harmless while it talks)
+          if (talking && more-- > 0) { try { speechSynthesis.resume(); } catch (err) { /* ignore */ } return guard(2000); }
+          if (held) {
+            // the engine kept the sentence and never said it (paused, or stalled behind nothing): it is reset, and the
+            // sentence comes again from its start, twice at most, so one bad moment never silences the rest of the walk
+            gen++; Diag.add('sound', 'the speech engine held a sentence back, so it was reset');
+            try { speechSynthesis.cancel(); speechSynthesis.resume(); } catch (err) { /* ignore */ }
+            e.heard = heardBefore;
+            if ((e.outside || 0) < 2) { e.outside = (e.outside || 0) + 1; e.cut = heardBefore; e.everCut = true; lastEnd = Date.now(); return park(e, 'cut'); }
+            return sentenceDone(e, false);
+          }
           if (talking) { Diag.add('sound', 'the speech engine stopped answering, so the line moved on'); try { speechSynthesis.cancel(); } catch (err) { /* ignore */ } }
           fin(true);
         }, wait); };
         guard(e.utterMs * 1.5 + 2500);
+        wake();
         speechSynthesis.speak(u);
       } catch (err) { clearTimeout(e.guard); e.guard = setTimeout(() => fin(false), 300); }
     }
@@ -4765,11 +4930,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       W.onFix({ t, lat: p.lat + n() / 111320, lon: p.lon + n() / 85300, acc: 7 + Math.random() * 5 });
       if (!this.telegramSent && W.tr && W.tr.phase === 'out' && W.tr.p > 1400) {
         this.telegramSent = true;
-        this.bus.pub('W', { id: 'demo1', from: P.watcher || 'Sam', text: 'Dinner is at 9:30. No rush.', t });
+        this.bus.pub('W', { id: 'demo1', from: P.watcher || 'Home', text: 'Dinner is at 9:30. No rush.', t });
       }
       if (!this.cheerSent && W.tr && W.tr.phase === 'back' && W.tr.p < W.tr.pFar - 900) {
         this.cheerSent = true;
-        this.bus.pub('W', { id: 'demo2', type: 'cheer', n: 3, from: P.watcher || 'Sam', t });
+        this.bus.pub('W', { id: 'demo2', type: 'cheer', n: 3, from: P.watcher || 'Home', t });
       }
       if (this.d >= this.len - 1 && W.tr && W.tr.status !== 'walking') this.stop();
     },
@@ -5084,7 +5249,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       else { Cab.caption(line.show); if (this.voiceOn) Sound.say(line); else if (line.onEnd) line.onEnd({ spoken: false, why: 'voice off' }); }
     },
     onWire(obj) {
-      if (!obj || !obj.id || this.seenWire.has(obj.id)) return;
+      // ids go back in every update as acks, so only the short ones her board makes: a huge one would swell each update
+      // past the relay's size limit and stop the board for the rest of the walk
+      if (!obj || typeof obj !== 'object' || typeof obj.id !== 'string' || !/^[A-Za-z0-9_-]{1,24}$/.test(obj.id) || this.seenWire.has(obj.id)) return;
       this.seenWire.add(obj.id);
       if ((obj.type === 'bell' || obj.type === 'notify') && !this.freshSetting(obj)) return; // a replayed setting: not her doing
       if (!this.tr || this.tr.status === 'finished') return;
@@ -5097,14 +5264,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         else if (!this.demo && obj.type === 'notify' && newer('notify')) { P.soonMin = [5, 10, 15, 20, 30].includes(+obj.min) ? +obj.min : 10; mark('notify'); saveP(); }
         return;
       }
-      const from = String(obj.from || 'Home').slice(0, 24);
+      const from = cleanText(obj.from, 24) || 'Home', soon = t => Number.isFinite(t) && t > this.now() - 3600000 && t < this.now() + 86400000;
       if (obj.type === 'homeby') {
-        this.tr.plan.homeBy = +obj.hb || null;
+        const hb = +obj.hb; if (!soon(hb)) return; // a time from tonight, not one the voice can't read
+        this.tr.plan.homeBy = hb;
         ['turnby10', 'turnbyNow', 'late'].forEach(k => this.an.said.delete(k));
-        this.say({ text: `Telegram from ${from}. Home by ${C.both.clock(obj.hb)}, please.`, prio: 3, chime: 'telegraph' });
+        this.say({ text: `Telegram from ${from}. Home by ${C.both.clock(hb)}, please.`, prio: 3, chime: 'telegraph' });
       } else if (obj.type === 'guess') {
         const g = +obj.t;
-        if (g > this.now() - 600000) { this.guess = { t: g, from }; this.say({ text: `${from} is betting you'll be home at ${C.both.clock(g)}. No pressure.`, prio: 2, chime: 'telegraph' }); }
+        if (soon(g) && g > this.now() - 600000) { this.guess = { t: g, from }; this.say({ text: `${from} is betting you'll be home at ${C.both.clock(g)}. No pressure.`, prio: 2, chime: 'telegraph' }); }
       } else if (obj.type === 'cheer') {
         const n = Math.max(1, Math.min(20, obj.n | 0));
         this.cheers += n;
@@ -5118,7 +5286,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         if (newer('bell')) { P.bell = !!obj.on; mark('bell'); saveP(); this.lateDepart(); }
         this.say({ text: obj.on ? `${from} turned on phone alerts.` : `${from} turned off phone alerts.`, prio: 1 });
       } else {
-        const text = String(obj.text || '').slice(0, 140);
+        const text = cleanText(obj.text, 140);
         if (!text) return;
         this.telegrams.push({ id: obj.id, from, text, t: this.now() });
         this.say({ text: `Telegram from ${from}. ${text}`, prio: 3, chime: 'telegraph' });
@@ -5236,7 +5404,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       // his distance this week, tonight included, in every update: her board's week line and the Station display read it
       const wk = demo ? null : Math.round(Records.weekTotal(walks, now) + (live ? tr.dist : 0));
       return {
-        v: 1, n: P.name || (demo ? 'Tom' : 'Walker'), tn: P.train || 'The Night Local', u: P.unit, demo: demo ? 1 : 0,
+        v: 1, n: P.name || 'Walker', pn: P.pron || undefined, tn: P.train || 'The Night Local', u: P.unit, demo: demo ? 1 : 0,
         ph: tr.phase, st: tr.status, stp: tr.stopped ? tr.stopSince : 0,
         t: now, t0: tr.t0, el: Math.round(tr.elapsed(now)), mv: Math.round(tr.moving),
         s: tr.onTrail ? Math.round(tr.s) : null, on: tr.onTrail,
@@ -5272,10 +5440,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         fail: (e, final) => { if (final) Diag.add('relay', 'gave up on the final update'); },
       });
     },
+    // A new board link during a walk: updates and her messages move to it now, so the old link stops following at once
+    relink() {
+      if (!this.active || this.demo || !this.relay || IN_CLAUDE) return;
+      if (this.stopWire) { this.stopWire(); this.stopWire = null; }
+      this.relay = new Relay(P.chan, P.key, relayOf()); this.share = 'connecting';
+      this.stopWire = this.relay.listen('W', String(Math.floor(Date.now() / 1000) - 60), obj => this.onWire(obj), st => { if (st === 'open' && this.share === 'connecting') this.share = 'live'; });
+      this.lastPub = 0; this.publish(true, true);
+      Diag.add('relay', 'moved to the new board link during the walk');
+    },
     bell(kind) {
       if (!this.relay || this.bellSent[kind] || !this.tr) return;
       if (!this.demo && !P.bell) return;
-      const tr = this.tr, now = this.now(), eta = tr.eta(now), name = P.name || (this.demo ? 'Tom' : 'Walker');
+      const tr = this.tr, now = this.now(), eta = tr.eta(now), name = P.name || 'Walker';
       let title, msg, prio = 3, tags = ['steam_locomotive'];
       if (kind === 'depart') { const g = tr.plan.goalId ? short(tr.plan.goalId) : 'north'; title = `${name} departed`; msg = `Heading for ${g}. Home around ${clock(eta.t)}.`; }
       else if (kind === 'turn' && tr.turn && tr.turn.streets) { title = `${name} is heading home`; msg = `Left the trail ${where(tr.turn)} and is walking home by the streets. Home around ${clock(eta.t)}.`; }
@@ -5404,7 +5581,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
       if (!wasDemo) { P.lastEnd = now; saveP(); }
       if (!keep) rec.unsaved = true;
-      if (wasDemo && current === 's-board') { this.lastDemoRec = rec; toast('Demo walk finished. Tap His cab for the ticket.', 4000); }
+      if (wasDemo && current === 's-board') { this.lastDemoRec = rec; toast(`Demo walk finished. Tap ${P.pron ? 'Your' : 'His'} cab for the ticket.`, 4000); }
       else Summary.show(rec, wasDemo);
       if (!auto) this.say({ text: `Walk complete. ${C.cap(C.both.dist(tr.dist, P.unit))} in ${C.both.dur(rec.elapsed)}.`, prio: 3, chime: 'whistle' });
       if (rec.prs && rec.prs.length) this.say({ text: `New personal record${rec.prs.length > 1 ? 's' : ''}: ${rec.prs.map(x => x.label.toLowerCase()).join(' and ')}.`, prio: 3, chime: 'bell' });
@@ -6073,6 +6250,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const xml = `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Last Train Home" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Monon walk ${new Date(r.t0).toLocaleDateString()}</name><type>walking</type><trkseg>${pts}</trkseg></trk></gpx>`;
       const a = h('a', { href: URL.createObjectURL(new Blob([xml], { type: 'application/gpx+xml' })), download: `monon-walk-${localDate(r.t0)}.gpx` });
       document.body.append(a); a.click(); a.remove();
+      toast('Saved the route as a GPX file. It starts and ends at your door, so share it with care.', 4200);
     },
   };
 
@@ -6274,16 +6452,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       // share card
       const sc = $('#d-share'); sc.textContent = '';
       if (IN_CLAUDE) {
-        sc.append(h('h2', null, 'Arrivals board'), h('p', { class: 'muted' }, 'Live sharing is off inside Claude’s preview. Open the app from its own web address to send her a board link.'));
+        sc.append(h('h2', null, 'Arrivals board'), h('p', { class: 'muted' }, `Live sharing is off inside Claude’s preview. Open the app from its own web address to send ${P.pron ? 'a' : 'her a'} board link.`));
       } else if (!P.share) {
         sc.append(h('h2', null, 'Arrivals board'), h('p', { class: 'muted' }, 'Sharing is off. Turn it on in Settings to give someone a live board.'));
       } else {
-        const who = P.watcher || 'her', resend = !!P.done.moved && !P.done.link;
+        const who = P.watcher || (P.pron ? '' : 'her'), resend = !!P.done.moved && !P.done.link; // no name on a new phone: plain words, not her
         sc.append(...[h('div', { class: 'row between' }, h('h2', null, `${P.watcher ? P.watcher + '’s' : 'The'} arrivals board`), h('span', { class: 'pill ' + (P.bell ? 'go' : '') }, h('i'), h('b', null, P.bell ? 'Alerts on' : 'Alerts off'))),
-          h('p', { class: 'muted small' }, `Send ${who} the link once. It shows your walk live, your home time, and lets ${who} send telegrams the conductor reads to you.`),
+          h('p', { class: 'muted small' }, `${who ? `Send ${who} the link once. It shows your walk live, your home time, and lets ${who}` : 'Send the link once to the person who waits for you at home. It shows your walk live, your home time, and lets them'} send telegrams the conductor reads to you.${P.pron ? ` Phone alerts switch on from ${who ? who + '\u2019s' : 'their'} board.` : ''}`),
           // restored onto a fresh install: the old link belongs to the other copy
-          resend && h('p', { class: 'note warn', id: 'd-share-resend' }, `This phone has its own board link. Send it to ${who} again: the old link won\u2019t show walks from here.`),
-          h('div', { class: 'row' }, h('button', { class: resend ? 'btn primary' : 'btn', onclick: () => shareLink() }, `Send to ${who}`), h('button', { class: 'btn ghost', onclick: () => { copyText(boardLink(), null, 'Board link copied'); linkSent(); } }, 'Copy link'), h('button', { class: 'btn ghost', onclick: () => qrSheet() }, 'QR code'))].filter(Boolean));
+          resend && h('p', { class: 'note warn', id: 'd-share-resend' }, `This phone has its own board link. Send it${who ? ` to ${who}` : ''} again: the old link won\u2019t show walks from here.`),
+          h('div', { class: 'row' }, h('button', { class: resend ? 'btn primary' : 'btn', onclick: () => shareLink() }, who ? `Send to ${who}` : 'Send the link'), h('button', { class: 'btn ghost', onclick: () => { copyText(boardLink(), null, 'Board link copied'); linkSent(); } }, 'Copy link'), h('button', { class: 'btn ghost', onclick: () => qrSheet() }, 'QR code'))].filter(Boolean));
       }
       // resume
       let act = store.get('active', null);
@@ -6390,7 +6568,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (P.done.checklist || real.length >= 3 || IN_CLAUDE) { box.hidden = true; return; }
     const items = [
       { k: 'home', ok: !!P.home, label: 'Set your home station', act: () => go('s-welcome') },
-      { k: 'voice', ok: !!P.done.voice, label: 'Hear the conductor with your volume up', act: () => { Sound.test(P.style, 'check'); P.done.voice = Date.now(); saveP(); this.render(); } },
+      { k: 'voice', ok: !!P.done.voice, label: 'Pick who calls your stops, and hear them', act: () => openSheet((p, close) => {
+        const box = h('div');
+        p.append(h('h2', { class: 'sh' }, 'Who calls your stops?'), h('p', { class: 'muted small' }, 'Turn your volume up and tap a voice to hear it. You can change it any night under Dispatch.'), box,
+          h('button', { class: 'btn primary', onclick: () => { P.done.voice = Date.now(); saveP(); close(); this.render(); } }, 'Use this voice'));
+        voicePicker(box);
+      }) },
       { k: 'link', ok: !!P.done.link || !P.share, label: `Send the arrivals board to ${P.watcher || 'your watcher'}`, act: () => shareLink() },
       { k: 'install', ok: standalone() || !!P.done.install, label: 'Add to your Home Screen so the phone keeps your history', act: () => openSheet((p, close) => {
         const iPhone = navigator.standalone === false; // a Safari tab on iPhone or iPad
@@ -6405,7 +6588,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const left = items.filter(i => !i.ok).length;
     if (!left) { box.hidden = true; return; }
     box.hidden = false; box.textContent = '';
-    box.append(h('div', { class: 'row between' }, h('h2', null, 'Before your first walk'), h('button', { class: 'btn small ghost', onclick: () => { P.done.checklist = Date.now(); saveP(); this.render(); } }, 'Hide')));
+    box.append(h('div', { class: 'row between' }, h('h2', null, real.length ? 'Finish setting up' : 'Before your first walk'), h('button', { class: 'btn small ghost', onclick: () => { P.done.checklist = Date.now(); saveP(); this.render(); } }, 'Hide')));
     const list = h('div', { class: 'checklist' });
     items.forEach(i => list.append(h('button', { type: 'button', class: 'check' + (i.ok ? ' ok' : ''), onclick: i.ok ? null : i.act, 'aria-pressed': String(i.ok) }, h('span', { class: 'box', 'aria-hidden': 'true' }, i.ok ? '\u2713' : ''), h('span', null, i.label))));
     box.append(list);
@@ -6475,6 +6658,21 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const n = document.getElementById('d-share-resend'); if (n) n.remove();
     if (current === 's-depot') Depot.renderChecklist();
   }
+  // A new board link, for when the old one went somewhere it shouldn't. The old one stops following at once: a walk
+  // under way moves to the new channel now, and the old channel gets one last message that tells its board the link was
+  // replaced (kept on the phone and retried like a walk's last update). Phone alerts follow the old topic, so they get
+  // one plain last notice and stay off until she subscribes again from the new board.
+  function rotateLink() {
+    const old = P.chan && P.key && !IN_CLAUDE ? new Relay(P.chan, P.key, relayOf()) : null, bell = !!P.bell, name = P.name || 'Walker';
+    P.chan = null; P.key = null; ensureChannel();
+    if (bell) { P.bell = false; P.setT = Object.assign({}, P.setT, { bell: Date.now() }); saveP(); }
+    if (old) {
+      W.sendFinal({ v: 1, gone: 1, t: Date.now(), n: P.name || '' }, old);
+      if (bell) Retry.add('bell:moved', () => old.bell(`${name} made a new board link`, `Alerts from this topic have stopped. Open the new link ${name} sends and set up alerts there.`, ['link'], 3), { maxAge: 30 * 60000 });
+    }
+    W.relink();
+    Diag.add('relay', 'made a new board link; the old one was told it was replaced');
+  }
   function shareLink() {
     linkSent();
     const url = boardLink();
@@ -6518,8 +6716,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         P.home = { lat: +p.coords.latitude.toFixed(6), lon: +p.coords.longitude.toFixed(6), label: `set from GPS, ±${Math.round(p.coords.accuracy)} m` };
         saveP(); this.homeStatus(); toast('Home station set');
       }, err => {
-        if (err.code === 1) toast(IN_CLAUDE ? 'Location is blocked in Claude’s preview' : 'Location permission was declined', 4200);
-        else toast('Could not get a GPS fix. Try again outside.', 4200);
+        if (err.code === 1) toast(IN_CLAUDE ? 'Location is blocked in Claude’s preview' : 'Location is off for this page. Search your address instead, or allow location in the browser’s settings.', 5200);
+        else toast('Could not get a GPS fix. Try again outside, or search your address.', 4200);
       }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
     },
     async search(inSel = '#w-addr', outSel = '#w-addr-results') {
@@ -6564,7 +6762,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const a = h('a', { href: URL.createObjectURL(blob), download: name });
       document.body.append(a); a.click(); a.remove();
       P.done.backup = Date.now(); saveP();
-      toast(`Saved ${data.walks.length} walks to ${name}`);
+      toast(`Saved ${data.walks.length} walks to ${name}. It holds your home location, so keep it private.`, 4200);
     },
     pick() {
       const inp = h('input', { type: 'file', accept: 'application/json,.json', style: 'display:none' });
@@ -6593,7 +6791,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           walks.filter(w => !w.demo).forEach((w, i) => { w.no = i + 1 + (retired().n || 0); });
           P.walkNo = walks.length ? walks[walks.length - 1].no : P.walkNo;
           capWalks(); saveWalks();
-          if (prof) { P = Object.assign({}, P, prof); }
+          if (prof) { P = Object.assign({}, P, prof); if (!prof.pron) delete P.pron; } // a backup from before the naming choice keeps its old words
           if (data.ext && typeof data.ext === 'object' && !Array.isArray(data.ext)) {
             const ext = {}; Object.keys(data.ext).forEach(k => { if (EXT_BACKUP.test(k) && JSON.stringify(data.ext[k]).length < 20000) ext[k] = data.ext[k]; });
             Bus.emit('restore', ext); // modules may merge it with what this phone already has, as the walks are merged
@@ -6619,7 +6817,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (s.goalId === null || stId(s.goalId)) o.goalId = s.goalId;
     if (s.weightKg === null || numIn(s.weightKg, 20, 320) != null) o.weightKg = s.weightKg === null ? null : +s.weightKg;
     if (s.weekGoal === null || numIn(s.weekGoal, 1, 810000) != null) o.weekGoal = s.weekGoal === null ? null : +s.weekGoal;
-    if (C.VOICES[s.style]) o.style = s.style;
+    if (typeof s.style === 'string' && Object.prototype.hasOwnProperty.call(C.VOICES, s.style)) o.style = s.style; // "__proto__" would silence the voice
+    if (['n', 'he', 'she'].includes(s.pron)) o.pron = s.pron;
     if ([5, 10, 15, 20, 30].includes(+s.soonMin)) o.soonMin = +s.soonMin;
     if (['stop', 'dist', 'time'].includes(s.planMode)) o.planMode = s.planMode;
     if (typeof s.mapKey === 'string' && (s.mapKey === '' || MiniMap.validKey(s.mapKey))) o.mapKey = s.mapKey.trim();
@@ -6668,7 +6867,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       });
     },
     relayNote() {
-      $('#p-relay-note').textContent = `Live updates go through ${relayOf() ? new URL(relayOf()).host : 'ntfy.sh, a free public relay'}. Your location is encrypted on this phone and only the board link can read it. Phone alerts are plain text: status, times, and the nearest cross street, never your exact position.`;
+      $('#p-relay-note').textContent = `Live updates go through ${relayOf() ? new URL(relayOf()).host : 'ntfy.sh, a free public relay'}. Your location is encrypted on this phone and only the board link can read it. Phone alerts are plain text the relay can read: your first name, the walk’s status, times and the nearest cross street, never your exact position.`;
     },
     voicesChanged() {
       const sel = $('#p-voice'); if (!sel) return;
@@ -6693,7 +6892,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       this.relayNote();
       const mk = $('#p-mapkey').value.trim();
       if (mk && !MiniMap.validKey(mk)) toast('That doesn\u2019t look like a CARTO key. Keeping the old one.');
-      else if (mk !== (P.mapKey || '')) { P.mapKey = mk; MiniMap.refreshAll(); toast(mk ? 'Street map key saved. Her board picks it up with the next update.' : 'Street map key removed'); }
+      else if (mk !== (P.mapKey || '')) { P.mapKey = mk; MiniMap.refreshAll(); toast(mk ? `Street map key saved. ${P.pron ? (P.watcher ? P.watcher + '\u2019s board' : 'The arrivals board') : 'Her board'} picks it up with the next update.` : 'Street map key removed'); }
       const wv = parseFloat($('#p-weight').value);
       P.weightKg = wv > 20 && wv < 700 ? +(P.unit === 'km' ? wv : wv / 2.20462).toFixed(1) : null;
       const gv = parseFloat($('#p-weekgoal').value);
@@ -6707,40 +6906,42 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   // Every field the board reads, checked and clamped, so a garbled or older update can't break the page
   function cleanLive(p) {
     if (!p || typeof p !== 'object' || p.v !== 1) return null;
-    const n = (v, lo = -9e15, hi = 9e15) => (v !== null && v !== '' && typeof v !== 'boolean' && Number.isFinite(+v) ? Math.min(hi, Math.max(lo, +v)) : null);
+    const n = (v, lo = -8.64e15, hi = 8.64e15) => (v !== null && v !== '' && typeof v !== 'boolean' && Number.isFinite(+v) ? Math.min(hi, Math.max(lo, +v)) : null); // 8.64e15 ms: the last valid date
     const t0 = n(p.t0), t = n(p.t);
-    if (t0 == null || t == null || !p.eta || typeof p.eta !== 'object' || n(p.eta.t) == null) return null;
+    if (t0 == null || t == null || t0 > t + 60000 || !p.eta || typeof p.eta !== 'object' || n(p.eta.t) == null) return null;
     const ll = a => (Array.isArray(a) && n(a[0], -90, 90) != null && n(a[1], -180, 180) != null && Math.abs(+a[0]) <= 90 && Math.abs(+a[1]) <= 180 ? [+a[0], +a[1]] : null);
-    const sid = v => (typeof v === 'string' && trail.byId[v] ? v : null), len = trail.length;
-    const o = Object.assign({}, p, { t0, t });
-    o.n = typeof p.n === 'string' && p.n.trim() ? p.n.slice(0, 24) : 'Walker';
-    o.tn = typeof p.tn === 'string' && p.tn.trim() ? p.tn.slice(0, 32) : 'The Night Local';
+    const sid = v => (typeof v === 'string' && trail.byId[v] ? v : null), len = trail.length, id = v => typeof v === 'string' && /^[A-Za-z0-9]{1,24}$/.test(v);
+    // only the fields below, never the rest of what came in: a key like "__proto__" in the update can't reach the page
+    const o = { v: 1, t0, t, rv: typeof p.rv === 'string' ? p.rv.slice(0, 24) : null, bell: !!p.bell };
+    o.n = cleanText(p.n, 24) || 'Walker';
+    o.tn = cleanText(p.tn, 32) || 'The Night Local';
+    if (['n', 'he', 'she'].includes(p.pn)) o.pn = p.pn; // how the board speaks of the walker (first run); older walker apps send none
     o.u = p.u === 'km' ? 'km' : 'mi';
     o.ph = ['toTrail', 'out', 'back', 'toHome', 'home'].includes(p.ph) ? p.ph : 'out';
     o.st = ['walking', 'paused', 'arrived', 'finished'].includes(p.st) ? p.st : 'walking';
     o.d = n(p.d, 0, 1e6) || 0; o.el = n(p.el, 0, 1e7) || 0; o.mv = n(p.mv, 0, 1e7) || 0; o.sp = n(p.sp, 0, 10) || 0; o.ve = n(p.ve, 0.3, 5) || 1.4;
     const et = n(p.eta.t);
-    o.eta = { t: et, lo: n(p.eta.lo) != null ? n(p.eta.lo) : et, hi: n(p.eta.hi) != null ? n(p.eta.hi) : et, b: typeof p.eta.b === 'string' ? p.eta.b : '', now: n(p.eta.now) };
+    o.eta = { t: et, lo: n(p.eta.lo) != null ? n(p.eta.lo) : et, hi: n(p.eta.hi) != null ? n(p.eta.hi) : et, b: ['goal', 'usual', 'now', 'home', 'back', 'loop'].includes(p.eta.b) ? p.eta.b : '', now: n(p.eta.now) };
     o.s = n(p.s, 0, len); o.se = n(p.se, 0, len); o.dt = n(p.dt, 0, len); o.on = !!p.on; o.dir = p.dir === -1 ? -1 : 1;
     o.goal = sid(p.goal); o.eid = sid(p.eid);
     o.stp = n(p.stp, 0) || 0; o.ok = n(p.ok, 0); o.lc = n(p.lc, 0); o.hb = n(p.hb, 0); o.te = n(p.te, 0);
     o.ll = ll(p.ll);
-    o.turn = p.turn && n(p.turn.s, 0, len) != null && n(p.turn.t) != null ? { s: +p.turn.s, t: +p.turn.t, id: sid(p.turn.id), x: typeof p.turn.x === 'string' ? p.turn.x.slice(0, 60) : '', sw: p.turn.sw ? 1 : 0 } : null;
+    o.turn = p.turn && n(p.turn.s, 0, len) != null && n(p.turn.t) != null ? { s: +p.turn.s, t: +p.turn.t, id: sid(p.turn.id), x: cleanText(p.turn.x, 60), sw: p.turn.sw ? 1 : 0 } : null;
     o.far = p.far && n(p.far.s, 0, len) != null ? { s: +p.far.s, id: sid(p.far.id) } : null;
-    o.last = p.last && typeof p.last.id === 'string' && n(p.last.t) != null ? { id: p.last.id, t: +p.last.t, lg: p.last.lg, nm: typeof p.last.nm === 'string' ? p.last.nm.slice(0, 40) : undefined } : null;
-    o.ps = Array.isArray(p.ps) ? p.ps.filter(q => Array.isArray(q) && typeof q[0] === 'string' && n(q[1]) != null).slice(-40) : [];
-    o.hs = Array.isArray(p.hs) ? p.hs.slice(0, 400).map(v => (Number.isFinite(+v) ? +v : -1)) : [];
+    o.last = p.last && id(p.last.id) && n(p.last.t) != null ? { id: p.last.id, t: +p.last.t, lg: p.last.lg === 'back' ? 'back' : 'out', nm: cleanText(p.last.nm, 40) || undefined } : null;
+    o.ps = Array.isArray(p.ps) ? p.ps.filter(q => Array.isArray(q) && sid(q[0]) && n(q[1]) != null).slice(-40).map(q => [q[0], +q[1], q[2] ? 1 : 0]) : [];
+    o.hs = Array.isArray(p.hs) ? p.hs.slice(0, 400).map(v => (Number.isFinite(+v) && +v >= 0 && +v <= len / 10 + 1 ? +v : -1)) : [];
     o.ho = n(p.ho, 0, 1000) || 0;
-    o.pk = p.pk && n(p.pk.t) != null ? { t: +p.pk.t, ll: ll(p.pk.ll), near: typeof p.pk.near === 'string' ? p.pk.near.slice(0, 60) : '' } : null;
-    o.ack = Array.isArray(p.ack) ? p.ack.filter(x => typeof x === 'string').slice(-20) : [];
-    o.rp = Array.isArray(p.rp) ? p.rp.filter(r => r && typeof r.text === 'string' && n(r.t) != null).slice(-5).map(r => ({ t: +r.t, text: r.text.slice(0, 60) })) : [];
-    o.wx = Array.isArray(p.wx) && n(p.wx[0], -80, 80) != null ? [n(p.wx[0]), n(p.wx[1], 0, 200) || 0, p.wx[2] === 'C' ? 'C' : 'F'] : null;
+    o.pk = p.pk && n(p.pk.t) != null ? { t: +p.pk.t, ll: ll(p.pk.ll), near: cleanText(p.pk.near, 60) } : null;
+    o.ack = Array.isArray(p.ack) ? p.ack.filter(id).slice(-20) : [];
+    o.rp = Array.isArray(p.rp) ? p.rp.filter(r => r && typeof r.text === 'string' && n(r.t) != null).slice(-5).map(r => ({ t: +r.t, text: cleanText(r.text, 60) })).filter(r => r.text) : [];
+    o.wx = Array.isArray(p.wx) && n(p.wx[0], -80, 80) != null ? [n(p.wx[0], -80, 80), n(p.wx[1], 0, 200) || 0, p.wx[2] === 'C' ? 'C' : 'F'] : null;
     o.wg = Array.isArray(p.wg) && n(p.wg[0], 0) != null && n(p.wg[1], 1) != null ? [n(p.wg[0], 0), n(p.wg[1], 1)] : null;
     o.wt = n(p.wt, 0, 1e7); // his distance this week in meters (older walker apps send none)
     o.sm = [5, 10, 15, 20, 30].includes(+p.sm) ? +p.sm : 10;
     o.ui = p.ui === undefined ? undefined : n(p.ui, 0, 3600000);
     o.seq = n(p.seq, 0) || 0; o.conn = n(p.conn, 0, 1e5) || 0; o.prog = n(p.prog, 0, 1e5); o.gs = n(p.gs, 0); o.ch = n(p.ch, 0, 1e4) || 0;
-    o.tg = Array.isArray(p.tg) ? p.tg.filter(x => typeof x === 'string') : [];
+    o.tg = Array.isArray(p.tg) ? p.tg.filter(id).slice(-10) : [];
     o.mk = typeof p.mk === 'string' && MiniMap.validKey(p.mk) ? p.mk.trim() : null;
     return o;
   }
@@ -6754,10 +6955,28 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const B = {
     active: false, demo: false, p: null, relay: null, stop: null, timer: null, sent: [], soundOn: false, cues: {}, connState: 'connecting', watch: null, preview: false, broken: false,
     now() { return this.demo ? Sim.now() : Date.now(); },
+    // The walker's name and words: from the latest update, else from the board link, else he (every walker app before
+    // the naming choice sends none). The walker's own preview of the board, and the demo, follow the profile.
+    who() {
+      const p = this.p, w = this.watch || {};
+      return walkerWords((p && p.n) || w.name || '', p ? p.pn : (this.preview || this.demo ? P.pron : w.pn));
+    },
+    // The board's fixed labels say he as written; any other words for the walker are written in once, when they change
+    words(w) {
+      const sig = w.he === 'he' ? '' : `${w.he}|${w.his}`;
+      if (this._words === sig || (!sig && this._words == null)) return;
+      this._words = sig;
+      const ids = ['#b-talk-note', '#b-hb-l', '#b-hb-note', '#b-heads-l', '#b-map-open'];
+      if (!this._orig) this._orig = ids.map(sel => ($(sel) || {}).textContent);
+      const said = sig ? [`The conductor reads it aloud in ${w.his} earbuds.`, `Ask ${w.him} to be home by`, `${w.He} hears when to turn around to make it.`, `Heads-up when ${w.he}’s this close to home`, `Open ${w.his} spot in Maps`] : this._orig;
+      ids.forEach((sel, i) => { const el = $(sel); if (el && said[i] != null) el.textContent = said[i]; });
+    },
     start(watch, demo, opt = {}) {
       this.stopAll();
       this.active = true; this.demo = demo; this.watch = watch; this.p = null; this.cues = {};
       this.preview = !!opt.preview; this.broken = !!watch.broken; this.connState = 'connecting'; this.connAt = Date.now(); this.openAt = 0;
+      const g = store.get('boardGone', null); this.gone = !demo && !this.preview && g && g.chan === watch.chan && Number.isFinite(g.t) ? g.t : 0; // replaced on his phone earlier
+      this.goneName = this.gone ? cleanText(g.n, 24) : '';
       $('#b-leave').hidden = demo || this.preview;
       $('#b-alerts-card').hidden = this.preview || this.broken;
       this.relay = this.broken ? null : demo ? Sim.bus : new Relay(watch.chan, watch.key, watch.base);
@@ -6795,10 +7014,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
       if (demo || store.get('boardIntro', false)) { box.hidden = true; return; }
       box.hidden = false; box.textContent = '';
-      box.append(h('h2', null, 'How this board works'),
+      const w = this.who();
+      // a link that names the walker: whose board it is, what the watcher can do, how alerts work, in as few words as that takes
+      box.append(...(w.named ? [h('h2', null, `${w.His} arrivals board`),
+        h('p', { class: 'muted small' }, `It wakes up when ${w.n} sets out and shows the walk live: where on the Monon Trail, and the time home.`),
+        h('p', { class: 'muted small' }, `Send a telegram or a cheer, and the conductor reads it to ${w.n}.`),
+        h('p', { class: 'muted small' }, 'Alerts: sounds play on this page while it\u2019s open. Phone alerts reach you even when it\u2019s closed.')] : [h('h2', null, 'How this board works'),
         h('p', { class: 'muted small' }, 'It follows his walk live: where he is on the Monon, how far out he is, and when he\u2019ll be home. It wakes up on its own when he leaves.'),
         h('p', { class: 'muted small' }, 'Send a telegram or a cheer and the conductor reads it in his earbuds. Guess his arrival time for bragging rights.'),
-        h('p', { class: 'muted small' }, 'Turn on sounds to hear a chime when he turns around and when he\u2019s close. Phone alerts reach you even with this page closed.'),
+        h('p', { class: 'muted small' }, 'Turn on sounds to hear a chime when he turns around and when he\u2019s close. Phone alerts reach you even with this page closed.')]),
         h('div', { class: 'row' },
           h('button', { class: 'btn', onclick: e => { B.soundOn = true; store.set('boardSound', true); Sound.unlock(); segSet('#b-sound', 'v', '1'); Sound.chime('station'); e.target.textContent = 'Sounds on'; e.target.disabled = true; } }, 'Turn on sounds'),
           h('button', { class: 'btn ghost', onclick: () => $('#b-alerts-card').scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }) }, 'Set up phone alerts')),
@@ -6813,14 +7037,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       return Math.max(p.t0 - 10 * 60000, end < p.t0 ? end : 0);
     },
     onLive(p, m) {
+      if (p && typeof p === 'object' && p.v === 1 && p.gone === 1) return this.retire(p);
       p = cleanLive(p);
       if (!p) return;
+      // an update stamped hours ahead of this phone can't be his: it would hold off every real one
+      if (!this.demo && p.t > Date.now() + 6 * 3600000) return;
       if (this.p && p.t0 < this.p.t0) return; // a late message from an earlier walk
-      if (this.p && p.t0 === this.p.t0 && p.seq && this.p.seq && p.seq < this.p.seq) return; // out of order
+      // out of order: numbered lower and no newer (a forged high number can't hold off his real, newer updates)
+      if (this.p && p.t0 === this.p.t0 && p.seq && this.p.seq && p.seq < this.p.seq && p.t <= this.p.t) return;
       if (this.p && p.t0 === this.p.t0 && !p.seq && p.t < this.p.t) return;
+      if (this.gone) { if (p.t <= this.gone) return; this.unretire(); } // older than the word that this link was replaced
       const prev = this.p;
       if (!prev || p.t0 !== prev.t0) this.cues = {}; // a new walk: cues start over before any are checked
-      if ((p.st === 'finished' || p.ph === 'home') && !this.demo && !this.preview && p.t > store.get('boardLastEnd', 0)) store.set('boardLastEnd', p.t);
+      if ((p.st === 'finished' || p.ph === 'home') && !this.demo && !this.preview && p.t > store.get('boardLastEnd', 0)) store.set('boardLastEnd', Math.min(p.t, Date.now() + 600000));
       this.p = p; this.recvAt = Date.now(); this.serverT = m && m.time ? m.time * 1000 : null; this.heavyKey = null;
       this.settle(p, prev);
       if (!prev || prev.sm !== p.sm) this.renderHeads();
@@ -6840,6 +7069,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
       if (this.soundOn && (p.ph === 'home') && !this.cues.home && news(p.t)) { this.cues.home = true; Sound.say({ text: `${p.n} is home.`, prio: 3, chime: 'whistle', board: true }); }
       this.render();
+    },
+    // His phone made a new board link, so this one is retired. The board remembers it (the relay keeps the message for
+    // 12 hours) and says so until an update newer than that word comes through.
+    retire(p) {
+      const t = Number.isFinite(+p.t) ? +p.t : 0;
+      if (!t || this.demo || this.preview || t > Date.now() + 3600000 || (this.p && this.p.t > t)) return;
+      this.gone = t; this.goneName = cleanText(p.n, 24);
+      if (this.watch && this.watch.chan) store.set('boardGone', { chan: this.watch.chan, t, n: this.goneName });
+      this.render();
+    },
+    unretire() {
+      this.gone = 0; store.del('boardGone');
+      $('#b-alerts-card').hidden = this.preview || this.broken;
     },
     age() {
       if (!this.p) return Infinity;
@@ -6872,19 +7114,21 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (document.visibilityState === 'hidden' && !this.demo) return;
       const now = this.now();
       $('#b-clock').textContent = clock(now).replace(' ', ' ');
-      const p = this.p;
+      const p = this.p, w = this.who();
+      this.words(w);
       $('#b-sub').textContent = this.demo ? 'Monon Trail (demo)' : this.preview ? 'Monon Trail (preview)' : 'Monon Trail';
+      if (this.gone) return this.renderGone(now);
       const fresh = $('#b-fresh');
       if (!p) {
         const cantReach = this.connState === 'retry' && !this.openAt && Date.now() - this.connAt > 20000, bad = this.broken || this.connState === 'badkey';
-        flap($('#b-f-train'), (this.watch && this.watch.name) ? this.watch.name : 'NIGHT LOCAL', 17);
+        flap($('#b-f-train'), (this.watch && this.watch.name) ? (this.watch.pn ? trainFlap(this.watch.name, this.watch.tn) : this.watch.name) : 'NIGHT LOCAL', 17);
         flap($('#b-f-status'), bad ? 'BAD LINK' : 'NO TRAIN', 8); flap($('#b-f-home'), '--:--', 8); flap($('#b-f-at'), bad ? 'CHECK THE LINK' : 'WAITING', 17);
         $('#b-f-at-l').textContent = 'Now at';
         $('#b-eta-l').textContent = 'Home in'; $('#b-eta').textContent = '--'; $('#b-eta-s').textContent = '';
         $('#b-status').textContent = this.broken ? 'This board link is cut off, so the board can\u2019t follow the walk.'
           : this.connState === 'badkey' ? 'Updates arrive, but this link can\u2019t read them, so part of it is wrong. Ask for the board link again.'
           : cantReach ? 'Can\u2019t reach the relay right now. Check this phone\u2019s connection. The board keeps trying.'
-          : this.connState === 'open' ? 'No walk yet. The board wakes up when he departs.' : 'Connecting to the relay\u2026';
+          : this.connState === 'open' ? `No walk yet. The board wakes up when ${w.he} departs.` : 'Connecting to the relay\u2026';
         fresh.className = 'fresh' + (bad || cantReach ? ' lost' : '');
         fresh.lastChild.textContent = this.broken ? 'Not connected' : this.connState === 'open' ? 'Connected, waiting for a departure' : cantReach ? 'No connection to the relay' : 'Connecting';
         this.blank();
@@ -6918,7 +7162,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!done && walking && (p.eta.t - now) < 5 * 60000 && (p.ph === 'back' || p.ph === 'toHome')) status = 'ARRIVING';
       if (stale) status = 'NO SIGNAL';
       if (ended) status = 'ENDED';
-      flap($('#b-f-train'), `${p.n}  ${p.tn.replace(/^the /i, '')}`, 17);
+      flap($('#b-f-train'), trainFlap(p.n, p.tn), 17);
       flap($('#b-f-status'), status, 9);
       flap($('#b-f-home'), arrived ? clock(p.t).replace(' ', '') : ended ? '--:--' : clock(p.eta.t).replace(' ', ''), 8);
       // where
@@ -6950,14 +7194,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       } else {
         const mins = Math.max(0, (p.eta.t - now) / 60000);
         const firstRun = p.eta.b === 'now' && p.ph !== 'back' && p.ph !== 'toHome';
-        put(etaL, firstRun ? 'If he turned around now' : 'Home in');
+        put(etaL, firstRun ? `If ${w.he} turned around now` : 'Home in');
         const k = mins >= 60 ? `${Math.floor(mins / 60)}h${Math.round(mins % 60)}` : String(Math.round(mins));
         if (etaV._k !== k) {
           etaV._k = k; etaV.textContent = '';
           if (mins >= 60) etaV.append(String(Math.floor(mins / 60)), h('small', null, 'h'), ' ', String(Math.round(mins % 60)).padStart(2, '0'), h('small', null, 'min'));
           else etaV.append(String(Math.round(mins)), h('small', null, 'min'));
         }
-        const basis = { goal: `turning at ${short(p.goal)}`, usual: 'assuming his usual turnaround', now: 'he\u2019s deciding on the way', back: 'on his way home', loop: 'if he heads home from here' }[p.eta.b] || '';
+        const basis = { goal: `turning at ${short(p.goal)}`, usual: `assuming ${w.his} usual turnaround`, now: `${w.he}\u2019s deciding on the way`, back: w.named ? 'on the way home' : `on ${w.his} way home`, loop: `if ${w.he} heads home from here` }[p.eta.b] || '';
         put(etaS, `Expected ${clock(p.eta.lo).replace(/ [AP]M/, '')} to ${clock(p.eta.hi)}, ${basis}.${p.hb ? ` You asked for ${clock(p.hb)}.` : ''}`);
       }
       // status sentence
@@ -6969,7 +7213,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       else if (p.turn) bits.push(`Turned around ${turnAt} at ${clock(p.turn.t)}.`);
       else if (p.ph === 'out' && p.goal && !done) bits.push(`Heading for ${short(p.goal)}.`);
       if (p.last && walking && (p.last.nm || short(p.last.id))) bits.push(`Passed ${p.last.nm || short(p.last.id)} ${ago(now - p.last.t)}.`);
-      if (p.rv && p.rv !== ROUTE_V) bits.push('His app is a different version from this page. Reload this page if positions look off.');
+      if (p.rv && p.rv !== ROUTE_V) bits.push(`${w.His} app is a different version from this page. Reload this page if positions look off.`);
       if (!done) bits.push(`Left at ${clock(p.t0)}.`);
       if (p.wx && !done) bits.push(`${p.wx[0]}\u00b0${p.wx[2]} ${Weather.phrase(p.wx[1])} out there.`);
       if (p.wg) bits.push(`This week: ${L.fmtDist(p.wg[0], p.u, 1)} of ${L.fmtDist(p.wg[1], p.u, 0)} ${L.unitLabel(p.u)}.`);
@@ -6979,7 +7223,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const slow = p.ui === 0 ? 'Updates come only with events tonight, to stay within the relay\u2019s daily limit.' : p.ui > 90000 ? `Updates every ${Math.round(p.ui / 60000)} min tonight, to stay within the relay\u2019s daily limit.` : '';
       if (done) { fresh.className = 'fresh'; fresh.lastChild.textContent = `Final update ${clock(p.t)}`; }
       else if (lost) { fresh.className = 'fresh lost'; fresh.lastChild.textContent = `No update since ${clock(p.t)}. The walk may have ended without its last update.`; }
-      else if (stale) { fresh.className = 'fresh lost'; fresh.lastChild.textContent = `Last signal ${ago(age)}. His phone may have locked. Position is estimated.`; }
+      else if (stale) { fresh.className = 'fresh lost'; fresh.lastChild.textContent = `Last signal ${ago(age)}. ${w.His} phone may have locked. Position is estimated.`; }
       else if (age > Math.max(100000, (p.ui || 0) * 1.1)) { fresh.className = 'fresh stale'; fresh.lastChild.textContent = `Updated ${ago(age)}${slow ? '. ' + slow : ''}`; }
       else { fresh.className = 'fresh live'; fresh.lastChild.textContent = `Live, updated ${Math.round(age / 1000)} s ago${slow ? '. ' + slow : ''}`; }
       // kv
@@ -7008,7 +7252,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     // Last night's walk: the board waits for the next departure and says when the last one was
     renderIdle(p, now, lost) {
       this.blank();
-      flap($('#b-f-train'), `${p.n}  ${p.tn.replace(/^the /i, '')}`, 17);
+      flap($('#b-f-train'), trainFlap(p.n, p.tn), 17);
       flap($('#b-f-status'), 'NO TRAIN', 9); flap($('#b-f-home'), '--:--', 8);
       $('#b-f-at-l').textContent = 'Last walk';
       flap($('#b-f-at'), `${new Date(p.t0).toLocaleDateString('en-US', { weekday: 'short' })} ${clock(p.t0).replace(' ', '')}`, 17);
@@ -7018,12 +7262,28 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const out = p.far && p.far.id && trail.byId[p.far.id] ? `, out to ${short(p.far.id)}` : '';
       const nb = s => s.replace(/ /g, ' '); // a number keeps its unit on the same line
       const wk = p.wt != null && Records.weekStart(p.t) === Records.weekStart(now) ? ` This week: ${nb(`${L.fmtDist(p.wt, p.u, 1)} ${L.unitLabel(p.u)}`)}.` : '';
-      $('#b-status').textContent = `Last walk: ${day}, ${nb(clock(p.t0))}, ${nb(`${L.fmtDist(p.d, p.u, 1)} ${L.unitLabel(p.u)}`)}${p.el ? ` in ${nb(minsText(p.el))}` : ''}${out}${how}.${wk} The board wakes up when he departs.`;
+      $('#b-status').textContent = `Last walk: ${day}, ${nb(clock(p.t0))}, ${nb(`${L.fmtDist(p.d, p.u, 1)} ${L.unitLabel(p.u)}`)}${p.el ? ` in ${nb(minsText(p.el))}` : ''}${out}${how}.${wk} The board wakes up when ${this.who().he} departs.`;
       const fresh = $('#b-fresh'); fresh.className = 'fresh'; fresh.lastChild.textContent = this.connState === 'open' ? 'Connected, waiting for a departure' : 'Connecting';
       $('#b-talk').hidden = true;
       document.title = 'Arrivals';
       this.renderSent(null);
       this.renderAlerts();
+    },
+    // His phone replaced this board link: nothing more comes through it, and the board says what to do about it
+    renderGone(now) {
+      this.blank();
+      const p = this.p, who = (p && p.n) || this.goneName || 'The walker';
+      const when = nightOf(this.gone) === nightOf(now) ? `at ${clock(this.gone)}` : `on ${new Date(this.gone).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`;
+      const w = this.who();
+      flap($('#b-f-train'), p ? (p.pn ? trainFlap(p.n, p.tn) : `${p.n}  ${p.tn.replace(/^the /i, '')}`) : this.goneName || 'NIGHT LOCAL', 17);
+      flap($('#b-f-status'), 'NO TRAIN', 9); flap($('#b-f-home'), '--:--', 8);
+      $('#b-f-at-l').textContent = 'This link'; flap($('#b-f-at'), 'REPLACED', 17);
+      const st = $('#b-status'), text = `${who} made a new board link ${when}, so this one no longer follows ${w.his} walks and its phone alerts have stopped. Ask ${w.him} to send you the new link.`;
+      if (st.textContent !== text) st.textContent = text;
+      const fresh = $('#b-fresh'); fresh.className = 'fresh lost'; fresh.lastChild.textContent = `Link replaced on ${w.his} phone`;
+      $('#b-talk').hidden = true; $('#b-intro').hidden = true; $('#b-alerts-card').hidden = true;
+      document.title = 'Arrivals';
+      this.renderSent(null);
     },
     renderPickup(p) {
       const box = $('#b-pickup');
@@ -7059,7 +7319,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
       box.className = 'card alert';
       box.append(h('h2', null, `Stopped ${minsText(mins * 60)}`), h('p', { class: 'muted' }, `${p.n} has been stopped ${near} since ${clock(p.stp)}${p.lc ? ' and has not checked in yet' : ''}.`));
-      const row = h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => this.send('Everything OK?') }, 'Ask if he\u2019s OK'));
+      const row = h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => this.send('Everything OK?') }, `Ask if ${this.who().he}\u2019s OK`));
       if (p.ll) row.append(h('a', { class: 'btn', href: `https://maps.apple.com/?q=${p.ll[0]},${p.ll[1]}`, target: '_blank', rel: 'noopener' }, 'Open in Maps'));
       box.append(row);
     },
@@ -7167,7 +7427,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const box = $('#b-line');
       const dir = p.dir || 1;
       const se = p.se != null ? p.se : (p.home ? trail.project(p.home[0], p.home[1]).s : null);
-      if (se == null) { $('#b-line-note').textContent = ''; box.textContent = ''; box.append(h('p', { class: 'note' }, 'The line appears once he reaches the trail.')); return; }
+      if (se == null) { $('#b-line-note').textContent = ''; box.textContent = ''; box.append(h('p', { class: 'note' }, `The line appears once ${this.who().he} reaches the trail.`)); return; }
       const o = s => dir * (s - se);
       let top = Math.max(o(se) + 400, p.goal && trail.byId[p.goal] ? o(trail.byId[p.goal].s) : 0, p.far ? o(p.far.s) : 0, sEst != null ? o(sEst) : 0);
       const list = trail.stations.filter(st => o(st.s) >= -30 && o(st.s) <= top + 1);
@@ -7321,22 +7581,23 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const key = `${p.t0}.${mine ? mine.g : 0}.${done ? 1 : 0}.${open ? 1 : 0}`;
       if (box._key === key) return;
       box._key = key; box.textContent = '';
-      box.append(h('h2', null, 'Guess his arrival'));
+      const w = this.who();
+      box.append(h('h2', null, `Guess ${w.his} arrival`));
       if (done && mine && p.ph === 'home') {
         const off = Math.round(Math.abs(p.t - mine.g) / 60000), late = p.t > mine.g;
         const verdict = off <= 1 ? 'Right on the money. Station master material.' : off <= 3 ? 'Close call. Nicely read.' : off <= 8 ? 'Not bad at all.' : `${p.tn.replace(/^the /i, 'The ')} kept its own schedule.`;
         const hist = Object.values(Object.assign(this.guesses(), { [p.t0]: Object.assign({}, mine, { a: p.t }) })).filter(x => x.a);
         const all = this.guesses(); if (!all[p.t0].a) { all[p.t0].a = p.t; store.set('guesses', all); }
         const offs = hist.map(x => Math.abs(x.a - x.g) / 60000);
-        box.append(...[h('p', { class: 'muted' }, `You guessed ${clock(mine.g)}. He got home ${clock(p.t)}, ${off === 0 ? 'to the minute' : `${off} minute${off === 1 ? '' : 's'} ${late ? 'late' : 'early'}`}. ${verdict}`),
+        box.append(...[h('p', { class: 'muted' }, `You guessed ${clock(mine.g)}. ${w.He} got home ${clock(p.t)}, ${off === 0 ? 'to the minute' : `${off} minute${off === 1 ? '' : 's'} ${late ? 'late' : 'early'}`}. ${verdict}`),
           offs.length > 1 ? h('p', { class: 'note' }, `${offs.length} guesses so far. Best ${Math.round(Math.min(...offs))} min off, average ${Math.round(offs.reduce((a, x) => a + x, 0) / offs.length)} min.`) : null].filter(Boolean));
         return;
       }
-      if (mine) { box.append(h('p', { class: 'muted' }, `Your guess: home at ${clock(mine.g)}. He's due around ${clock(p.eta.t)}. He hears your guess, so no pressure.`)); return; }
-      if (!open) { box.append(h('p', { class: 'note' }, done ? 'No guess tonight. Next walk, lock one in early.' : 'Guesses close 10 minutes before he\u2019s due.')); return; }
-      const inp = h('input', { id: 'b-guess-t', type: 'time', class: 'input', style: 'width:auto;min-width:0', 'aria-label': 'Your guess for his arrival time' });
+      if (mine) { box.append(h('p', { class: 'muted' }, `Your guess: home at ${clock(mine.g)}. ${w.He}'s due around ${clock(p.eta.t)}. ${w.He} hears your guess, so no pressure.`)); return; }
+      if (!open) { box.append(h('p', { class: 'note' }, done ? 'No guess tonight. Next walk, lock one in early.' : `Guesses close 10 minutes before ${w.he}\u2019s due.`)); return; }
+      const inp = h('input', { id: 'b-guess-t', type: 'time', class: 'input', style: 'width:auto;min-width:0', 'aria-label': `Your guess for ${w.his} arrival time` });
       const d = new Date(p.eta.t); inp.value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      box.append(h('p', { class: 'note' }, 'Call the minute he walks in. He hears your guess, and the board scores it when he gets home.'),
+      box.append(h('p', { class: 'note' }, w.named ? `Call the minute ${w.n} walks in. ${w.He} hears your guess, and the board scores it on arrival.` : `Call the minute ${w.he} walks in. ${w.He} hears your guess, and the board scores it when ${w.he} gets home.`),
         h('div', { class: 'row' }, inp, h('button', { class: 'btn primary', onclick: () => this.lockGuess() }, 'Lock it in')));
     },
     cheer() {
@@ -7377,8 +7638,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!this.relay) return;
       this.post(this.stamp({ id: L.randId(10), type: 'notify', min: m, from: store.get('watchName', '') || 'Home', t: this.now() }), null);
       // the heads-up reaches her through phone alerts or this page's sounds; with neither on, it says so
-      const ask = this.bellAsk(), alerts = ask ? ask.on : !!(this.p && this.p.bell);
-      toast(alerts ? `Your phone gets a heads-up when he’s ${m} minutes out` : this.soundOn ? `This page chimes when he’s ${m} minutes out` : `Heads-up set to ${m} minutes. Turn on phone alerts or sounds to get it.`, 3600);
+      const ask = this.bellAsk(), alerts = ask ? ask.on : !!(this.p && this.p.bell), he = this.who().he;
+      toast(alerts ? `Your phone gets a heads-up when ${he}’s ${m} minutes out` : this.soundOn ? `This page chimes when ${he}’s ${m} minutes out` : `Heads-up set to ${m} minutes. Turn on phone alerts or sounds to get it.`, 3600);
     },
     // Her alert and heads-up choices wait until an update from his phone shows them
     bellAsk() { const a = store.get('bellAsk', null); return a && typeof a.on === 'boolean' && Number.isFinite(a.at) ? a : null; },
@@ -7416,9 +7677,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     },
     renderAlerts() {
       const box = $('#b-alerts'); if (!box) return;
-      const known = !!this.p, on = known && !!this.p.bell, ask = this.demo || this.preview ? null : this.bellAsk();
+      const known = !!this.p, on = known && !!this.p.bell, ask = this.demo || this.preview ? null : this.bellAsk(), w = this.who();
       const wait = !!ask && !(known && on === ask.on); // she asked, and no update from his phone shows it yet
-      const key = `${known ? String(on) : 'unknown'}.${wait ? ask.on : ''}`;
+      const key = `${known ? String(on) : 'unknown'}.${wait ? ask.on : ''}.${w.his}`;
       if (box._on === key && box.childElementCount) return;
       box._on = key; box.textContent = '';
       const pill = wait ? h('span', { class: 'pill caution' }, h('i'), h('b', null, ask.on ? 'Turning on' : 'Turning off')) : known ? h('span', { class: 'pill ' + (on ? 'go' : '') }, h('i'), h('b', null, on ? 'On' : 'Off')) : null;
@@ -7427,12 +7688,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const topic = this.watch ? this.watch.chan + 'B' : '';
       const cb = h('div', { class: 'codebox' }, topic);
       const custom = this.relay && this.relay.base !== DEFAULT_RELAY ? this.relay.base : null;
-      const what = 'a buzz when he departs, turns around, is close to home, gets home, stops for a long time, or asks for a pickup.';
-      const setup = [h('ol', { class: 'guide' }, h('li', null, 'Install the free ntfy app from the App Store.'), h('li', null, `Tap +, paste this topic${custom ? `, turn on Use another server and enter ${custom}` : ''}, and subscribe.`), h('li', null, 'Come back and tap I subscribed.')),
+      // the alerts are plain text on a topic anyone who learns it can post to, unlike this board, which only his link can write
+      const what = `a buzz when ${w.he} departs, turns around, is close to home, gets home, stops for a long time, or asks for a pickup. Alerts travel as plain text that someone who learns the topic could imitate, so if an alert and this board ever disagree, trust the board.`;
+      const setup = [h('ol', { class: 'guide' }, h('li', null, 'Install the free ntfy app from the App Store or Google Play.'), h('li', null, `Tap +, paste this topic${custom ? `, turn on Use another server and enter ${custom}` : ''}, and subscribe.`), h('li', null, 'Come back and tap I subscribed.')),
         cb, h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => copyText(topic, cb, 'Topic copied. Paste it in ntfy.') }, 'Copy topic'),
           h('button', { class: 'btn primary', onclick: () => this.setBell(true) }, 'I subscribed'))];
       const off = h('button', { class: 'btn ghost', onclick: () => this.setBell(false) }, 'Turn off');
-      if (wait) box.append(h('p', { class: 'note' }, ask.on ? 'Sent to his phone. Alerts start with his next update. If it hasn’t reached his phone by his next walk, the board sends it again.' : 'Sent to his phone. Alerts stop with his next update.'));
+      if (wait) box.append(h('p', { class: 'note' }, w.named ? (ask.on ? `Sent to ${w.his} phone. Alerts start with its next update. If the request hasn’t reached it by the next walk, the board sends it again.` : `Sent to ${w.his} phone. Alerts stop with its next update.`)
+        : ask.on ? `Sent to ${w.his} phone. Alerts start with ${w.his} next update. If it hasn’t reached ${w.his} phone by ${w.his} next walk, the board sends it again.` : `Sent to ${w.his} phone. Alerts stop with ${w.his} next update.`));
       // once she has subscribed, the card says what she gets and keeps the setup steps folded away for another phone
       if (wait ? ask.on : on) box.append(h('p', { class: 'muted small' }, `Your phone ${wait ? 'will get' : 'gets'} ${what}`), h('div', { class: 'row' }, off), h('details', { class: 'more' }, h('summary', null, 'Set up another phone'), ...setup));
       else box.append(h('p', { class: 'muted small' }, `Get ${what}`), ...setup);
@@ -7444,7 +7707,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         store.set('bellAsk', { on, at: this.now() }); this.renderAlerts();
         if (had) { const b = [...box.querySelectorAll('button')].find(x => x.getClientRects().length); if (b) b.focus(); } // the card rebuilt under her finger
       }
-      this.relay.pub('W', this.stamp({ id: L.randId(10), type: 'bell', on, from: store.get('watchName', '') || 'Home', t: this.now() })).then(() => toast(on ? 'Alerts will start with his next update' : 'Alerts will stop with his next update')).catch(() => toast('Could not send. The board tries again when his next walk starts.', 4200));
+      this.relay.pub('W', this.stamp({ id: L.randId(10), type: 'bell', on, from: store.get('watchName', '') || 'Home', t: this.now() })).then(() => toast(`Alerts will ${on ? 'start' : 'stop'} with ${this.who().his} next update`)).catch(() => toast(`Could not send. The board tries again when ${this.who().his} next walk starts.`, 4200));
     },
   };
 
@@ -7523,7 +7786,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     W.depart({ demo: true });
     segSet('#c-demo', 'act', 'demo-view-cab');
     segSet('#c-speed', 'speed', String(Sim.speed));
-    if (!B.active || !B.demo) B.start({ chan: 'demo', key: '', name: P.name || 'Tom' }, true);
+    if (!B.active || !B.demo) B.start({ chan: 'demo', key: '', name: P.name || 'Walker' }, true);
+    // a profile with a naming choice gets switch labels that fit anyone: the cab is yours, the board is theirs
+    if (P.pron) { $('#c-demo [data-act="demo-view-cab"]').textContent = 'Your cab'; $('#c-demo [data-act="demo-view-board"]').textContent = 'The board'; }
     if (view === 'board') demoView('board');
   }
   function demoView(which) {
@@ -7599,7 +7864,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             h('button', { class: 'btn ghost', onclick: () => { Diag.log = []; Diag.save(); box.textContent = 'Cleared.'; } }, 'Clear'),
             h('button', { class: 'btn', onclick: close }, 'Close')));
       }); break;
-      case 'new-link': confirmSheet({ title: 'Make a new board link?', body: 'The old link stops working. Send the new one again.', ok: 'Make new link', onOk: () => { P.chan = null; P.key = null; ensureChannel(); toast('New link ready'); shareLink(); } }); break;
+      case 'new-link': confirmSheet({ title: 'Make a new board link?', body: `The old link stops following your walks right away${W.active && !W.demo ? ', this one included' : ''}, and its board says the link was replaced. Send the new link to ${P.watcher || 'the person who watches'}.${P.bell ? ` Phone alerts stop until ${P.watcher || 'they'} ${P.watcher ? 'sets' : 'set'} them up again from the new board.` : ''}`, ok: 'Make new link', onOk: () => { rotateLink(); toast('New link ready. The old one is cut off.'); shareLink(); } }); break;
       case 'erase-all':
         openSheet((p, close) => p.append(h('h2', { class: 'sh' }, 'Erase everything?'),
           h('p', { class: 'muted' }, `Removes your settings, ${walks.filter(w => !w.demo).length} saved walks and the board link from this phone. If you might want the walks again, save a backup first.`),
@@ -7655,7 +7920,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (W.active) return;
     openBoardHash(location.hash);
   });
-  const boardHashOf = w => `#board.${w.chan}.${w.key}${w.base && w.base !== DEFAULT_RELAY ? '.' + L.b64u.enc(new TextEncoder().encode(w.base)) : ''}`;
+  const boardHashOf = w => `#board.${w.chan}.${w.key}${w.base && w.base !== DEFAULT_RELAY ? '.' + L.b64u.enc(new TextEncoder().encode(w.base)) : ''}${whoTag(w.pn, w.name, w.tn)}`;
   // A board link: cut off, a second board, or the one this phone already follows
   function openBoardHash(hash) {
     const bh = parseBoardHash(hash);
@@ -7675,13 +7940,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (store.get('watchName', '')) return;
       openSheet((p, close) => {
         const inp = h('input', { class: 'input', id: 'b-me', maxlength: '24', placeholder: 'Your name', 'aria-label': 'Your name' });
-        p.append(h('h2', { class: 'sh' }, 'Who’s watching?'), h('p', { class: 'muted small' }, 'Your telegrams will say they’re from you.'), inp,
+        // a link that names the walker opens with whose board this is, then asks
+        p.append(...(watch.pn && watch.name ? [h('h2', { class: 'sh' }, `${watch.name}\u2019s arrivals board`), h('p', { class: 'muted' }, `${watch.name} shared this board so you can follow each walk live.`), h('p', { class: 'muted small' }, 'What\u2019s your name? It goes on the telegrams you send.')]
+          : [h('h2', { class: 'sh' }, 'Who’s watching?'), h('p', { class: 'muted small' }, 'Your telegrams will say they’re from you.')]), inp,
           h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { store.set('watchName', inp.value.trim() || 'Home'); close(); } }, 'Save'), h('button', { class: 'btn', style: 'flex:1', onclick: () => { store.set('watchName', 'Home'); close(); } }, 'Skip')));
       });
     };
     if (!opt.ask) return nameAsk();
     openSheet((p, close) => {
-      p.append(h('h2', { class: 'sh' }, 'Follow this board instead?'), h('p', { class: 'muted' }, 'This phone already follows a different arrivals board. Use this new link from now on?'),
+      p.append(h('h2', { class: 'sh' }, 'Follow this board instead?'), h('p', { class: 'muted' }, `This phone already follows a different arrivals board. Use ${watch.pn && watch.name ? `${watch.name}\u2019s board` : 'this new link'} from now on?`),
         h('div', { class: 'row' },
           h('button', { class: 'btn primary', style: 'flex:1', onclick: () => { store.set('watch', watch); close(); nameAsk(); } }, 'Use the new link'),
           h('button', { class: 'btn', style: 'flex:1', onclick: () => { close(); history.replaceState(null, '', location.pathname + location.search + boardHashOf(opt.ask)); startBoard(opt.ask, false); } }, 'Keep the old one')));
@@ -7757,13 +8024,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   hook(Depot, 'render', 'depot', () => []);
   hook(Settings, 'fill', 'settings', () => []);
   hook(About, 'render', 'about', () => []);
+  hook(Setup, 'homeStatus', 'home', () => [P.home]); // the home station was set, changed, or shown
   hook(Cab, 'render', 'cab:render', a => [a[0]]);
   hook(B, 'onLive', 'board:update', () => [B.p]);
   hook(B, 'render', 'board:render', () => [B.p]);
   window.LTApp = {
     Bus, h, $, $$, svgEl, toast, notif, openSheet, confirmSheet, stationSheet, go, show, store, trail, ROUTE, Sound, Diag, Records, L, C, MiniMap,
-    clock, ago, minsText, distTxt, where, short, capFirst, localDate, nightOf, nightSun, flap, reduced, edgeFade, uLabel, U, mapStations, walkedLine,
-    W, B, Cab, Pocket, Depot, History, Summary, Settings, About, Sim, Retry,
+    clock, ago, minsText, distTxt, where, short, capFirst, localDate, nightOf, nightSun, flap, reduced, edgeFade, uLabel, U, mapStations, walkedLine, walkerWords, trainFlap,
+    W, B, Cab, Pocket, Depot, History, Summary, Settings, About, Sim, Retry, Setup,
     IN_CLAUDE,
     get P() { return P; }, saveP, get walks() { return walks; }, saveWalks, get current() { return current; },
     started: false,
@@ -7985,7 +8253,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     else if (check === 'ok') say = `${txt(ck.querySelector('h2'))}.`;
     else if (status === 'ARRIVED') say = `${n} is home.`;
     else if (status === 'ENDED') say = `${n} ended the walk, not at home.`;
-    else if (status === 'NO SIGNAL') say = `No signal from ${n}’s phone. The board shows where he probably is.`;
+    else if (status === 'NO SIGNAL') say = `No signal from ${n}’s phone. The board shows where ${B.who ? B.who().he : 'he'} probably is.`;
     else if (PHRASE[status]) {
       const mins = p && p.eta ? Math.max(0, Math.round((p.eta.t - B.now()) / 60000)) : null, lab = txt($('#b-eta-l'));
       const where = status === 'STOPPED' && p && p.s != null ? ` ${A.where(A.trail.describe(p.s))}` : '';
@@ -7997,6 +8265,304 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   // for tests: what was said, and the pieces that decide focus
   A.Access = { log, announce: A.announce, modal: Modal, focusScreen, boardNews, get boardKey() { return Board.key; } };
+})();
+
+/* The Depot as a calm pre-departure screen (wave 4 design pass). Layout, hierarchy and one visual language only: nothing
+   here changes what the app works out or says, and ext/depot.css holds the looks. This module names the parts the
+   stylesheet holds on to and moves two things to where they belong:
+   - Tonight's plan card is the only panel under the Departures board. Its home-by answer is marked late when the plan
+     runs past the time, so it reads as a caution, in the same style as the board's rain lines.
+   - Carmel's trail hours caution moves from Dispatch into the plan card, under the home-by answer: it is about tonight's
+     turnaround, so it sits with the turnaround.
+   - Who calls your stops is a set-once choice, so on the Depot it folds into one line that names the voice and opens
+     the four choices on a tap (Settings keeps the full cards).
+   - Once the board link has gone out, the arrivals board card drops its explanation of what the link does, from the
+     next time the Depot draws (never under a finger that just tapped Copy link).
+   It runs after every Depot render, once the other modules have added their parts. Nothing is stored. */
+(() => {
+  'use strict';
+  const A = window.LTApp; if (!A || !A.Depot) return;
+  const { h } = A;
+  const D = A.Depot;
+  const byId = id => document.getElementById(id);
+
+  // names for the stylesheet; the markup and its order stay as they are (the wave 2 and 3 suites check that order)
+  const goals = byId('d-goals'), plan = goals && goals.closest('.card');
+  if (plan) { plan.classList.add('d-plan'); if (!plan.id) plan.id = 'd-plan-card'; }
+  const hb = byId('d-homeby'), hbRow = hb && hb.closest('.row');
+  if (hbRow) hbRow.classList.add('d-homeby-row');
+
+  // the home-by answer: Depot.fit leaves a signature on it only when the plan runs past the time
+  const fit0 = D.fit;
+  if (typeof fit0 === 'function') {
+    D.fit = function (...a) {
+      const r = fit0.apply(this, a);
+      try { const el = byId('d-fit'); if (el) el.classList.toggle('late', !el.hidden && !!el._sig); } catch (e) { /* the mark is only a look */ }
+      return r;
+    };
+  }
+
+  // Carmel posts its part of the trail as open sunrise to sunset: the core's caution row, moved into the plan card.
+  // Only a freshly drawn Dispatch says whether it applies tonight; one that wasn't redrawn leaves the plan card as it is.
+  function hours() {
+    const sky = document.querySelector('#d-tonight .sky');
+    if (!sky || sky.dataset.arranged) return;
+    sky.dataset.arranged = '1';
+    const fit = byId('d-fit'), old = byId('d-hours'), row = sky.querySelector('.skyrow.warn');
+    if (old) old.remove();
+    if (!fit || !row) return;
+    row.id = 'd-hours';
+    row.classList.add('d-remark');
+    fit.after(row);
+  }
+
+  // Calling your stops: one line with the voice's name, the choices one tap away. Open or shut survives a redraw.
+  let voiceOpen = false;
+  function voice() {
+    const grid = document.querySelector('#d-tonight .voice-grid'), field = grid && grid.closest('.field');
+    if (!field || field.closest('details')) return;
+    const label = field.querySelector(':scope > .eyebrow');
+    const name = () => { const b = grid.querySelector('[aria-pressed="true"]'); return b ? b.textContent : ''; };
+    const val = h('b', { class: 'd-voice-v' }, name());
+    const det = h('details', { class: 'd-voice', id: 'd-voice' },
+      h('summary', null, h('span', { class: 'd-voice-l' }, label ? label.textContent : 'Calling your stops'), h('span', { class: 'sr' }, ': '), val));
+    if (label) label.remove();
+    field.before(det);
+    det.append(field);
+    det.open = voiceOpen;
+    det.addEventListener('toggle', () => { voiceOpen = det.open; });
+    // the chip's own handler has already pressed the new voice by the time the click reaches here
+    grid.addEventListener('click', () => { const n = name(); if (val.textContent !== n) val.textContent = n; });
+  }
+
+  // the arrivals board card, once the link is out: its name, the alerts pill and the three ways to send it again. Only
+  // the card that sends links folds; where sharing is off (or in Claude's viewer) its one line says why, so it stays.
+  function share() {
+    const s = byId('d-share'), P = A.P;
+    if (s) s.classList.toggle('d-sent', !A.IN_CLAUDE && !!P.share && !!(P.done && P.done.link) && !byId('d-share-resend'));
+  }
+
+  let queued = false;
+  function arrange() {
+    queued = false;
+    for (const f of [hours, voice, share]) {
+      try { f(); } catch (e) { A.Diag.add('ext', `depot ${f.name}: ${e && e.message ? e.message : e}`); }
+    }
+  }
+  // this module loads before the ones that add to the Depot, so it arranges once they have all run
+  A.Bus.on('depot', () => { if (!queued) { queued = true; Promise.resolve().then(arrange); } });
+
+  // for tests and the lead's checks
+  A.DepotLayout = { arrange, get voiceOpen() { return voiceOpen; } };
+})();
+
+/* First run: what a new owner meets in the first ten minutes. On the welcome and in Settings, home can be picked on a
+   map, which sends no address anywhere (the satellite pictures come from the same imagery service as every map). On
+   the welcome, once home is set, where the Monon Trail runs from there, or a plain warning when home is far from it.
+   A new owner's first turnaround comes from where home is, not from the stock 96th Street. The Ticket Book with no
+   walks shows the ticket the first walk will print, and a way to see one now. Nothing here has a store key of its own:
+   home and the turnaround go into the profile, as the Depot and the other two ways of setting home do. `LTApp.FirstRun` */
+(() => {
+  'use strict';
+  const A = window.LTApp; if (!A || !A.MiniMap) return;
+  const { h, $, trail, L, Bus, MiniMap: MM } = A;
+  const FAR = 3200; // meters from the trail: past this, the welcome says the app is built for homes near it
+  const TILE = 256, ZMIN = 11, ZMAX = 17; // the small map's own zoom range
+  const ZPICK = 15; // from this zoom a tap places home; farther out, a tap zooms in toward the spot
+  const PICKED = 'the spot you picked';
+  // Web Mercator back from pixels at zoom z to [lat, lon], the inverse of MiniMap.world
+  const unworld = (x, y, z) => { const n = TILE * Math.pow(2, z); return [Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI, (x / n) * 360 - 180]; };
+  // distances on the welcome follow its Units switch, which is saved only with the rest of the form
+  const unitNow = () => { const b = document.querySelector('#s-welcome:not([hidden]) #w-units [aria-pressed="true"]'); return (b && b.dataset.unit) || A.P.unit || 'mi'; };
+  const far = (m, u = unitNow(), dp) => `${L.fmtDist(m, u, dp)} ${L.unitLabel(u)}`; // rounded as the home status line rounds
+  const ends = () => [trail.byId['10'], trail.byId['146']];
+
+  /* ------------------------------------------------------------ where home meets the trail */
+  // One sentence under the home status: the stretch north and south of where home joins the trail, or, far from it, why
+  // the app may not suit this home. The status line above already says how far and the nearest stop.
+  function fitText(lat, lon, u) {
+    const pj = trail.project(lat, lon), [s, n] = ends();
+    if (pj.d > FAR) return { warn: true, text: 'That’s a long way from the Monon Trail. The app follows walks on the trail between 10th Street in Indianapolis and 146th Street in Carmel, so it works best from a home near it.' };
+    const st = trail.nearest(pj.s, 2000), legs = [];
+    if (n && n.s - pj.s > 400) legs.push(`${far(n.s - pj.s, u, 1)} north to 146th St in Carmel`);
+    if (s && pj.s - s.s > 400) legs.push(`${far(pj.s - s.s, u, 1)} south to 10th St in Indianapolis`);
+    return { warn: false, text: legs.length ? `From ${st ? st.short : 'there'} the trail runs ${legs.join(' and ')}.` : '' };
+  }
+  function homeFit() {
+    const status = $('#w-home-status'); if (!status) return;
+    let el = $('#w-home-fit');
+    const P = A.P, f = P.home ? fitText(+P.home.lat, +P.home.lon) : null;
+    if (!f || !f.text) { if (el) el.hidden = true; return; }
+    if (!el) { el = h('p', { class: 'note', id: 'w-home-fit' }); status.after(el); }
+    el.hidden = false; el.classList.toggle('warn', f.warn); el.textContent = f.text;
+  }
+
+  /* ------------------------------------------------------------ the first plan */
+  // A new owner's first turnaround: the stop closest to a four mile round trip from home, in place of the stock 96th
+  // Street (a nine mile round trip from Broad Ripple, more than twenty from 10th Street). Only while the welcome is open
+  // and before any walk; the Depot changes it as before.
+  const ROUND = new Set(['75', '91', '106', '46', '30', '22', '16']); // the streets the Depot offers besides the major stops
+  let planned = null; // the turnaround set here, which a corrected home may move again
+  function firstPlan() {
+    const P = A.P;
+    if (!P.pron || !P.home || A.current !== 's-welcome' || (P.goalId !== '96' && P.goalId !== planned) || P.planTarget || A.walks.some(w => !w.demo)) return;
+    const pj = trail.project(+P.home.lat, +P.home.lon), conn = pj.d * 1.3, target = 4 * L.MI;
+    const best = dir => trail.stations.filter(st => dir * (st.s - pj.s) > 600 && (st.kind === 'major' || ROUND.has(st.id)))
+      .reduce((b, st) => { const rt = 2 * (conn + Math.abs(st.s - pj.s)); return !b || Math.abs(rt - target) < Math.abs(b.rt - target) ? { st, rt } : b; }, null);
+    const pick = best(1) || best(-1);
+    if (pick) { planned = pick.st.id; if (P.goalId !== planned) { P.goalId = planned; A.saveP(); } }
+  }
+
+  /* ------------------------------------------------------------ pick home on the map */
+  const Pick = {
+    cur: null,
+    open() {
+      const P = A.P, start = P.home ? [+P.home.lat, +P.home.lon] : null, mid = trail.at(trail.length / 2);
+      // a home already set opens close up and marked; otherwise the whole trail, to tap toward
+      const st = this.cur = { c: start || [mid.lat, mid.lon], z: start ? 16 : ZMIN, pick: start, view: null };
+      A.openSheet((p, close) => {
+        const host = h('div', { class: 'fr-map', tabindex: '0', role: 'group', 'aria-label': 'Map. Arrow keys move it, plus and minus zoom, Enter zooms in and then puts home in the middle.', 'aria-describedby': 'fr-pick-say' });
+        const say = h('p', { class: 'note', id: 'fr-pick-say', 'aria-live': 'polite' });
+        const hint = () => { if (!st.pick) say.textContent = st.z < ZPICK ? 'Tap near your home to zoom in. Drag to move the map.' : 'Now tap your home. Close up like this, walks end at your door.'; };
+        // zooming in keeps a placed home in the middle
+        const zoom = d => () => { const z = Math.max(ZMIN, Math.min(ZMAX, st.z + d)); if (z === st.z) return; if (d > 0 && st.pick) st.c = st.pick.slice(); st.z = z; draw(); hint(); };
+        const zin = h('button', { type: 'button', class: 'fr-zoom', 'aria-label': 'Zoom in', 'data-mm-avoid': '', onclick: zoom(1) }, '+');
+        const zout = h('button', { type: 'button', class: 'fr-zoom', 'aria-label': 'Zoom out', 'data-mm-avoid': '', onclick: zoom(-1) }, '−');
+        const set = h('button', { type: 'button', class: 'btn primary', style: 'flex:1', disabled: !st.pick, onclick: () => {
+          if (!st.pick) return;
+          P.home = { lat: +st.pick[0].toFixed(6), lon: +st.pick[1].toFixed(6), label: PICKED };
+          A.saveP();
+          if (A.Setup && A.Setup.homeStatus) A.Setup.homeStatus();
+          if (A.current === 's-settings') { const box = $('#p-addr-results'); if (box) box.hidden = true; }
+          else { const box = $('#w-addr-results'); if (box) box.hidden = true; }
+          A.toast('Home station set');
+          close();
+        } }, 'Set home here');
+        p.append(h('h2', { class: 'sh' }, 'Pick your home on the map'), say,
+          h('div', { class: 'fr-mapwrap' }, host, h('div', { class: 'fr-zooms' }, zin, zout)),
+          h('div', { class: 'row' }, set, h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: close }, 'Cancel')));
+        // the map draws once the sheet is on screen and has a width
+        requestAnimationFrame(() => {
+          if (!host.isConnected) return;
+          const ht = Math.max(220, Math.min(340, window.innerHeight - 330));
+          st.view = new MM.View(host, { tiles: !A.IN_CLAUDE, height: ht, label: 'Map for picking your home', lineNote: A.IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : '' });
+          const drop = MM.addView(st.view); // the map leaves the shared list when the sheet goes
+          const mo = new MutationObserver(() => { if (!host.isConnected) { drop(); mo.disconnect(); if (Pick.cur === st) Pick.cur = null; } });
+          mo.observe($('#sheet-panel'), { childList: true });
+          draw(); hint();
+          requestAnimationFrame(() => { if (host.isConnected) try { host.focus({ preventScroll: true }); } catch (e) { /* gone */ } }); // after the sheet's own focus
+          drag(host, st, draw, ll => { if (st.z < ZPICK) { st.c = ll; st.z = Math.min(ZPICK, st.z + 2); draw(); hint(); } else place(ll); });
+        });
+        const place = ll => {
+          st.pick = ll; set.disabled = false;
+          const pj = trail.project(ll[0], ll[1]), near = trail.nearest(pj.s, 1500);
+          say.textContent = pj.d > FAR ? `Home here is ${far(pj.d, A.P.unit)} from the Monon Trail, far for walks on it. Set it anyway, or tap again.`
+            : `Home here: ${far(pj.d, A.P.unit)} from the trail${near ? `, near ${near.short}` : ''}. Tap again to move it.`;
+          draw();
+        };
+        // keys for the map: arrows pan, plus and minus zoom, Enter zooms toward the center and then puts home there
+        host.addEventListener('keydown', e => {
+          const v = st.view && st.view.view; if (!v) return;
+          const pan = { ArrowLeft: [-80, 0], ArrowRight: [80, 0], ArrowUp: [0, -80], ArrowDown: [0, 80] }[e.key];
+          if (pan) { e.preventDefault(); const [x, y] = MM.world(st.c[0], st.c[1], st.z); st.c = unworld(x + pan[0], y + pan[1], st.z); draw(); }
+          else if (e.key === '+' || e.key === '=') { e.preventDefault(); zoom(1)(); }
+          else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoom(-1)(); }
+          else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (st.z < ZPICK) zoom(2)(); else place(st.c.slice()); }
+        });
+        function draw() {
+          const view = st.view; if (!view || !host.isConnected) return;
+          const w = host.clientWidth || 320, ht = view.height, [cx, cy] = MM.world(st.c[0], st.c[1], st.z);
+          // a box three quarters of the map's inner size at zoom z, so the small map's own fit lands on z, centered
+          const bw = 0.375 * Math.max(40, w - 68), bh = 0.375 * Math.max(40, ht - 68);
+          view.view = null;
+          view.draw({ line: A.ROUTE.line, stations: A.mapStations(), focus: [unworld(cx - bw, cy - bh, st.z), unworld(cx + bw, cy + bh, st.z)],
+            marks: st.pick ? [{ ll: st.pick, kind: 'home', label: 'Home' }] : [], label: st.pick ? 'Map for picking your home, with home marked' : 'Map for picking your home' });
+          zin.disabled = st.z >= ZMAX; zout.disabled = st.z <= ZMIN;
+        }
+      });
+    },
+  };
+  // Drag pans the map (it slides under the finger, then redraws where it stopped); a tap without a drag goes to onTap
+  function drag(host, st, draw, onTap) {
+    let d = null;
+    host.addEventListener('pointerdown', e => {
+      if (e.button > 0 || (e.target instanceof Element && e.target.closest('button, a'))) return;
+      d = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false };
+      try { host.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
+    });
+    host.addEventListener('pointermove', e => {
+      if (!d || e.pointerId !== d.id) return;
+      const dx = e.clientX - d.x, dy = e.clientY - d.y;
+      if (!d.moved && Math.hypot(dx, dy) < 8) return;
+      d.moved = true;
+      const c = st.view && st.view.canvas; if (c) c.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    const end = e => {
+      if (!d || e.pointerId !== d.id) return;
+      const was = d; d = null;
+      const v = st.view && st.view.view, c = st.view && st.view.canvas;
+      if (c) c.style.transform = '';
+      if (!v) return;
+      if (was.moved) { const [x, y] = MM.world(st.c[0], st.c[1], st.z); st.c = unworld(x - (e.clientX - was.x), y - (e.clientY - was.y), st.z); draw(); return; }
+      if (e.type === 'pointercancel') return;
+      const r = (c || host).getBoundingClientRect();
+      onTap(unworld(v.x0 + (e.clientX - r.left), v.y0 + (e.clientY - r.top), v.z));
+    };
+    host.addEventListener('pointerup', end);
+    host.addEventListener('pointercancel', end);
+    host.addEventListener('wheel', e => { e.preventDefault(); const z = Math.max(ZMIN, Math.min(ZMAX, st.z + (e.deltaY < 0 ? 1 : -1))); if (z !== st.z) { st.z = z; draw(); } }, { passive: false });
+  }
+
+  /* ------------------------------------------------------------ the ways to set home */
+  // The welcome shows the map as a third way, next to location and search. Settings keeps its card as it is: the map
+  // is offered under a search, as it is on the welcome when a search comes up empty.
+  function addMapButton() {
+    const res = $('#w-addr-results');
+    if (!res || $('#fr-map-w')) return;
+    res.after(h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', id: 'fr-map-w', onclick: () => Pick.open() },
+      pinIcon(), 'Pick it on the map')));
+  }
+  function pinIcon() {
+    const s = A.svgEl('svg', { viewBox: '0 0 24 24', width: 20, height: 20, fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'aria-hidden': 'true' });
+    s.append(A.svgEl('path', { d: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z' }), A.svgEl('path', { d: 'M9 4v14M15 6v14' }));
+    return s;
+  }
+  // under a finished search: the map, for an address that isn't listed or a home a search can't find
+  function offerMap(box) {
+    if (!box || box.hidden || box.querySelector('.fr-offer')) return;
+    const msg = box.querySelector('.result.msg');
+    if (msg && /Searching/.test(msg.textContent)) return;
+    const miss = !!msg;
+    box.append(h('div', { class: 'result msg fr-offer' }, miss ? 'Or pick your home on the map. ' : 'Not in the list? ',
+      h('button', { type: 'button', class: 'linkbtn', onclick: () => Pick.open() }, miss ? 'Pick it on the map' : 'Pick it on the map instead')));
+  }
+  ['#w-addr-results', '#p-addr-results'].forEach(sel => {
+    const box = $(sel); if (!box) return;
+    new MutationObserver(() => offerMap(box)).observe(box, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+  });
+
+  /* ------------------------------------------------------------ the Ticket Book with no walks */
+  // The first ticket, waiting to be printed, instead of a line of gray text and a button that erases nothing
+  function emptyBook() {
+    const real = A.walks.filter(w => !w.demo), list = $('#h-list'), row = $('#h-p-tickets > .linkrow');
+    if (row) row.hidden = !real.length;
+    if (real.length || !list) return;
+    list.textContent = '';
+    list.append(h('div', { class: 'ticket fr-stub', role: 'img', 'aria-label': 'An unprinted ticket: number 1, your first walk' },
+      h('div', { class: 'top' }, h('span', null, 'Admit one'), h('span', null, 'No. 0001')),
+      h('div', { class: 'route' }, 'Your first walk'),
+      h('div', { class: 'when' }, 'Prints when you finish')),
+    h('p', { class: 'muted small' }, 'Every walk you finish prints a ticket here, punched with the landmarks you passed. Tap one to see that walk again.'),
+    h('button', { type: 'button', class: 'btn', 'data-act': 'demo-cab' }, 'Ride the demo walk'));
+  }
+
+  Bus.on('home', () => { firstPlan(); homeFit(); });
+  Bus.on('screen', id => { if (id === 's-welcome') { addMapButton(); homeFit(); } });
+  Bus.on('history', emptyBook);
+  document.addEventListener('click', e => { if (e.target instanceof Element && e.target.closest('#w-units button')) requestAnimationFrame(homeFit); });
+
+  // for tests: open the picker, the picker on screen (its view and choice), and the wording helpers
+  A.FirstRun = { pick: () => Pick.open(), get picking() { return Pick.cur; }, fitText, unworld };
 })();
 
 /* Tonight's window: what tonight's walk will run into, from the Open-Meteo forecast the app already asks for.
@@ -8484,7 +9050,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (old && old[0] <= now + 5 * MIN) return; // the forecast he left with had rain about now already
       // sooner by 20 minutes or more; with no rain in the old forecast, only where that forecast reached
       if (old ? old[0] - nu[0] < 20 * MIN : nu[0] > st.base.end) return;
-      const C = A.C, kind = nu[2], name = cap(NAME[kind]), pl = PLURAL.has(kind), when = C.spokenClock(nu[0], 5);
+      // times in both forms: the voice says "seven forty-five", the cab caption shows 7:45 PM
+      const C = A.C, kind = nu[2], name = cap(NAME[kind]), pl = PLURAL.has(kind), when = C.both.clock(nu[0], 5);
       // no likely rain in the old forecast: say whether it had at least a chance around then
       const chance = !old && (st.base.chance || []).some(r => r[1] > now && r[0] < nu[0] + HR && r[1] > nu[0] - HR);
       let text = old
@@ -8493,13 +9060,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           ? `Heads up. ${name} now ${pl ? 'look' : 'looks'} likely from about ${when}. When you left, ${pl ? 'they were' : 'it was'} only a chance.`
           : `Heads up. ${name} ${pl ? 'weren\'t' : 'wasn\'t'} in the forecast when you left, but now ${pl ? 'look' : 'looks'} likely from about ${when}.`;
       const tr = W.tr;
-      if ((tr.phase === 'out' || tr.phase === 'toTrail') && eta.nowT && eta.nowT < nu[0] - 5 * MIN) text += ` Turning back now gets you home around ${C.spokenClock(eta.nowT, 5)}, ahead of it.`;
-      else text += ` That's before you're due home, around ${C.spokenClock(eta.t, 5)}.`;
+      if ((tr.phase === 'out' || tr.phase === 'toTrail') && eta.nowT && eta.nowT < nu[0] - 5 * MIN) text += ` Turning back now gets you home around ${C.both.clock(eta.nowT, 5)}, ahead of it.`;
+      else text += ` That's before you're due home, around ${C.both.clock(eta.t, 5)}.`;
       if (kind === 'storms') text += ' At the first thunder, head for cover.';
       st.said = true; this.save();
       if (W.an) W.an.said.add('rainSoon'); // the conductor's own "within the hour" heads-up would say the same thing again
       A.Diag.add('weather', `rain moved up: now from ${A.clock(nu[0])}${old ? `, was ${A.clock(old[0])}` : chance ? ', was a chance' : ', was not forecast'}`);
-      W.say({ text, prio: 2, chime: 'bell', kind: 'weather' });
+      W.say(C.split({ text, prio: 2, chime: 'bell', kind: 'weather' }));
     },
   };
   A.Bus.on('walk:start', W => Walk.start(W));
@@ -8736,8 +9303,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     },
     save() { if (!A.W.demo) store.set(K_VOICE, { wid: this.wid, n: this.n, at: this.at, sign: this.sign, d: this.d }); },
   };
-  function runLine(an, d, why, g) {
-    const who = whoOf(g), Who = capFirst(who), diff = C.spokenDiff(d), Diff = capFirst(diff), style = an.o.style;
+  // forms: true returns the line with its figures in both forms (spoken, and written for the caption) for C.split
+  function runLine(an, d, why, g, forms) {
+    const who = whoOf(g), Who = capFirst(who), diff = forms ? C.both.diff(d) : C.spokenDiff(d), Diff = forms ? C.cap(diff) : capFirst(diff), style = an.o.style;
     const c = Math.abs(d) < 10 ? 'even' : d < 0 ? 'ahead' : 'behind', k = `ghost.${style}.${why === 'flip' ? 'flip.' : ''}${c}`;
     const L4 = {
       conductor: {
@@ -8770,8 +9338,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const set = L4[style] || L4.conductor, list = set[(why === 'flip' ? 'flip.' : '') + c] || set[c];
     return an.pick(k, list);
   }
-  function finishLine(an, d, g) {
-    const who = whoOf(g), Who = capFirst(who), a = Math.abs(Math.round(d)), split = C.spokenSplit(a), Split = capFirst(split);
+  function finishLine(an, d, g, forms) {
+    const who = whoOf(g), Who = capFirst(who), a = Math.abs(Math.round(d)), split = forms ? C.both.split(a) : C.spokenSplit(a), Split = forms ? C.cap(split) : capFirst(split);
     if (a < 1) return { conductor: `Dead even with ${who}.`, coach: `Dead even with ${who}.`, guide: `You and ${who} arrive together.`, owl: `Even with ${who}.` }[an.o.style] || `Dead even with ${who}.`;
     const best = g.kind === 'best' && !!g.goalId;
     const ahead = {
@@ -8789,17 +9357,18 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     return (d < 0 ? ahead : behind)[an.o.style] || (d < 0 ? ahead : behind).conductor;
   }
   // Add a ghost clause to the stop's own call; a line of its own only for the result, or when nothing else was said
-  // for a while (the conductor's rule for a clear line)
+  // for a while (the conductor's rule for a clear line). The clause comes in both forms, and the stop's call was already
+  // parted into what is said and what the caption shows, so each form joins its own half.
   function attach(an, out, text, now, before, must, st, tr) {
-    const line = out.find(l => l && l.kind === 'pass' && l.text);
-    if (line && line.text.length + 1 + text.length <= EAR) {
-      line.text = `${line.text} ${text}`;
+    const line = out.find(l => l && l.kind === 'pass' && l.text), ear = C.spoken(text);
+    if (line && line.text.length + 1 + ear.length <= EAR) {
+      if (line.show != null) { line.text = `${line.text} ${ear}`; line.show = `${line.show} ${C.shown(text)}`; } else line.text = `${line.text} ${text}`;
       if (!(line.prio >= 1)) line.prio = 1; // a minor call carrying the race is worth hearing
       return line;
     }
     if (must || (!line && now - before >= 25000)) {
-      const name = !line && st ? C.ear(an.named(st, now, tr)) : '';
-      const l = { text: name ? `${name} ${text}` : text, prio: must ? 2 : 1, kind: 'ghost' };
+      const name = !line && st ? C.both.ear(an.named(st, now, tr)) : '';
+      const l = C.split({ text: name ? `${name} ${text}` : text, prio: must ? 2 : 1, kind: 'ghost' });
       out.push(l);
       an.lastOut = now;
       return l;
@@ -8822,7 +9391,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       Race.res = { id: st.id, mine, theirs, d: mine - theirs, goal: true };
       V.fin = true;
       if (v === 'quiet') return;
-      const l = attach(an, out, finishLine(an, Race.res.d, g), now, before, true, st, tr);
+      const l = attach(an, out, finishLine(an, Race.res.d, g, true), now, before, true, st, tr);
       if (l) V.log.push({ t: now, el: mine, st: st.id, why: 'finish', text: l.text });
       return;
     }
@@ -8836,7 +9405,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const d = mine - theirs, sign = Math.abs(d) < 10 ? 0 : Math.sign(d);
     const why = !V.n ? 'first' : sign && V.sign && sign !== V.sign ? 'flip' : Math.abs(d - V.d) >= 45 ? 'swing' : null;
     if (!why) return;
-    const l = attach(an, out, runLine(an, d, why, g), now, before, false, st, tr);
+    const l = attach(an, out, runLine(an, d, why, g, true), now, before, false, st, tr);
     if (!l) return;
     V.n++; V.at = now; V.d = d; if (sign) V.sign = sign;
     V.save();
@@ -11075,6 +11644,73 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   A.Offline = { D, UI, ask, costly };
 })();
 
+/* Privacy on the hosted page: the last word on where it may connect.
+   build.py gives index.html a Content Security Policy: the app's one inline script by its hash, and pictures, fonts and
+   styles from exactly the hosts the app uses. Its connect-src lets any https relay through, because a custom relay can
+   come from Settings or from a board link. This module narrows it as the app starts (before anything connects) to
+   exactly what this page uses: the relay (ntfy.sh, or the custom one in use), the weather (Open-Meteo), the address
+   search (Nominatim) and the two satellite imagery services (the service worker fetches their tiles, and a page asking
+   for a tile goes through it). Both policies hold at once, so the page gets the narrower one. A page served from this
+   computer (development and the tests, whose relay can change at any moment) may also reach any port on it.
+   A relay that shows up later (a new one saved in Settings, or a board link on another relay) needs a fresh start, so
+   the page reloads itself then, never during a walk. A blocked request is noted in Diagnostics by host only.
+   Claude's viewer has no policy and no network features, so nothing here runs there. */
+(() => {
+  'use strict';
+  const A = window.LTApp;
+  if (!A) return;
+  const base = document.head && document.head.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  if (!base || A.IN_CLAUDE) return;
+  const { store } = A;
+  const FIXED = ['https://ntfy.sh', 'https://api.open-meteo.com', 'https://nominatim.openstreetmap.org', 'https://di-ingov.img.arcgis.com', 'https://basemap.nationalmap.gov'];
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  // a relay's origin, as the app would accept it (normRelay in ui.js): https, or http on this computer for a page on
+  // this computer, with no password, query or fragment
+  const originOf = u => {
+    try {
+      const x = new URL(String(u));
+      if (x.username || x.password || x.search || x.hash) return null;
+      return x.protocol === 'https:' || (local && x.protocol === 'http:' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(x.hostname)) ? x.origin : null;
+    } catch (e) { return null; }
+  };
+  // the relay a board link names, if it names one
+  const hashRelay = hash => {
+    const m = /^#board\.[A-Za-z0-9]{12,64}\.[A-Za-z0-9_-]{43}\.([A-Za-z0-9_-]{4,400})(?:~[A-Za-z0-9_-]{2,400})?$/.exec(hash || ''); // a named link (first run) ends in ~name
+    if (!m) return null;
+    try { return originOf(new TextDecoder().decode(A.L.b64u.dec(m[1]))); } catch (e) { return null; }
+  };
+  const obj = k => { const v = store.get(k, null); return v && typeof v === 'object' ? v : {}; };
+  // every relay this page may talk to now: the walker's, the board link's, the board this phone follows and a walk's
+  // last update still waiting to go. A page on this computer (development and tests, whose relay can be set at any
+  // moment) may also reach any port here; a hosted page never can.
+  const relays = () => [A.P.relay, obj('watch').base, obj('finalPub').base].map(originOf).concat(hashRelay(location.hash));
+  const allowed = new Set(FIXED.concat(relays().filter(Boolean), local ? ['http://localhost:*', 'http://127.0.0.1:*'] : []));
+  const meta = document.createElement('meta');
+  meta.httpEquiv = 'Content-Security-Policy';
+  meta.content = `connect-src ${[...allowed].join(' ')}`;
+  document.head.append(meta);
+
+  // a relay this page can't reach until it starts again: reload, unless a walk is under way
+  const fresh = why => {
+    if (A.W && A.W.active) return false;
+    A.Diag.add('csp', `restarting for a relay this page didn't start with (${why})`);
+    setTimeout(() => location.reload(), why === 'settings' ? 1600 : 0);
+    return true;
+  };
+  const ok = o => allowed.has(o) || (local && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o));
+  window.addEventListener('hashchange', () => { const o = hashRelay(location.hash); if (o && !ok(o)) fresh('board link'); });
+  A.Bus.on('screen', (id, prev) => {
+    const o = originOf(A.P.relay);
+    if (prev === 's-settings' && id !== 's-settings' && o && !ok(o) && fresh('settings')) A.toast('Relay changed. The app restarts to use it.', 3000);
+  });
+  document.addEventListener('securitypolicyviolation', e => {
+    let host = '';
+    try { host = new URL(e.blockedURI).host; } catch (err) { host = String(e.blockedURI || '').slice(0, 24); }
+    A.Diag.add('csp', `blocked ${e.effectiveDirective || e.violatedDirective || ''} ${host}`);
+  });
+  A.Privacy = { allowed, ok, policy: () => [base.content, meta.content] };
+})();
+
 /* Ready check: a quick look at GPS, sound, the live board, the screen, the battery (where the browser reports it) and
    Carmel's posted hours when he taps All aboard; a #depart link that opens the same check from outside the app; and a
    closer watch on the screen wake lock during a walk. Nothing here can block a walk: Depart now is always one tap away. */
@@ -11635,6 +12271,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     store.set(K, c);
   }
   const isDone = k => !!(cards()[k] && cards()[k].done);
+  // A backup's dismissed tickets join the ones dismissed here (a ticket dismissed on either stays dismissed), and the
+  // copy in memory is read again once the restore has written the merged list
+  A.Bus.on('restore', ext => {
+    if (!ext || typeof ext !== 'object' || !(K in ext)) return;
+    const theirs = ext[K] && typeof ext[K] === 'object' && !Array.isArray(ext[K]) ? ext[K] : {}, mine = cards(), all = {};
+    Object.keys(theirs).forEach(k => { if (theirs[k] && typeof theirs[k] === 'object') all[k] = theirs[k]; });
+    Object.keys(mine).forEach(k => { all[k] = Object.assign({}, all[k], mine[k]); });
+    ext[K] = all; mem = null;
+  });
 
   /* ------------------------------------------------------------ the year in review */
   // The year counts as reviewed once it is over, and from December 1 while it is still going
@@ -12080,7 +12725,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   // in sentences a number keeps its unit on the same line (6:30 PM, 5.22 mi, 1 h 35 min): no-break spaces
   const nb = s => String(s).replace(/ /g, '\u00a0');
   const clk = t => nb(clock(t)), far = (m, u) => nb(dist(m, u)), dur = secs => nb(A.minsText(secs));
-  const trainOf = (n, tn) => `${n}  ${String(tn || 'The Night Local').replace(/^the /i, '')}`;
+  const trainOf = (n, tn) => (A.trainFlap ? A.trainFlap(n, tn, N.train) : `${n}  ${String(tn || 'The Night Local').replace(/^the /i, '')}`);
+  // the walker in her board's own words: the name, or he on a board whose walker app sends no choice
+  const who = () => (B.who ? B.who() : { n: 'the walker', he: 'he', his: 'his', him: 'him', He: 'He', His: 'His', named: false });
   // A stop's name for a field: its short name, without the street suffix when the full name is too long
   function sign(id, n = N.where) {
     const st = trail.byId[id]; if (!st) return '';
@@ -12205,7 +12852,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const m = Math.round(Math.max(0, mins));
     const big = m <= 0 ? { kind: 'word', word: 'DUE' } : m >= 60 ? { kind: 'hm', h: Math.min(9, Math.floor(m / 60)), m: m % 60 } : { kind: 'm', m };
     const firstRun = p.eta.b === 'now' && p.ph !== 'back' && p.ph !== 'toHome';
-    const basis = { goal: p.goal ? `turning at ${A.short(p.goal)}` : '', usual: 'assuming his usual turnaround', now: 'he’s deciding on the way', back: 'on his way home', loop: 'if he heads home from here' }[p.eta.b] || '';
+    const w = who();
+    const basis = { goal: p.goal ? `turning at ${A.short(p.goal)}` : '', usual: `assuming ${w.his} usual turnaround`, now: `${w.he}’s deciding on the way`, back: w.named ? 'on the way home' : `on ${w.his} way home`, loop: `if ${w.he} heads home from here` }[p.eta.b] || '';
     let sub = `Expected ${clock(p.eta.lo).replace(/ [AP]M/, '')} to ${clk(p.eta.hi)}${basis ? `, ${basis}` : ''}.`, subTone = '';
     if (p.st === 'paused') sub = `${p.n} paused the walk. ${sub}`;
     else if (p.stp && p.st === 'walking') {
@@ -12217,10 +12865,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const rp = A.Watcher && A.Watcher.reply ? A.Watcher.reply(p) : null;
     if (rp) { sub = `${p.n} replied at ${clk(rp.t)}: ${rp.text}${/[.!?]$/.test(rp.text) ? '' : '.'}`; subTone = 'reply'; }
     if (p.pk) { sub = `Asked at ${clk(p.pk.t)}, ${A.where(p.pk.near || 'off the trail')}. Exit the display for the map.`; subTone = 'stop'; }
-    if (stale) { sub = `Last signal ${nb(A.ago(age))}. His phone may have locked.`; subTone = 'caution'; }
+    if (stale) { sub = `Last signal ${nb(A.ago(age))}. ${w.His} phone may have locked.`; subTone = 'caution'; }
     const phrase = /^AT /.test(status) ? `is stopped ${status.toLowerCase().replace(/ st$/, ' St')}` : PHRASE[status] || 'is out on the line';
-    return { mode: 'live', t0: p.t0, train, status, tone, whereL, where, whenL: 'Home at', when: clockFlap(p.eta.t), bigL: big.kind === 'word' ? 'Expected home' : firstRun ? 'If he turned around now' : 'Home in', big, sub, subTone,
-      say: `${p.n} ${phrase}. ${big.kind === 'word' ? 'He is due home now' : `Home in ${words(big)}`}.`, rp: rp ? rp.t : 0, rpSay: rp ? `${p.n} replied: ${rp.text}` : '' };
+    return { mode: 'live', t0: p.t0, train, status, tone, whereL, where, whenL: 'Home at', when: clockFlap(p.eta.t), bigL: big.kind === 'word' ? 'Expected home' : firstRun ? `If ${w.he} turned around now` : 'Home in', big, sub, subTone,
+      say: `${p.n} ${phrase}. ${big.kind === 'word' ? `${w.named ? 'Due' : `${w.He} is due`} home now` : `Home in ${words(big)}`}.`, rp: rp ? rp.t : 0, rpSay: rp ? `${p.n} replied: ${rp.text}` : '' };
   }
 
   function idle(now, p) {
@@ -12230,7 +12878,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     let where = '--';
     if (last) { const day = dayOf(last.t0, now), both = `${day} ${dist(last.d, u)}`; where = both.length <= N.where ? both : day; }
     const sub = last ? `Last walk ${dayOf(last.t0, now, true)}, ${clk(last.t0)}: ${far(last.d, u)}${last.el ? ` in ${dur(last.el)}` : ''}${last.far && trail.byId[last.far] ? `, out to ${A.short(last.far)}` : ''}.`
-      : 'The board flips to live when he departs.';
+      : `The board flips to live when ${who().he} departs.`;
     const hr = new Date(now).getHours();
     // his own weekly total when his phone sends it; otherwise only what this board saw, and the label says so
     return { mode: 'idle', t0: p ? p.t0 : 0, train: n ? trainOf(n, (p && p.tn) || (last && last.tn)) : 'NIGHT LOCAL', status: 'NO TRAIN', tone: '',
@@ -12243,7 +12891,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const bad = B.broken || B.connState === 'badkey';
     const cantReach = B.connState === 'retry' && !B.openAt && Date.now() - B.connAt > 20000;
     v.mode = 'wait';
-    if (bad) Object.assign(v, { status: 'BAD LINK', tone: 'stop', sub: 'This board link can’t read his updates. Exit the display and ask him for the link again.', say: 'The board link is not working.' });
+    if (bad) { const w = who(); Object.assign(v, { status: 'BAD LINK', tone: 'stop', sub: `This board link can’t read ${w.his} updates. Exit the display and ask ${w.him} for the link again.`, say: 'The board link is not working.' }); }
     else if (cantReach) Object.assign(v, { sub: 'Can’t reach the relay right now. Check this phone’s connection. The board keeps trying.', subTone: 'caution' });
     return v; // while it connects, the foot says so and the sentence keeps the last walk
   }
@@ -12615,7 +13263,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       h('span', { class: 'note' }, 'Full screen for a propped-up phone or tablet'),
       h('button', { type: 'button', class: 'stn-open', id: 'stn-open', onclick: () => open({ gesture: true }) }, icon(ICON.open), 'Station display')));
   }
-  function syncButton() { const row = $('#stn-open-row'); if (row) row.hidden = !!B.broken; }
+  // a cut-off or replaced board link has nothing to show full screen: the button goes, and an open sign closes
+  function syncButton() { const row = $('#stn-open-row'), dead = !!(B.broken || B.gone); if (row) row.hidden = dead; if (dead && S.open) close({ quiet: true }); }
   placeButton();
 
   Bus.on('screen', () => { if (S.open) close({ quiet: true }); syncButton(); });
@@ -13015,7 +13664,6 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
   }
   function speakPart(now, r) {
     const pos = { ch: wk.pos.ch, seg: wk.pos.seg };
-    if (pos.seg === 0) wk.newCh = true;
     wk.lastWalk = now; wk.lastReal = r;
     submit(partText(pos, wk.played === 0), { kind: 'part', pos });
     saveWalk();
@@ -13028,6 +13676,8 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
   }
   function advance(pos) {
     const c = CH[pos.ch];
+    // a new chapter counts as begun once its first part was heard: one cut off, or lost to a reload, plays again tonight
+    if (pos.seg === 0) wk.newCh = true;
     let next = { ch: pos.ch, seg: pos.seg + 1 };
     if (next.seg >= c.segs.length) {
       next = { ch: pos.ch + 1, seg: 0 };
@@ -13312,7 +13962,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     if (!box || box.hidden || !mine() || B.demo || !A.Station || box.querySelector('[data-stn-intro]')) return;
     const row = [...box.children].find(el => el.classList && el.classList.contains('row'));
     if (!row) return;
-    row.before(h('p', { class: 'muted small', 'data-stn-intro': '1' }, 'On a propped-up phone or tablet, the Station display shows this board as a full-screen split-flap sign and keeps the screen on while he walks.'));
+    row.before(h('p', { class: 'muted small', 'data-stn-intro': '1' }, `On a propped-up phone or tablet, the Station display shows this board as a full-screen split-flap sign and keeps the screen on while ${B.who ? B.who().he : 'he'} walks.`));
     row.append(h('button', { class: 'btn ghost', type: 'button', onclick: () => A.Station.open({ gesture: true }) }, 'Open the Station display'));
   }
 

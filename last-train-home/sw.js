@@ -108,7 +108,10 @@ let SCALE = 1;    // Web Mercator meters per meter on the ground, at the trail
   }
 })();
 // How far the strip reaches either side of the line. A map at the lower levels shows kilometers either side of the
-// trail, so the strip is a tile and a half wide there; close up it hugs the trail (200 m, then 60 m).
+// trail, so the strip is a tile and a half wide there; close up it hugs the trail (200 m, then 60 m). Each stretch of
+// the line counts as its bounding box, so where a long stretch runs on a diagonal the strip reaches a few hundred
+// meters farther (tiles up to about 430 m off the line at level 17 and 360 m at level 18). A tile can show a home near
+// the trail at any level, which is why the Privacy list in About says so.
 const reach = z => (z <= 15 ? 1.5 * span(z) : z === 16 ? span(z) : (z === 17 ? 200 : 60) * SCALE);
 function inCorridor(z, x, y) {
   const m = span(z), r = reach(z), x1 = x * m - HALF, x2 = x1 + m, y2 = HALF - y * m, y1 = y2 - m;
