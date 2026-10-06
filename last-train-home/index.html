@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9p8GI6QWMAtgiplFAwTFrt7i129BQCqpeI6fSl/rPZM='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rBjCRUcxvTne99YIc+pJ/pV+d2fGY8+MtuwMUTMOWvw='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#0f1217">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -541,6 +541,41 @@ html { scroll-padding-top: 5.5rem; scroll-padding-bottom: calc(6.5rem + env(safe
 .linemap .lm-row { height: auto; min-height: 1.875rem; }
 .check { grid-template-columns: 1.625rem 1fr; }
 .check .box { width: 1.375rem; height: 1.375rem; }
+
+/* Along the way (ext/along.js): rides, stretches to note and places to eat beside a trip's route, on the planner and the
+   trip in progress. The map draws them small, under the route's own markers; the card lists them. */
+#s-trip .t-along { gap: 10px; }
+#s-trip .t-along h2 { font-size: 1.25rem; line-height: 1.1; }
+#s-trip .t-along > .row.between { align-items: center; gap: 10px; flex-wrap: wrap; }
+#s-trip .t-along-sum { font-size: 0.9375rem; line-height: 1.4; color: var(--ink-2); }
+#s-trip .t-along-h { font: 600 0.9375rem/1.3 var(--f-body); color: var(--ink); margin-top: 4px; }
+#s-trip .t-along-h .note { font-weight: 400; }
+#s-trip .t-along-list { list-style: none; margin: 0; padding: 0; display: grid; }
+#s-trip .t-along-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 0.9375rem; line-height: 1.35; }
+#s-trip .t-along-list li:first-child { border-top: 0; }
+#s-trip .t-along-list li > :first-child { min-width: 0; text-wrap: pretty; }
+#s-trip .t-along-list li .note { font-size: 0.8125rem; }
+#s-trip .t-along-list li .tip { display: block; margin-top: 3px; font-size: 0.8125rem; line-height: 1.35; color: var(--ink-2); }
+#s-trip .t-along-list li .meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; font-size: 0.8125rem; color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: right; }
+#s-trip .t-along-list li .meta .linkbtn { min-height: 36px; padding: 4px 2px; font-size: 0.875rem; color: var(--amber); }
+#s-trip .t-along-list li.hi b { color: var(--caution); }
+#s-trip .t-along-foot { line-height: 1.45; }
+#s-trip .t-along-foot .linkbtn, #s-trip .t-along-foot a { min-height: 0; padding: 0; font-size: inherit; color: var(--ink-2); display: inline; }
+#s-trip .t-diet { gap: 10px; align-items: center; }
+#s-trip .t-diet .note { min-width: 0; }
+#sheet-panel .t-along { background: none; border: 0; padding: 0; }
+#sheet-panel .t-along-list { list-style: none; margin: 0; padding: 0; display: grid; }
+#sheet-panel .t-along-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 0.9375rem; line-height: 1.35; }
+#sheet-panel .t-along-list li .tip { display: block; margin-top: 3px; font-size: 0.8125rem; color: var(--ink-2); }
+#sheet-panel .t-along-list li .meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; font-size: 0.8125rem; }
+#sheet-panel select.input { min-height: 44px; }
+/* the map: the stretches to note as a wide soft band under the line, deeper for more reports; small markers */
+.minimap .mm-hot { fill: none; stroke: rgba(236, 140, 64, 0.42); stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; }
+.minimap .mm-hot.hi { stroke: rgba(232, 84, 76, 0.46); stroke-width: 19; }
+.minimap .mm-dock .mm-dot { fill: #3b82e6; stroke: #f4f6fa; stroke-width: 1.5; }
+.minimap .mm-scoot .mm-dot { fill: #21b07f; stroke: #f4f6fa; stroke-width: 1.2; }
+.minimap .mm-food .mm-dot { fill: #e0a03a; stroke: #1a1206; stroke-width: 1.2; }
+.minimap .mm-dock .mm-label { font-size: 11px; }
 
 /* The Depot, wave 4 design pass (ext/depot.js names the parts styled here).
    One lit object, the split-flap Departures board, and one red action, All aboard. Tonight's plan is the only other
@@ -1268,8 +1303,7 @@ body.stn-on { overflow: hidden; }
 #s-trip #t-gauges .g .v { font-size: 2.125rem; }
 #s-trip #t-gauges .g.home .v { color: var(--amber); }
 #s-trip #t-controls .row { flex-wrap: wrap; }
-#s-trip .t-dock .inner { display: flex; gap: 10px; }
-#s-trip .t-dock .btn { flex: 1 1 0; min-height: 48px; }
+#s-trip .t-dock .inner { grid-template-columns: repeat(3, 1fr); } /* Pocket, Pause, End trip: the walk's dock, three across */
 #s-trip #t-done-g .g .v { font-size: 2.125rem; }
 
 @media (max-width: 360px) {
@@ -1573,7 +1607,7 @@ body.stn-on { overflow: hidden; }
   <section class="card plain">
     <h2>What's new</h2>
     <ul class="muted small changelog">
-      <li>Trips: plan a walk to anywhere, like a gym downtown, by search or on the map, with stops of your own. The route rides the Monon when it helps, the conductor calls the turns and the Monon’s stations, and a new route comes if you leave this one.</li>
+      <li>Trips: plan a walk to anywhere, like a gym downtown, by search or on the map, with stops of your own. The route rides the Monon when it helps, the conductor calls the turns and the Monon’s stations, and a new route comes if you leave this one. Along the way it shows Pacers Bikeshare docks and Bird scooters, stretches with more reported incidents from IMPD, and places to eat ranked for a dining need, each a tap from Yelp, and Pocket mode works on a trip too.</li>
       <li>If the phone pauses the conductor’s voice after a locked screen or a call, the app now wakes it and says the line again, so telegrams and the home-by warning still get through.</li>
       <li>Making a new board link cuts off the old one at once, even in the middle of a walk, and the old board says the link was replaced.</li>
       <li>The Depot is calmer: the Departures board and All aboard lead, and choices you set once, like the voice, fold away until you open them.</li>
@@ -1633,7 +1667,11 @@ body.stn-on { overflow: hidden; }
       <li><b>Indiana’s imagery service</b> (on Esri’s ArcGIS cloud), with the <b>U.S. Geological Survey</b> as a backup, serves the satellite pictures and sees which part of town is on screen. Tiles inside a strip along the trail are kept on this phone, as you look at them or all at once with Save trail maps for offline, so the maps show where the signal is weak; tiles outside the strip are never kept. The strip follows the trail’s line and is the same for everyone. It reaches a few hundred meters either side in close-ups and farther in the overview maps, so if you live near the trail, some kept tiles show your street. The arrivals board keeps the tiles it shows the same way, on the watcher’s phone. Delete them in Settings, under Maps.</li>
       <li><b>CARTO</b> serves the street map pictures, only once you add a key, and sees which part of town is on screen. The arrivals board uses your key too.</li>
       <li><b>OpenStreetMap Nominatim</b> gets the address or place you type, only when you search for your home or a trip. For a trip search it also gets this app’s web address, which its rules ask for.</li>
-      <li><b>FOSSGIS’s routing services</b> (OSRM at routing.openstreetmap.de, and Valhalla at valhalla1.openstreetmap.de when OSRM doesn’t answer) get where a trip starts, its stops and where it ends, only when you plan a trip or one needs a new route, along with this app’s web address, which their rules ask for.</li>
+      <li><b>FOSSGIS’s routing services</b> (OSRM at routing.openstreetmap.de, and Valhalla at valhalla1.openstreetmap.de when OSRM doesn’t answer) get where a trip starts, its stops and where it ends, only when you plan a trip or one needs a new route, along with this app’s web address, which their rules ask for. Valhalla also gets a few points from the middle of each stretch the map leaves unnamed, to find the street it runs along, never within a quarter mile of home.</li>
+      <li><b>Pacers Bikeshare</b> (gbfs.bcycle.com) and <b>Bird</b> (mds.bird.co) publish open lists of their docks and scooters for the whole city. When you plan a trip, the app downloads them and picks the ones near your route on this phone, so they learn nothing about the trip.</li>
+      <li><b>IMPD’s public data service</b> (gis.indy.gov) gets the map squares, about a mile and a third across, that a trip passes through, when you plan one, to show reported incidents near the route.</li>
+      <li><b>The Overpass API</b> (overpass-api.de), which serves OpenStreetMap’s data, gets the same map squares and the area around where you’re going, when you plan a trip, to find places to eat. Your dining needs stay on this phone.</li>
+      <li><b>Yelp</b> gets a place’s name and street only when you tap a Yelp button, which opens Yelp’s own page or app.</li>
       <li><b>Google Fonts</b> serves the typefaces when they load.</li>
       <li><b>Apple Maps</b> or <b>Google Maps</b> gets your position only if the watcher taps one of the map links on the arrivals board.</li>
     </ul>
@@ -1861,7 +1899,11 @@ const SOURCES = [
   ['Street map, with your key', 'CARTO basemaps with OpenStreetMap data', 'https://carto.com/attributions'],
   ['Address search', 'OpenStreetMap Nominatim, data \u00a9 OpenStreetMap contributors', 'https://nominatim.org/'],
   ['Trip routes', 'OSRM, run by FOSSGIS at routing.openstreetmap.de, on OpenStreetMap data \u00a9 OpenStreetMap contributors', 'https://routing.openstreetmap.de/about.html'],
-  ['Trip routes when OSRM is down', 'Valhalla, run by FOSSGIS at valhalla1.openstreetmap.de, on OpenStreetMap data', 'https://valhalla1.openstreetmap.de/'],
+  ['Trip routes when OSRM is down, and street names for sidewalks the map leaves unnamed', 'Valhalla, run by FOSSGIS at valhalla1.openstreetmap.de, on OpenStreetMap data', 'https://valhalla1.openstreetmap.de/'],
+  ['Bike share docks on a trip', 'Pacers Bikeshare’s open feed (GBFS), run by BCycle', 'https://www.pacersbikeshare.org/'],
+  ['Scooters on a trip', 'Bird’s open feed (GBFS) for Indianapolis', 'https://www.bird.co/'],
+  ['Reported incidents on a trip', 'IMPD public incident data (Incidents_Public), City of Indianapolis', 'https://impd-transparency-hub-indygis.hub.arcgis.com/'],
+  ['Places to eat on a trip', 'OpenStreetMap, through the Overpass API', 'https://overpass-api.de/'],
   ['Live board and phone alerts', 'ntfy.sh, the relay that carries the encrypted board updates and the plain-text alerts', 'https://ntfy.sh/'],
   ['Typefaces', 'Google Fonts: Big Shoulders Display, Barlow and Chivo Mono', 'https://fonts.google.com/'],
   ['Moon phase', 'Mean synodic month from the new moon of January 6, 2000 (Meeus, Astronomical Algorithms)', 'https://en.wikipedia.org/wiki/Lunar_phase'],
@@ -2764,7 +2806,7 @@ const TRIP = (() => {
     if (!s) return '';
     if (/^Indianapolis Cultural Trail\b/i.test(s)) return 'Cultural Trail';
     if (isPath(s)) return s;
-    for (const [re, r] of DIRS) s = s.replace(re, r);
+    if (/^(North|South|East|West)\s+\S+\s+\S/.test(s)) for (const [re, r] of DIRS) s = s.replace(re, r); // East 10th Street, not East Street
     for (const [re, r] of ABBR) s = s.replace(re, r);
     return s;
   }
@@ -2784,9 +2826,10 @@ const TRIP = (() => {
   }
   const verbOf = dir => (dir.startsWith('slight') ? `Bear ${dir.slice(7)}` : dir.startsWith('sharp') ? `Make a sharp ${dir.slice(6)}` : `Turn ${dir}`);
 
-  // One maneuver in words, for the sign (short street names) and for the voice (full names)
+  // One maneuver in words, for the sign (short street names) and for the voice (full names). A way with no name on the
+  // map (a sidewalk drawn apart from its street, a path) gets the heading instead, so "turn left" still says which way.
   function phrase(m, destName) {
-    const nm = shortName(m.name), sp = sayName(m.name);
+    const nm = shortName(m.name), sp = sayName(m.name), hd = fin(m.ba) ? cardinal(m.ba) : '';
     if (m.kind === 'depart') return { text: `Head ${m.dir}${nm ? ` on ${nm}` : ''}`, say: `Head ${m.dir}${sp ? ` on ${sp}` : ''}` };
     if (m.kind === 'arrive') return { text: `Arrive at ${destName || 'your stop'}`, say: `Arrive at ${destName || 'your stop'}` };
     if (m.kind === 'continue') return { text: `Continue onto ${nm}`, say: `Continue onto ${sp}` };
@@ -2795,12 +2838,22 @@ const TRIP = (() => {
       return { text: `${head}, heading ${m.heading}`, say: `${m.dir === 'straight' ? 'Join' : `${verbOf(m.dir)} onto`} the Monon Trail at ${m.at.name.replace(/,.*$/, '')}, heading ${m.heading}` };
     }
     if (m.kind === 'leave') {
-      const then = m.dir === 'straight' ? (nm ? ` and continue onto ${nm}` : '') : ` and ${verbOf(m.dir).toLowerCase()}${nm ? ` onto ${nm}` : ''}`;
-      const thenSay = m.dir === 'straight' ? (sp ? ` and continue onto ${sp}` : '') : ` and ${verbOf(m.dir).toLowerCase()}${sp ? ` onto ${sp}` : ''}`;
+      const turn = m.dir === 'straight' ? '' : ` and ${verbOf(m.dir).toLowerCase()}`;
+      const then = nm ? (m.dir === 'straight' ? ` and continue onto ${nm}` : `${turn} onto ${nm}`) : `${turn}${hd ? `, heading ${hd}` : ''}`;
+      const thenSay = sp ? (m.dir === 'straight' ? ` and continue onto ${sp}` : `${turn} onto ${sp}`) : `${turn}${hd ? `, heading ${hd}` : ''}`;
       return { text: `Leave the Monon at ${m.at.short}${then}`, say: `Leave the Monon at ${m.at.name.replace(/,.*$/, '')}${thenSay}` };
     }
     const v = verbOf(m.dir);
-    return { text: `${v}${nm ? ` onto ${nm}` : ''}`, say: `${v}${sp ? ` onto ${sp}` : ''}` };
+    if (!nm) return { text: hd ? `${v}, heading ${hd}` : v, say: hd ? `${v}, heading ${hd}` : v };
+    if (m.same) return { text: `${v}, staying on ${nm}`, say: `${v}, staying on ${sp}` };
+    return { text: `${v} onto ${nm}`, say: `${v} onto ${sp}` };
+  }
+  // A maneuver of a plan in words again, after its street got a name
+  function rephrase(m, destName) {
+    const at = m.at ? { id: m.at, short: m.atShort || '', name: m.atName || m.atShort || '' } : null;
+    const w = phrase({ kind: m.kind, dir: m.dir, name: m.name, ba: m.ba, same: m.same, heading: m.heading, at }, destName);
+    m.text = w.text; m.say = w.say;
+    return m;
   }
 
   /* ------------------------------------------------------------ OSRM routes as maneuvers */
@@ -2833,9 +2886,10 @@ const TRIP = (() => {
         const renamed = !!m.name && m.name !== cur;
         if (m.dir === 'straight' && !renamed) { const p = res[res.length - 1]; if (p) p.d += m.d; continue; }
         if (m.dir === 'straight') m.kind = 'continue';
+        else if (m.name && m.name === cur) m.same = true; // a turn that keeps to the same street or path
       } else if (m.kind === 'depart') m.dir = cardinal(m.ba);
       res.push(m);
-      if (m.name) cur = m.name;
+      if (m.kind !== 'arrive') cur = m.name; // after a turn onto a way with no name, the next named street is new
     }
     return res;
   }
@@ -2926,13 +2980,29 @@ const TRIP = (() => {
     const L = new Line(line);
     // every maneuver at its place along the line, in order (the line can pass near itself, so look forward only)
     let s = 0;
-    const out = [];
+    const out = [], at = [];
     for (const m of man) {
       const pj = m.kind === 'depart' ? { s: 0 } : m.kind === 'arrive' ? { s: L.length } : L.project(m.ll[0], m.ll[1], s - 5, Infinity);
       s = Math.max(s, pj.s);
-      const w = phrase(m, opts.destName);
-      out.push({ s: Math.round(pj.s * 10) / 10, ll: [+m.ll[0].toFixed(6), +m.ll[1].toFixed(6)], kind: m.kind, dir: m.dir || '', name: m.name || '', text: w.text, say: w.say, at: m.at ? m.at.id : undefined });
+      at.push(pj.s);
     }
+    man.forEach((m, i) => {
+      const sm = at[i], len = (i + 1 < at.length ? at[i + 1] : L.length) - sm;
+      // a way with no name is told by its heading: the way the line goes over its first stretch (not the first steps
+      // around the corner), and none for a few steps before the next turn, which is called with it
+      let ba = m.ba;
+      if (!m.name && m.kind !== 'join' && m.kind !== 'arrive' && m.kind !== 'depart') {
+        if (len >= JOG) { const a = L.at(sm), b = L.at(sm + Math.min(80, len)); ba = bearing([a.lat, a.lon], [b.lat, b.lon]); } else ba = undefined;
+      }
+      const w = phrase(Object.assign({}, m, { ba }), opts.destName);
+      const o = { s: Math.round(sm * 10) / 10, ll: [+m.ll[0].toFixed(6), +m.ll[1].toFixed(6)], kind: m.kind, dir: m.dir || '', name: m.name || '', text: w.text, say: w.say, at: m.at ? m.at.id : undefined };
+      // what it takes to say it again once its street has a name
+      if (fin(ba)) o.ba = Math.round(ba);
+      if (m.same) o.same = true;
+      if (m.heading) o.heading = m.heading;
+      if (m.at) { o.atShort = m.at.short; o.atName = m.at.name; }
+      out.push(o);
+    });
     if (!out.length || out[0].kind !== 'depart') out.unshift({ s: 0, ll: line[0], kind: 'depart', dir: cardinal(L.bearingAt(0)), name: '', text: `Head ${cardinal(L.bearingAt(0))}`, say: `Head ${cardinal(L.bearingAt(0))}` });
     if (out[out.length - 1].kind !== 'arrive') { const w = phrase({ kind: 'arrive' }, opts.destName); out.push({ s: L.length, ll: line[line.length - 1], kind: 'arrive', dir: '', name: '', text: w.text, say: w.say }); }
     out.forEach((m, i) => { m.d = Math.round(((out[i + 1] ? out[i + 1].s : L.length) - m.s) * 10) / 10; });
@@ -2947,6 +3017,7 @@ const TRIP = (() => {
   }
 
   /* ------------------------------------------------------------ following a walk along the plan */
+  const JOG = 40; // meters: a turn this close after another is called with it
   const MODES = { walk: { vmax: 4.2, prior: 1.45, lo: 0.6, hi: 2.8, ahead: 140, now: 22 }, bike: { vmax: 13, prior: 4.2, lo: 1.5, hi: 9, ahead: 260, now: 35 } };
   class TripTracker {
     constructor(plan, opts = {}) {
@@ -3100,8 +3171,14 @@ const TRIP = (() => {
       const m = M[this.mIdx];
       if (m && m.kind !== 'arrive') {
         const dd = m.s - s, key = `${this.ver}:${this.mIdx}`;
-        if (dd <= this.k.ahead && dd > this.k.now + 15 && !this.said[key + 'a'] && !this.said[key + 'n']) { this.said[key + 'a'] = 1; ev.push({ type: 'approach', m, i: this.mIdx, dist: dd }); }
-        if (dd <= this.k.now && dd > -15 && !this.said[key + 'n']) { this.said[key + 'n'] = 1; ev.push({ type: 'turnNow', m, i: this.mIdx }); }
+        // two turns a few steps apart (a jog across a street to the sidewalk on the far side) are called as one
+        const nx = M[this.mIdx + 1], then = nx && nx.kind !== 'arrive' && nx.s - m.s < JOG ? nx : null;
+        if (dd <= this.k.ahead && dd > this.k.now + 15 && !this.said[key + 'a'] && !this.said[key + 'n']) { this.said[key + 'a'] = 1; ev.push({ type: 'approach', m, i: this.mIdx, dist: dd, then }); }
+        if (dd <= this.k.now && dd > -15 && !this.said[key + 'n']) {
+          this.said[key + 'n'] = 1;
+          if (then) { const k2 = `${this.ver}:${this.mIdx + 1}`; this.said[k2 + 'a'] = this.said[k2 + 'n'] = 1; }
+          ev.push({ type: 'turnNow', m, i: this.mIdx, then });
+        }
       }
       // stations he passes: the Monon's stops, his own stops along the way
       for (const st of this.plan.stations) {
@@ -3192,14 +3269,306 @@ const TRIP = (() => {
     restore(o) { const keep = { line: this.line, plan: this.plan, k: this.k }; Object.assign(this, o, keep); }
   }
 
+  /* ------------------------------------------------------------ names for the ways the map leaves unnamed */
+  // Sidewalks drawn apart from their streets, and some paths, have no name on the map, so the route can only say "turn
+  // left" there. A map matcher can tell which street such a stretch runs along: these are the stretches to ask about,
+  // the longest first, each as a few points from its middle (the corners belong to the cross streets). None within
+  // `keep` meters of a place to keep private, so the matcher never sees the streets around home.
+  function nameSpots(plan, opts = {}) {
+    const min = opts.min || 50, max = opts.max || 4, keep = opts.keep == null ? 400 : opts.keep, avoid = (opts.avoid || []).filter(a => a && fin(+a[0]) && fin(+a[1]));
+    const L = new Line(plan.line), M = plan.maneuvers || [], out = [];
+    M.forEach((m, i) => {
+      if (m.name || !['turn', 'depart', 'leave'].includes(m.kind)) return;
+      const s0 = m.s, s1 = M[i + 1] ? M[i + 1].s : L.length, len = s1 - s0;
+      if (!(len >= min)) return;
+      const cut = Math.min(15, len * 0.2), a = s0 + cut, b = s1 - cut, n = clamp(Math.round((b - a) / 25) + 1, 2, 16);
+      const pts = [];
+      for (let k = 0; k < n; k++) { const q = L.at(a + ((b - a) * k) / (n - 1)); pts.push([+q.lat.toFixed(6), +q.lon.toFixed(6)]); }
+      if (avoid.some(h => pts.some(q => hav(pt(q), { lat: +h[0], lon: +h[1] }) < keep))) return;
+      out.push({ i, len: Math.round(len), pts });
+    });
+    return out.sort((x, y) => y.len - x.len).slice(0, max).sort((x, y) => x.i - y.i);
+  }
+  // A line as an encoded polyline, six decimal places (the form Valhalla reads)
+  function encode6(points) {
+    let out = '', pa = 0, pb = 0;
+    const e = v => { v = v < 0 ? ~(v << 1) : v << 1; let t = ''; while (v >= 0x20) { t += String.fromCharCode((0x20 | (v & 0x1f)) + 63); v >>>= 5; } return t + String.fromCharCode(v + 63); };
+    for (const p of points || []) { const a = Math.round(+p[0] * 1e6), b = Math.round(+p[1] * 1e6); out += e(a - pa) + e(b - pb); pa = a; pb = b; }
+    return out;
+  }
+  // The street a stretch runs along, from the matcher's answer (Valhalla's trace_attributes, matched to streets for
+  // cars): the name most of its points matched, close by; no name when they disagree or matched far away
+  function matchName(j, opts = {}) {
+    const maxOff = opts.maxOff || 30, share = opts.share || 0.7;
+    const edges = j && Array.isArray(j.edges) ? j.edges : [], pts = j && Array.isArray(j.matched_points) ? j.matched_points : [];
+    const count = new Map(), full = new Map();
+    for (const q of pts) {
+      if (!q || (q.type !== 'matched' && q.type !== 'interpolated') || !fin(q.distance_from_trace_point) || q.distance_from_trace_point > maxOff) continue;
+      const e = edges[q.edge_index], raw = e && Array.isArray(e.names) && e.names.length ? e.names[0] : '';
+      const nm = String(raw == null ? '' : raw).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!nm) continue;
+      // a street keeps its name across the line where North turns to South ("North East Street", "South East Street")
+      const base = /^(North|South|East|West) \S+ \S/.test(nm) ? nm.replace(/^(North|South|East|West) /, '') : nm;
+      count.set(base, (count.get(base) || 0) + 1);
+      if (!full.has(base)) full.set(base, new Set());
+      full.get(base).add(nm);
+    }
+    let best = '', bn = 0;
+    count.forEach((c, nm) => { if (c > bn) { best = nm; bn = c; } });
+    if (!(pts.length >= 2 && bn >= 2 && bn / pts.length >= share)) return '';
+    const forms = full.get(best);
+    return forms.size === 1 ? [...forms][0] : best;
+  }
+  // Names found for a plan's unnamed stretches, put in its maneuvers and their words; how many it named
+  function applyNames(plan, names, destName) {
+    let n = 0;
+    for (const k of Object.keys(names || {})) {
+      const m = plan.maneuvers[+k];
+      if (!m || m.name || !names[k] || !['turn', 'depart', 'leave'].includes(m.kind)) continue;
+      if (m.kind === 'leave' && !m.atShort) continue; // a plan from before the words could be said again
+      m.name = String(names[k]); m.named = true; delete m.same;
+      rephrase(m, destName); n++;
+    }
+    return n;
+  }
+
   // A plan's own summary in plain numbers (for the board and the log)
   function summary(plan) {
     return { length: plan.length, turns: plan.maneuvers.filter(m => m.kind !== 'depart' && m.kind !== 'arrive').length, monon: plan.monon ? { entry: plan.monon.entry.short, exit: plan.monon.exit.short, len: Math.round(plan.monon.len) } : null };
   }
 
-  return { Line, simplify, hav, bearing, cardinal, turnOf, shortName, sayName, phrase, rawSteps, cleanLeg, osrmPart, mononPart, mononChoice, compose, TripTracker, summary, MODES };
+  return { Line, simplify, hav, bearing, cardinal, turnOf, shortName, sayName, phrase, rephrase, rawSteps, cleanLeg, osrmPart, mononPart, mononChoice, compose, TripTracker, summary, nameSpots, encode6, matchName, applyNames, MODES, JOG };
 })();
 if (typeof module !== 'undefined') module.exports = TRIP;
+
+/* Last Train Home: what lies along a trip's route. Bike share docks and scooters to ride (Pacers Bikeshare, Bird),
+   stretches of the route with more reported incidents (IMPD's public data), and places to eat that suit a dining need
+   (OpenStreetMap, ranked on this phone). DOM-free, so it can be tested in Node; ext/along.js fetches the data and
+   draws it. Everything here works on data already on the phone: nothing in this file talks to a server. */
+const ALONG = (() => {
+  'use strict';
+  const D2R = Math.PI / 180;
+  const fin = v => typeof v === 'number' && Number.isFinite(v);
+  const num = v => (v === null || v === undefined || v === '' ? NaN : +v);
+  const bool = v => v === true || v === 1 || v === '1' || v === 'true';
+  const clean = (s, n = 80) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+  function hav(a, b) {
+    const dLat = (b[0] - a[0]) * D2R, dLon = (b[1] - a[1]) * D2R;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * D2R) * Math.cos(b[0] * D2R) * Math.sin(dLon / 2) ** 2;
+    return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  const ll6 = (lat, lon) => [+(+lat).toFixed(6), +(+lon).toFixed(6)];
+
+  /* ------------------------------------------------------------ map squares */
+  // The incident and place services are asked for whole map squares about a mile and a third across, the same squares
+  // for anyone, so a request says roughly where a trip goes and never which street.
+  const TILE = { lat: 0.02, lon: 0.025 };
+  const tileOf = (lat, lon) => { const i = Math.floor(lat / TILE.lat), j = Math.floor(lon / TILE.lon); return { key: `${i}:${j}`, s: +(i * TILE.lat).toFixed(4), w: +(j * TILE.lon).toFixed(4), n: +((i + 1) * TILE.lat).toFixed(4), e: +((j + 1) * TILE.lon).toFixed(4) }; };
+  // the squares within `pad` meters of the route, and of any extra points (the destination) within their own radius
+  function tiles(L, pad = 150, extra = []) {
+    const out = new Map();
+    const add = (lat, lon, r) => {
+      const dLat = r / 111320, dLon = r / (111320 * Math.cos(lat * D2R));
+      for (const [a, b] of [[0, 0], [dLat, 0], [-dLat, 0], [0, dLon], [0, -dLon], [dLat, dLon], [dLat, -dLon], [-dLat, dLon], [-dLat, -dLon]]) { const t = tileOf(lat + a, lon + b); if (!out.has(t.key)) out.set(t.key, t); }
+    };
+    if (L && L.length >= 0 && L.pts && L.pts.length) for (let s = 0; s <= L.length + 1; s += 40) { const p = L.at(Math.min(s, L.length)); add(p.lat, p.lon, pad); }
+    for (const x of extra) if (x && x.ll && fin(+x.ll[0]) && fin(+x.ll[1])) {
+      // a radius wider than a square: sample a small grid around the point
+      const r = x.r || 800, steps = Math.max(1, Math.ceil(r / 600));
+      for (let a = -steps; a <= steps; a++) for (let b = -steps; b <= steps; b++) { const dy = (a / steps) * r, dx = (b / steps) * r; if (Math.hypot(dx, dy) <= r * 1.01) add(+x.ll[0] + dy / 111320, +x.ll[1] + dx / (111320 * Math.cos(+x.ll[0] * D2R)), 0); }
+    }
+    return [...out.values()]; // in the order the route reaches them, so a long trip keeps its first squares
+  }
+
+  /* ------------------------------------------------------------ rides: bike share docks, scooters */
+  // Docks of a bike share (GBFS station_information and station_status) within `max` meters of the route, in the
+  // order he reaches them, with what each has right now
+  function docks(info, status, L, opts = {}) {
+    const max = opts.max || 250, st = new Map(), out = [];
+    for (const s of (status && status.data && status.data.stations) || []) if (s && s.station_id != null) st.set(String(s.station_id), s);
+    for (const s of (info && info.data && info.data.stations) || []) {
+      if (!s || !fin(num(s.lat)) || !fin(num(s.lon))) continue;
+      const pj = L.project(+s.lat, +s.lon);
+      if (!(pj.d <= max)) continue;
+      const x = st.get(String(s.station_id));
+      if (x && x.is_installed != null && !bool(x.is_installed)) continue;
+      const types = (x && x.num_bikes_available_types) || {};
+      const uri = s.rental_uris && typeof s.rental_uris.ios === 'string' && /^https:\/\/(www\.)?bcycle\.com\//.test(s.rental_uris.ios) ? s.rental_uris.ios : '';
+      out.push({
+        id: String(s.station_id), name: clean(s.name, 60) || 'Bike share dock', ll: ll6(s.lat, s.lon), s: Math.round(pj.s), off: Math.round(pj.d),
+        bikes: x && fin(num(x.num_bikes_available)) ? +x.num_bikes_available : null,
+        ebikes: fin(num(types.electric)) ? +types.electric : null,
+        docks: x && fin(num(x.num_docks_available)) ? +x.num_docks_available : null,
+        renting: !x || x.is_renting == null || bool(x.is_renting), returning: !x || x.is_returning == null || bool(x.is_returning),
+        live: !!x, uri,
+      });
+    }
+    return out.sort((a, b) => a.s - b.s);
+  }
+  // Scooters and bikes parked anywhere (GBFS free_bike_status) within `max` meters of the route, in groups along it
+  // (one every `bin` meters), the disabled and the reserved left out. Vehicle ids change with every update in GBFS 2,
+  // and none are kept.
+  function vehicles(free, types, L, opts = {}) {
+    const max = opts.max || 120, bin = opts.bin || 400, form = new Map(), groups = new Map();
+    for (const t of (types && types.data && types.data.vehicle_types) || []) if (t && t.vehicle_type_id != null) form.set(String(t.vehicle_type_id), String(t.form_factor || ''));
+    for (const b of (free && free.data && free.data.bikes) || []) {
+      if (!b || !fin(num(b.lat)) || !fin(num(b.lon)) || bool(b.is_disabled) || bool(b.is_reserved)) continue;
+      const pj = L.project(+b.lat, +b.lon);
+      if (!(pj.d <= max)) continue;
+      const k = Math.floor(pj.s / bin), g = groups.get(k) || { s: 0, n: 0, scooters: 0, bikes: 0, lat: 0, lon: 0, range: 0 };
+      const f = form.get(String(b.vehicle_type_id)) || 'scooter';
+      if (f === 'bicycle' || f === 'cargo_bicycle') g.bikes++; else g.scooters++;
+      g.n++; g.s += pj.s; g.lat += +b.lat; g.lon += +b.lon;
+      if (fin(num(b.current_range_meters))) g.range = Math.max(g.range, +b.current_range_meters);
+      groups.set(k, g);
+    }
+    return [...groups.values()].map(g => ({ s: Math.round(g.s / g.n), ll: ll6(g.lat / g.n, g.lon / g.n), n: g.n, scooters: g.scooters, bikes: g.bikes, range: Math.round(g.range) })).sort((a, b) => a.s - b.s);
+  }
+
+  /* ------------------------------------------------------------ safety: reported incidents near the route */
+  // The incidents that bear on someone walking by: crimes against a person, and robbery, purse snatching and
+  // pickpocketing (IMPD's NIBRS class codes), most serious first
+  const PERSON = { N09A: 'homicide', N09B: 'homicide', N100: 'kidnapping', N11A: 'sexual assault', N11B: 'sexual assault', N11C: 'sexual assault', N11D: 'sexual assault', N120: 'robbery', N13A: 'aggravated assault', N13B: 'assault', N23B: 'purse snatching', N23A: 'pickpocketing', N13C: 'threat' };
+  const RANK = ['homicide', 'kidnapping', 'sexual assault', 'robbery', 'aggravated assault', 'assault', 'purse snatching', 'pickpocketing', 'threat'];
+  const CODES = Object.keys(PERSON);
+  // ...and where: outdoors and in public (street and sidewalk, parking lots and garages, parks, fields and woods, the
+  // waterside, transit stops, ATMs, gas stations), not inside homes and businesses (NIBRS location codes)
+  const OUTDOOR = new Set(['01', '10', '13', '16', '18', '23', '40', '50', '51']);
+  function incidents(feats, L, opts = {}) {
+    const max = opts.max || 100, byCase = new Map();
+    for (const f of feats || []) {
+      const a = (f && f.attributes) || {}, g = (f && f.geometry) || {};
+      const lat = fin(num(a.Latitude)) ? +a.Latitude : num(g.y), lon = fin(num(a.Longitude)) ? +a.Longitude : num(g.x);
+      if (!fin(lat) || !fin(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+      const kind = PERSON[String(a.NIBRSClassCode || '').trim().toUpperCase()];
+      if (!kind) continue;
+      const pm = /^\s*(\d{2})/.exec(String(a.PremiseType || ''));
+      if (!pm || !OUTDOOR.has(pm[1])) continue;
+      const pj = L.project(lat, lon);
+      if (!(pj.d <= max)) continue;
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(a.sOccDate || '')) ? String(a.sOccDate) : '';
+      const key = clean(a.CaseNum, 40) || `${lat.toFixed(5)},${lon.toFixed(5)},${date}`;
+      const it = { s: Math.round(pj.s), d: Math.round(pj.d), ll: ll6(lat, lon), kind, date, block: clean(a.sAddress, 60), premise: pm[1] };
+      // one case is one incident, at its most serious offense
+      const had = byCase.get(key);
+      if (!had || RANK.indexOf(kind) < RANK.indexOf(had.kind)) byCase.set(key, it);
+    }
+    return [...byCase.values()].sort((x, y) => x.s - y.s || (x.date < y.date ? 1 : -1));
+  }
+  // Stretches of the route with more reports: any `win` meters holding at least `min` incidents, joined where they
+  // overlap; level 2 where some `win` meters hold `high` or more
+  function stretches(incs, L, opts = {}) {
+    const win = opts.win || 400, min = opts.min || 3, high = opts.high || 6, list = (incs || []).slice().sort((a, b) => a.s - b.s), runs = [];
+    let j = 0;
+    for (let i = 0; i < list.length; i++) {
+      while (list[j].s < list[i].s - win) j++;
+      const n = i - j + 1;
+      if (n >= min) runs.push({ a: list[j].s, b: list[i].s, hi: n >= high });
+    }
+    const merged = [];
+    for (const r of runs) {
+      const last = merged[merged.length - 1];
+      if (last && r.a <= last.b + 60) { last.b = Math.max(last.b, r.b); last.hi = last.hi || r.hi; } else merged.push(Object.assign({}, r));
+    }
+    return merged.map(r => {
+      const s0 = Math.max(0, r.a - 60), s1 = Math.min(L.length, Math.max(r.b + 60, r.a + 120));
+      const inside = list.filter(x => x.s >= s0 && x.s <= s1), kinds = {};
+      inside.forEach(x => { kinds[x.kind] = (kinds[x.kind] || 0) + 1; });
+      const last = inside.reduce((m, x) => (x.date > m ? x.date : m), '');
+      return { s0: Math.round(s0), s1: Math.round(s1), n: inside.length, level: r.hi ? 2 : 1, kinds, last, pts: L.slice(s0, s1).map(p => ll6(p[0], p[1])) };
+    });
+  }
+  // "2 robberies and 3 assaults"
+  function kindsText(kinds) {
+    const plural = { robbery: 'robberies', 'purse snatching': 'purse snatchings', pickpocketing: 'pickpocketings', threat: 'threats', assault: 'assaults', 'aggravated assault': 'aggravated assaults', 'sexual assault': 'sexual assaults', homicide: 'homicides', kidnapping: 'kidnappings' };
+    const parts = RANK.filter(k => kinds && kinds[k]).map(k => `${kinds[k]} ${kinds[k] === 1 ? k : plural[k]}`);
+    return parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  }
+
+  /* ------------------------------------------------------------ food: places to eat that suit a dining need */
+  // Cuisines that usually have dishes made without milk, and what to ask for. Hints, not menus.
+  const EASY = {
+    thai: 'Thai curries are made with coconut milk; skip Thai iced tea, made with condensed milk.',
+    vietnamese: 'Pho, banh mi and rice plates are usually made without milk; skip the iced coffee with condensed milk.',
+    japanese: 'Most Japanese dishes use no milk; skip rolls with cream cheese.',
+    sushi: 'Sushi and sashimi use no milk; skip rolls with cream cheese.',
+    ramen: 'Most ramen has no milk; ask about creamy broths.',
+    korean: 'Korean barbecue and stews usually have no milk; skip dishes topped with cheese.',
+    chinese: 'Most Chinese dishes are made without milk.',
+    ethiopian: 'Ethiopian stews on injera usually have no milk; skip ayib, the fresh cheese.',
+    caribbean: 'Caribbean cooking leans on coconut milk, not cow’s milk.',
+    jamaican: 'Jamaican cooking leans on coconut milk, not cow’s milk.',
+    lebanese: 'Hummus, falafel and grilled meats are usually made without milk; skip yogurt sauces and feta.',
+    mediterranean: 'Hummus, falafel and grilled meats are usually made without milk; skip yogurt sauces and feta.',
+    middle_eastern: 'Hummus, falafel and grilled meats are usually made without milk; skip yogurt sauces and feta.',
+    turkish: 'Grilled meats and many mezes have no milk; skip yogurt sauces.',
+    greek: 'Grilled meats and many mezes have no milk; skip tzatziki and feta.',
+    falafel: 'Falafel and hummus are made without milk; skip yogurt sauces.',
+    mexican: 'Ask them to hold the cheese and crema; corn tortillas, salsas and most meats have no milk.',
+    tex_mex: 'Ask them to hold the cheese and crema.',
+    tacos: 'Ask them to hold the cheese and crema.',
+    poke: 'Poke bowls use no milk; skip creamy sauces.',
+    hawaiian: 'Poke and plate lunches usually have no milk; skip mac salad.',
+    vegan: 'Everything on a vegan menu is made without milk.',
+  };
+  // what usually builds on milk: not a fit unless the place is marked dairy-free or vegan
+  const HEAVY = new Set(['pizza', 'ice_cream', 'frozen_yogurt', 'gelato', 'cheese', 'dessert', 'creperie', 'crepe', 'fondue', 'donut', 'bagel', 'bakery', 'pastry', 'milkshake', 'cake', 'waffle', 'pancake', 'macaroni']);
+  const ITALIAN_TIP = 'Ask for olive oil instead of cheese and cream: marinara, arrabbiata, aglio e olio and grilled fish are usually made without milk; skip pesto and anything with parmesan.';
+  const AMENITY = new Set(['restaurant', 'cafe', 'fast_food', 'ice_cream', 'food_court', 'pub']);
+  const cuisinesOf = t => String(t.cuisine || '').toLowerCase().split(/[;,]/).map(c => c.trim().replace(/\s+/g, '_')).filter(Boolean);
+  const yes = v => /^(yes|only)$/i.test(String(v || '').trim());
+  const LABEL = { tex_mex: 'Tex-Mex', middle_eastern: 'Middle Eastern', ice_cream: 'ice cream', fast_food: 'fast food', coffee_shop: 'coffee' };
+  const labelOf = (cs, am) => {
+    const c = cs.filter(x => x !== 'regional').slice(0, 2).map(x => LABEL[x] || x.replace(/_/g, ' ')).map(x => x.charAt(0).toUpperCase() + x.slice(1));
+    return c.length ? c.join(', ') : am === 'cafe' ? 'Cafe' : am === 'fast_food' ? 'Quick bite' : am === 'pub' ? 'Pub' : 'Restaurant';
+  };
+  // Places within `route` meters of the route or `near` meters of the destination, put in groups for the dining need:
+  // best (marked dairy-free or vegan on the map; the favorite cuisine first), fav (the favorite cuisine, menu to
+  // check), easy (cuisines that usually have dishes without milk), other. Without a dairy need: fav, then the rest.
+  function food(elements, L, dest, prefs = {}, opts = {}) {
+    const route = opts.route || 150, near = opts.near || 800, fav = String(prefs.fav || '').toLowerCase(), dairy = !!prefs.dairy;
+    const out = [], seen = new Set();
+    for (const e of elements || []) {
+      const t = (e && e.tags) || {}, name = clean(t.name, 60);
+      if (!name || !AMENITY.has(t.amenity)) continue;
+      const lat = fin(num(e.lat)) ? +e.lat : e.center ? num(e.center.lat) : NaN, lon = fin(num(e.lon)) ? +e.lon : e.center ? num(e.center.lon) : NaN;
+      if (!fin(lat) || !fin(lon)) continue;
+      const id = `${e.type || 'node'}/${e.id}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const pj = L ? L.project(lat, lon) : { d: Infinity, s: 0 }, dDest = dest ? hav([lat, lon], dest) : Infinity;
+      if (!(pj.d <= route) && !(dDest <= near)) continue;
+      const cs = cuisinesOf(t);
+      const says = yes(t['diet:dairy_free']) ? 'dairy-free' : yes(t['diet:vegan']) || cs.includes('vegan') ? 'vegan' : ''; // lactose-free is not milk-free: still has milk protein
+      const isFav = !!fav && (cs.includes(fav) || (fav === 'italian' && cs.some(c => /^italian/.test(c))));
+      const heavy = cs.some(c => HEAVY.has(c)) || t.amenity === 'ice_cream';
+      const easyTip = cs.map(c => EASY[c]).find(Boolean) || '';
+      let group;
+      if (dairy) group = says ? 'best' : isFav ? 'fav' : easyTip && !heavy ? 'easy' : 'other';
+      else group = isFav ? 'fav' : 'other';
+      const away = Math.round(Math.min(pj.d * 2, dDest)); // a stop on the route costs the walk there and back
+      const street = clean(t['addr:street'], 50), house = clean(t['addr:housenumber'], 12);
+      const web = typeof t.website === 'string' && /^https?:\/\/[^\s"<>]+$/i.test(t.website.trim()) ? t.website.trim().replace(/^http:/i, 'https:') : '';
+      out.push({
+        id, name, ll: ll6(lat, lon), cuisine: labelOf(cs, t.amenity), group, says, fav: isFav, heavy,
+        tip: says === 'vegan' ? EASY.vegan : says === 'dairy-free' ? 'Marked dairy-free on the map.' : isFav && fav === 'italian' ? ITALIAN_TIP : easyTip,
+        onRoute: pj.d <= route, s: Math.round(pj.s), off: Math.round(pj.d), dDest: Math.round(dDest), away,
+        addr: house && street ? `${house} ${street}` : street, city: clean(t['addr:city'], 40), web, hours: clean(t.opening_hours, 90),
+      });
+    }
+    const order = { best: 0, fav: 1, easy: 2, other: 3 };
+    return out.sort((a, b) => order[a.group] - order[b.group] || (b.fav - a.fav) || a.away - b.away || (a.name < b.name ? -1 : 1));
+  }
+  // A Yelp search for one place, or for a kind of place near somewhere: Yelp's own page, or its app when installed.
+  // Nothing goes to Yelp unless he taps it.
+  function yelp(q, where) {
+    return `https://www.yelp.com/search?find_desc=${encodeURIComponent(clean(q, 80))}&find_loc=${encodeURIComponent(clean(where, 120) || 'Indianapolis, IN')}`;
+  }
+  const placeWhere = p => (p.addr ? `${p.addr}, ${p.city || 'Indianapolis'}, IN` : `${p.city || 'Indianapolis'}, IN`);
+
+  return { TILE, tileOf, tiles, docks, vehicles, PERSON, CODES, OUTDOOR, incidents, stretches, kindsText, EASY, HEAVY, ITALIAN_TIP, food, yelp, placeWhere, hav, clean };
+})();
+if (typeof module !== 'undefined') module.exports = ALONG;
 
 /* Body metrics: step counting from the motion sensor, calories from the 2024 Adult Compendium, effort. */
 const Metrics = (() => {
@@ -4476,7 +4845,7 @@ const MiniMap = (() => {
       if (this.view && !this.tilesDrawn) this.drawTiles();
     }
     // opts: { line: [[lat,lon]..], done: [[lat,lon]..], marks: [{ll:[lat,lon], kind, label}], focus: [[lat,lon]..],
-    //         stations: [{ll:[lat,lon], name, rank}] (rank 0 is labeled first) }
+    //         stations: [{ll:[lat,lon], name, rank}] (rank 0 is labeled first), hot: [{pts: [[lat,lon]..], level}] }
     draw(opts) {
       this.last = opts;
       const w = this.host.clientWidth || 320, h = this.height;
@@ -4498,6 +4867,8 @@ const MiniMap = (() => {
       if (moved) { svg.classList.add('snap'); requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('snap'))); }
       const gLines = el('g', {}, base), gTicks = el('g', {}, base), gMarks = el('g', {}, base), gNames = el('g', {}, base);
       const seen = new Set();
+      // stretches to note under the route (a trip's Along the way): a wide soft band, deeper where there were more reports
+      for (const z of opts.hot || []) if (z && Array.isArray(z.pts) && z.pts.length > 1) el('path', { d: path(z.pts), class: `mm-hot${z.level > 1 ? ' hi' : ''}` }, gLines);
       if (opts.line && opts.line.length > 1) {
         el('path', { d: path(opts.line), class: 'mm-line-case' }, gLines);
         el('path', { d: path(opts.line), class: 'mm-line' }, gLines);
@@ -4528,8 +4899,8 @@ const MiniMap = (() => {
       for (const m of opts.marks || []) {
         if (!m || !m.ll) continue;
         const [x, y] = P(m.ll);
-        const live = m.kind === 'you' || m.kind === 'est';
-        boxes.push([x - 14, y - 14, x + 14, y + 14]);
+        const live = m.kind === 'you' || m.kind === 'est', small = m.kind === 'dock' || m.kind === 'scoot' || m.kind === 'food';
+        boxes.push(small ? [x - 6, y - 6, x + 6, y + 6] : [x - 14, y - 14, x + 14, y + 14]);
         let g;
         if (live) {
           seen.add(m.kind);
@@ -4542,6 +4913,12 @@ const MiniMap = (() => {
           // drawn once above
         } else if (m.kind === 'home') {
           el('rect', { x: -6, y: -6, width: 12, height: 12, rx: 2, class: 'mm-dot' }, g);
+        } else if (m.kind === 'dock') { // a bike share dock: a small kiosk
+          el('rect', { x: -5, y: -5, width: 10, height: 10, rx: 2.5, class: 'mm-dot' }, g);
+        } else if (m.kind === 'food') { // a place to eat
+          el('path', { d: 'M0 -5.5L5.5 0L0 5.5L-5.5 0Z', class: 'mm-dot' }, g);
+        } else if (m.kind === 'scoot') { // scooters parked
+          el('circle', { r: 3.5, class: 'mm-dot' }, g);
         } else if (m.kind === 'pickup') {
           el('path', { d: 'M0 0 C-8 -10 -8 -20 0 -20 C8 -20 8 -10 0 0Z', class: 'mm-dot' }, g);
           el('circle', { cy: -13, r: 3, class: 'mm-hole' }, g);
@@ -7379,7 +7756,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function segGet(sel, attr) { const b = $(`${sel} button[aria-pressed="true"]`); return b ? b.dataset[attr] : null; }
   // Backups: everything worth keeping in one JSON file, and a merge on the way back in
   // feature data that travels with a backup: only these keys, and each module checks what it reads
-  const EXT_BACKUP = /^ext\.(story\.(on|pos|heard|said)|ghost\.(pick|races)|recap\.cards|trip\.(saved|log))$/;
+  const EXT_BACKUP = /^ext\.(story\.(on|pos|heard|said)|ghost\.(pick|races)|recap\.cards|trip\.(saved|log)|along\.(diet|heads|tab))$/;
   const extData = () => { const o = {}; try { Object.keys(localStorage).forEach(k => { if (k.startsWith('lth.') && EXT_BACKUP.test(k.slice(4))) { const v = store.get(k.slice(4), undefined); if (v !== undefined) o[k.slice(4)] = v; } }); } catch (e) { /* storage unavailable */ } return o; };
   const Backup = {
     save() {
@@ -8892,6 +9269,337 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   // for tests: what was said, and the pieces that decide focus
   A.Access = { log, announce: A.announce, modal: Modal, focusScreen, boardNews, get boardKey() { return Board.key; } };
+})();
+
+/* Along the way: what a trip passes, on the trip planner and the trip in progress.
+   Rides: Pacers Bikeshare's docks with their bikes right now, and Bird's scooters parked near the route. Both publish
+   open feeds of the whole city; the app downloads them and picks the ones near the route on this phone, so neither
+   learns anything about the trip.
+   Safety: stretches of the route with more reported incidents in the last 90 days (IMPD's public data: crimes against
+   a person, outdoors and in public). The app asks for whole map squares about a mile and a third across, never streets.
+   Food: places to eat from OpenStreetMap (the Overpass API, asked for the same squares), ranked for a dining need set
+   on this phone, each with a Yelp search one tap away (nothing goes to Yelp until he taps it).
+   The ranking and the stretches come from along.js (no DOM, tested in Node). `LTApp.Along` */
+(() => {
+  'use strict';
+  const A = window.LTApp;
+  if (!A || typeof ALONG === 'undefined' || typeof TRIP === 'undefined') return;
+  const { h, $, store, toast, openSheet, Diag, L, Bus } = A;
+  const SRC = {
+    pacersInfo: 'https://gbfs.bcycle.com/bcycle_pacersbikeshare/station_information.json',
+    pacersStatus: 'https://gbfs.bcycle.com/bcycle_pacersbikeshare/station_status.json',
+    birdFree: 'https://mds.bird.co/gbfs/v2/public/indianapolis/free_bike_status.json',
+    birdTypes: 'https://mds.bird.co/gbfs/v2/public/indianapolis/vehicle_types.json',
+    impd: 'https://gis.indy.gov/server/rest/services/IMPD/IMPD_Public_Data/MapServer/1/query',
+    overpass: 'https://overpass-api.de/api/interpreter',
+    hub: 'https://impd-transparency-hub-indygis.hub.arcgis.com/',
+  };
+  const K = { diet: 'ext.along.diet', heads: 'ext.along.heads', tab: 'ext.along.tab' };
+  const DAYS = 90, MAXTILES = 18;
+  const U = () => A.U(), dist = (m, dp = 1) => `${L.fmtDist(m, U(), dp)} ${A.uLabel()}`;
+  const FAVS = [['', 'None'], ['italian', 'Italian'], ['mexican', 'Mexican'], ['thai', 'Thai'], ['japanese', 'Japanese'], ['chinese', 'Chinese'], ['vietnamese', 'Vietnamese'], ['korean', 'Korean'], ['indian', 'Indian'], ['mediterranean', 'Mediterranean'], ['american', 'American'], ['burger', 'Burgers'], ['seafood', 'Seafood'], ['steak_house', 'Steakhouse']];
+
+  /* ------------------------------------------------------------ the dining need, set on this phone */
+  const Diet = {
+    get() {
+      const d = store.get(K.diet, null) || {};
+      return { dairy: d.dairy === true, butter: d.dairy === true && d.butter === true, fav: FAVS.some(f => f[0] === d.fav) ? d.fav : '', set: !!store.get(K.diet, null) };
+    },
+    set(d) { store.set(K.diet, { dairy: !!d.dairy, butter: !!d.dairy && !!d.butter, fav: FAVS.some(f => f[0] === d.fav) ? d.fav : '' }); },
+    favName() { const f = FAVS.find(x => x[0] === this.get().fav); return f && f[0] ? f[1] : ''; },
+  };
+
+  /* ------------------------------------------------------------ fetching: a time limit, a short memory */
+  async function getJSON(url, timeout = 15000) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeout);
+    try {
+      const r = await fetch(url, { signal: ctl.signal, credentials: 'omit', referrerPolicy: 'strict-origin' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } finally { clearTimeout(t); }
+  }
+  const memo = new Map();
+  function cached(key, ttl, fn) {
+    const m = memo.get(key);
+    if (m && Date.now() - m.at < ttl) return m.p;
+    const p = fn().catch(e => { if (memo.get(key) && memo.get(key).p === p) memo.delete(key); throw e; });
+    memo.set(key, { at: Date.now(), p });
+    if (memo.size > 120) memo.delete(memo.keys().next().value);
+    return p;
+  }
+  const errText = e => (e && e.name === 'AbortError' ? 'timed out' : (e && e.message) || String(e));
+  // a few at a time, so a long trip's squares don't all go at once
+  async function pool(items, n, fn) {
+    const out = new Array(items.length);
+    let i = 0;
+    await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; try { out[k] = { ok: true, v: await fn(items[k]) }; } catch (e) { out[k] = { ok: false, e }; } } }));
+    return out;
+  }
+  const since = () => new Date(Date.now() - DAYS * 86400000).toISOString().slice(0, 10);
+  function impdURL(t) {
+    const q = new URLSearchParams({
+      where: `sOccDate >= '${since()}' AND NIBRSClassCode IN (${ALONG.CODES.map(c => `'${c}'`).join(',')})`,
+      geometry: `${t.w},${t.s},${t.e},${t.n}`, geometryType: 'esriGeometryEnvelope', inSR: '4326', spatialRel: 'esriSpatialRelIntersects',
+      outFields: 'CaseNum,sOccDate,NIBRSClassCode,PremiseType,sAddress,Latitude,Longitude', returnGeometry: 'false', resultRecordCount: '2000', f: 'json',
+    });
+    return `${SRC.impd}?${q}`;
+  }
+  function overpassURL(ts) {
+    const parts = ts.map(t => `nwr["amenity"~"^(restaurant|cafe|fast_food|ice_cream|food_court|pub)$"]["name"](${t.s},${t.w},${t.n},${t.e});`).join('');
+    return `${SRC.overpass}?data=${encodeURIComponent(`[out:json][timeout:25];(${parts});out center tags qt;`)}`;
+  }
+
+  /* ------------------------------------------------------------ what a plan passes */
+  const St = new WeakMap();
+  const stateOf = plan => { let s = St.get(plan); if (!s) St.set(plan, (s = { rides: null, safety: null, food: null, foodRaw: null, busy: {}, err: {}, said: {}, line: null })); return s; };
+  const lineOf = (plan, st) => st.line || (st.line = new TRIP.Line(plan.line));
+  const destOf = plan => (plan.to && plan.to.ll && !plan.to.home ? plan.to.ll : null); // dinner near where he's going, not near home
+  let repaint = () => {};
+  const changed = () => { try { repaint(); } catch (e) { /* the screen moved on */ } };
+
+  async function loadRides(plan) {
+    const st = stateOf(plan), Ln = lineOf(plan, st);
+    st.busy.rides = true; changed();
+    const [info, status, free, types] = await Promise.all([
+      cached(SRC.pacersInfo, 6 * 3600000, () => getJSON(SRC.pacersInfo)), cached(SRC.pacersStatus, 60000, () => getJSON(SRC.pacersStatus)),
+      cached(SRC.birdFree, 60000, () => getJSON(SRC.birdFree, 20000)), cached(SRC.birdTypes, 6 * 3600000, () => getJSON(SRC.birdTypes)),
+    ].map(p => p.then(v => ({ ok: true, v }), e => ({ ok: false, e }))));
+    if (!info.ok) Diag.add('along', `Pacers Bikeshare: ${errText(info.e)}`);
+    if (!free.ok) Diag.add('along', `Bird: ${errText(free.e)}`);
+    st.rides = {
+      docks: info.ok ? ALONG.docks(info.v, status.ok ? status.v : null, Ln) : null,
+      scoot: free.ok ? ALONG.vehicles(free.v, types.ok ? types.v : null, Ln) : null,
+      at: Date.now(), pacers: info.ok, bird: free.ok, live: status.ok,
+    };
+    st.busy.rides = false; changed();
+  }
+  async function loadSafety(plan) {
+    const st = stateOf(plan), Ln = lineOf(plan, st);
+    st.busy.safety = true; changed();
+    const ts = ALONG.tiles(Ln, 150).slice(0, MAXTILES);
+    const res = await pool(ts, 3, t => cached(impdURL(t), 6 * 3600000, async () => { const j = await getJSON(impdURL(t), 20000); if (j && j.error) throw new Error(j.error.message || 'query error'); return j; }));
+    const feats = [];
+    let failed = 0;
+    res.forEach(r => { if (r.ok && r.v && Array.isArray(r.v.features)) feats.push(...r.v.features); else failed++; });
+    if (failed) Diag.add('along', `IMPD: ${failed} of ${ts.length} map squares didn't answer${res.find(r => !r.ok) ? ` (${errText(res.find(r => !r.ok).e)})` : ''}`);
+    const incs = ALONG.incidents(feats, Ln);
+    st.safety = { incs, stretches: ALONG.stretches(incs, Ln), since: since(), tiles: ts.length, failed, at: Date.now() };
+    st.busy.safety = false; changed();
+  }
+  async function loadFood(plan) {
+    const st = stateOf(plan), Ln = lineOf(plan, st), dest = destOf(plan);
+    st.busy.food = true; changed();
+    const ts = ALONG.tiles(Ln, 150, dest ? [{ ll: dest, r: 800 }] : []).slice(0, MAXTILES + 4);
+    try {
+      const url = overpassURL(ts);
+      const j = await cached(url, 24 * 3600000, () => getJSON(url, 30000));
+      st.foodRaw = Array.isArray(j && j.elements) ? j.elements : [];
+      st.food = ALONG.food(st.foodRaw, Ln, dest, Diet.get());
+      st.err.food = '';
+    } catch (e) { st.err.food = errText(e); Diag.add('along', `Overpass: ${errText(e)}`); }
+    st.busy.food = false; changed();
+  }
+  // everything for a plan, once; rides again when asked (they change by the minute)
+  function start(plan, again) {
+    if (!plan || !Array.isArray(plan.line) || plan.line.length < 2 || A.IN_CLAUDE) return;
+    const st = stateOf(plan);
+    if (!st.rides || again) loadRides(plan);
+    if (!st.safety && !st.busy.safety) loadSafety(plan);
+    if (!st.food && !st.busy.food) loadFood(plan);
+  }
+  function rerank(plan) { const st = stateOf(plan); if (st.foodRaw) st.food = ALONG.food(st.foodRaw, lineOf(plan, st), destOf(plan), Diet.get()); }
+
+  /* ------------------------------------------------------------ where on the trip, in words */
+  function whereOn(plan, s) {
+    const mon = (plan.stations || []).filter(x => /^monon:/.test(x.key));
+    if (mon.length && s >= mon[0].s - 50 && s <= mon[mon.length - 1].s + 50) {
+      const n = mon.reduce((b, x) => (Math.abs(x.s - s) < Math.abs(b.s - s) ? x : b));
+      return `near ${n.short || n.name}`;
+    }
+    let m = null;
+    for (const x of plan.maneuvers || []) { if (x.s <= s + 5) m = x; else break; }
+    const nm = m && m.name && m.kind !== 'arrive' && m.kind !== 'join' ? TRIP.shortName(m.name) : '';
+    return nm ? `on ${nm}` : `${dist(s)} along`;
+  }
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const ext = (href, text, cls = 'linkbtn') => h('a', { href, target: '_blank', rel: 'noopener noreferrer', class: cls }, text);
+
+  /* ------------------------------------------------------------ the planner's card */
+  const TABS = [['rides', 'Rides'], ['safety', 'Safety'], ['food', 'Food']];
+  const tabNow = () => { const t = store.get(K.tab, 'rides'); return TABS.some(x => x[0] === t) ? t : 'rides'; };
+  function card(plan, opts = {}) {
+    const st = stateOf(plan), tab = tabNow();
+    const box = h('section', { class: 'card t-along', id: opts.id || 't-along', 'aria-labelledby': `${opts.id || 't-along'}-h` });
+    box.append(h('div', { class: 'row between' }, h('h2', { id: `${opts.id || 't-along'}-h` }, 'Along the way'),
+      h('div', { class: 'seg small', role: 'group', 'aria-label': 'Show', id: `${opts.id || 't-along'}-tabs` }, TABS.map(([k, label]) => h('button', { type: 'button', 'data-v': k, 'aria-pressed': String(k === tab), onclick: () => { store.set(K.tab, k); changed(); } }, label)))));
+    box.append(h('p', { class: 't-along-sum', 'aria-live': 'polite' }, summary(plan, st)));
+    if (tab === 'rides') ridesView(plan, st, box);
+    else if (tab === 'safety') safetyView(plan, st, box);
+    else foodView(plan, st, box, opts);
+    return box;
+  }
+  // one line for all three, so nothing hides behind a tab
+  function summary(plan, st) {
+    const r = st.rides, s = st.safety, f = st.food;
+    const rides = st.busy.rides && !r ? 'Rides: looking' : !r ? '' : `Rides: ${r.docks ? plural(r.docks.length, 'dock', 'docks') : 'docks unknown'}${r.scoot ? `, ${plural(r.scoot.reduce((a, g) => a + g.n, 0), 'scooter', 'scooters')}` : ''}`;
+    const safe = st.busy.safety && !s ? 'safety: looking' : !s ? '' : s.stretches.length ? `safety: ${plural(s.stretches.length, 'stretch', 'stretches')} to note` : 'safety: nothing stands out';
+    const d = Diet.get(), food = st.busy.food && !f ? 'food: looking' : !f ? '' : d.dairy ? `food: ${f.filter(p => p.group === 'best' || p.group === 'fav' || p.group === 'easy').length} that may suit` : `food: ${plural(f.length, 'place', 'places')}`;
+    return [rides, safe, food].filter(Boolean).join('; ') + '.';
+  }
+  function ridesView(plan, st, box) {
+    const r = st.rides;
+    if (!r) { box.append(h('p', { class: 'note' }, st.busy.rides ? 'Looking for bike share docks and scooters near the route…' : 'Bike share and scooters show here once the route is set.')); return; }
+    const list = h('ul', { class: 't-along-list', id: 't-rides' });
+    const items = [];
+    (r.docks || []).forEach(d => items.push({ s: d.s, el: h('li', null,
+      h('span', null, h('b', null, d.name), h('span', { class: 'note' }, ` Pacers Bikeshare dock, ${whereOn(plan, d.s)}`)),
+      h('span', { class: 'meta' }, !d.live ? 'no count' : !d.renting ? 'not renting' : `${plural(d.bikes || 0, 'bike', 'bikes')}${d.ebikes ? `, ${d.ebikes} e` : ''}`, d.uri ? ext(d.uri, 'Rent') : null)) }));
+    (r.scoot || []).forEach(g => items.push({ s: g.s, el: h('li', null,
+      h('span', null, h('b', null, `${plural(g.n, g.bikes && !g.scooters ? 'Bird bike' : 'Bird scooter', g.bikes && !g.scooters ? 'Bird bikes' : 'Bird scooters')}`), h('span', { class: 'note' }, ` parked ${whereOn(plan, g.s)}`)),
+      h('span', { class: 'meta' }, `${dist(g.s)} in`)) }));
+    items.sort((a, b) => a.s - b.s).slice(0, 12).forEach(x => list.append(x.el));
+    if (items.length) box.append(list);
+    else box.append(h('p', { class: 'note' }, 'No bike share dock or scooter within a block or two of this route right now.'));
+    const missing = [!r.pacers && 'Pacers Bikeshare', !r.bird && 'Bird'].filter(Boolean);
+    box.append(h('p', { class: 'note t-along-foot' }, `${missing.length ? `${missing.join(' and ')} didn’t answer just now. ` : ''}As of ${A.clock(r.at)}. Unlock with the BCycle or Bird app. Both feeds are open to anyone: the app downloads the city’s list and sends nothing about you.`,
+      ' ', h('button', { type: 'button', class: 'linkbtn', id: 't-rides-again', onclick: () => { loadRides(plan); } }, 'Check again')));
+  }
+  function safetyView(plan, st, box) {
+    const s = st.safety;
+    if (!s) { box.append(h('p', { class: 'note' }, st.busy.safety ? 'Checking IMPD’s reports near the route…' : 'Reported incidents show here once the route is set.')); return; }
+    if (s.stretches.length) {
+      const list = h('ul', { class: 't-along-list', id: 't-safety' });
+      s.stretches.forEach(z => list.append(h('li', { class: z.level > 1 ? 'hi' : '' },
+        h('span', null, h('b', null, `${z.level > 1 ? 'Many reports' : 'More reports'} ${whereOn(plan, (z.s0 + z.s1) / 2)}`), h('span', { class: 'note' }, ` ${ALONG.kindsText(z.kinds)}${z.last ? `, the latest ${new Date(z.last + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : ''}`)),
+        h('span', { class: 'meta' }, `${dist(z.s0)} to ${dist(z.s1)}`))));
+      box.append(list);
+    } else box.append(h('p', { class: 'note' }, s.incs.length ? `No stretch stands out: ${plural(s.incs.length, 'report', 'reports')} within a block of the route in the last ${DAYS} days, spread out.` : `No reports within a block of the route in the last ${DAYS} days.`));
+    box.append(h('p', { class: 'note t-along-foot' }, `${s.failed ? `${s.failed} of ${s.tiles} map squares didn’t answer, so this may be missing some. ` : ''}IMPD’s public incident data since ${new Date(s.since + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: assaults, robberies and other crimes against a person, on streets, sidewalks, parks and parking lots within a block of the route, located to the block. Busy places have more reports because more people are there. `, ext(SRC.hub, 'IMPD’s data')));
+  }
+  function foodView(plan, st, box, opts) {
+    const d = Diet.get(), f = st.food, fav = Diet.favName();
+    const need = d.dairy ? `No cow’s milk${d.butter ? ', butter is OK' : ''}${fav ? `; favorite: ${fav}` : ''}` : fav ? `Favorite: ${fav}` : 'No dining need set';
+    box.append(h('div', { class: 'row between t-diet' }, h('span', { class: 'note' }, need), h('button', { type: 'button', class: 'btn small ghost', id: 't-diet-set', onclick: () => dietSheet(plan) }, d.set ? 'Change' : 'Set dining needs')));
+    if (!f) { box.append(h('p', { class: 'note' }, st.busy.food ? 'Looking for places to eat near the route and the destination…' : st.err.food ? 'The place search didn’t answer. Try again in a minute.' : 'Places to eat show here once the route is set.')); return; }
+    const groups = d.dairy ? [['best', 'Best bets', 'Marked vegan or dairy-free on the map.'], ['fav', fav ? `${fav} to check` : 'To check', 'Check the menu on Yelp first.'], ['easy', 'Usually easy without milk', '']]
+      : [['fav', fav || 'Favorites', ''], ['other', 'Along the way', '']];
+    let shown = 0;
+    for (const [k, title, sub] of groups) {
+      const all = f.filter(p => p.group === k);
+      if (!all.length) continue;
+      const list = h('ul', { class: 't-along-list t-food', 'data-g': k });
+      all.slice(0, opts.full ? 12 : 5).forEach(p => { list.append(placeItem(plan, p, d)); shown++; });
+      box.append(h('h3', { class: 't-along-h' }, title, sub ? h('span', { class: 'note' }, ` ${sub}`) : null), list);
+      if (all.length > (opts.full ? 12 : 5)) box.append(h('p', { class: 'note' }, `${all.length - (opts.full ? 12 : 5)} more on Yelp.`));
+    }
+    if (!shown) box.append(h('p', { class: 'note' }, d.dairy ? 'Nothing near the route or the destination looks like a fit on the map. Yelp may know more.' : 'No places to eat found near the route or the destination.'));
+    const near = plan.to && plan.to.name && !plan.to.home ? plan.to.name : 'the route';
+    const q = `${d.dairy ? 'dairy free ' : ''}${fav ? fav.toLowerCase() : 'restaurants'}`;
+    const where = destOf(plan) ? (plan.to.where ? `${plan.to.where}, Indianapolis, IN` : `${plan.to.name}, Indianapolis, IN`) : 'Indianapolis, IN';
+    box.append(h('p', { class: 'note t-along-foot' }, ext(ALONG.yelp(q, where), `Search Yelp for ${q} near ${near}`), '. ',
+      d.dairy ? 'Map marks and cuisines are hints, not menus: tell the server about the milk allergy and ask about cross-contact. ' : '',
+      'Places from OpenStreetMap. Yelp opens with a place’s name and street; nothing goes to Yelp until you tap.'));
+  }
+  function placeItem(plan, p, d) {
+    const where = p.dDest <= 800 && destOf(plan) && (!p.onRoute || p.dDest < p.off * 2) ? `${dist(p.dDest, 2)} from ${plan.to.name}` : `${whereOn(plan, p.s)}, ${dist(p.s)} in`;
+    const tip = p.tip ? (d.butter && p.fav && /parmesan/.test(p.tip) ? `${p.tip} Butter is fine.` : p.tip) : '';
+    const riding = !!(A.Trip && A.Trip.Ride && A.Trip.Ride.tr); // a stop is added while planning; on the way, Yelp
+    const btns = h('span', { class: 'meta' }, ext(ALONG.yelp(p.name, ALONG.placeWhere(p)), 'Yelp'),
+      riding ? null : h('button', { type: 'button', class: 'linkbtn', onclick: () => { if (A.Trip && A.Trip.Plan && A.Trip.Plan.addStop) A.Trip.Plan.addStop({ name: p.name, ll: p.ll }); } }, 'Add stop'));
+    return h('li', null, h('span', null, h('b', null, p.name), h('span', { class: 'note' }, ` ${p.cuisine}${p.says && !p.cuisine.toLowerCase().includes(p.says) ? `, ${p.says}` : ''}, ${where}`), tip ? h('span', { class: 'tip' }, tip) : null), btns);
+  }
+  function dietSheet(plan) {
+    const cur = Diet.get();
+    openSheet((p, close) => {
+      const v = { dairy: cur.dairy, butter: cur.butter, fav: cur.fav };
+      const seg = (key, label, id) => {
+        const g = h('div', { class: 'seg small', role: 'group', 'aria-labelledby': id });
+        const paint = () => g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === '1') === !!v[key])));
+        [['1', 'Yes'], ['0', 'No']].forEach(([x, t]) => g.append(h('button', { type: 'button', 'data-v': x, onclick: () => { v[key] = x === '1'; if (key === 'dairy' && !v.dairy) v.butter = false; paint(); butterRow.hidden = !v.dairy; } }, t)));
+        paint();
+        return h('div', { class: 'row between' }, h('span', { class: 'flabel', id }, label), g);
+      };
+      const sel = h('select', { class: 'input', id: 't-diet-fav', 'aria-label': 'Favorite cuisine' }, FAVS.map(([k, t]) => h('option', { value: k, selected: k === v.fav ? 'selected' : null }, t)));
+      sel.addEventListener('change', () => { v.fav = sel.value; });
+      const butterRow = seg('butter', 'Butter is OK', 't-diet-butter-l');
+      butterRow.hidden = !v.dairy;
+      p.append(h('h2', { class: 'sh' }, 'Dining needs'), h('p', { class: 'muted' }, 'Places to eat along a trip are ranked for these. They stay on this phone and are never sent anywhere.'),
+        seg('dairy', 'No cow’s milk (cheese, cream, whey, casein)', 't-diet-dairy-l'), butterRow,
+        h('div', { class: 'row between' }, h('label', { class: 'flabel', for: 't-diet-fav' }, 'Favorite cuisine'), sel),
+        h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary', style: 'flex:1', id: 't-diet-save', onclick: () => { Diet.set(v); if (plan) rerank(plan); close(); toast('Dining needs saved on this phone'); changed(); } }, 'Save'),
+          h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: close }, 'Cancel')));
+    });
+  }
+
+  /* ------------------------------------------------------------ the map */
+  // stretches to note under the route, and markers for the tab in view (rides, or places to eat)
+  function layers(plan, tr) {
+    const st = St.get(plan); if (!st) return { hot: [], marks: [] };
+    const hot = st.safety ? st.safety.stretches.map(z => ({ pts: z.pts, level: z.level })) : [];
+    const marks = [], tab = tabNow();
+    const ahead = x => !tr || (x.s > tr.s - 150 && x.s < tr.s + 1500);
+    if ((tab === 'rides' || tr) && st.rides) {
+      (st.rides.docks || []).filter(ahead).forEach(d => marks.push({ ll: d.ll, kind: 'dock', label: tr ? '' : d.live && d.renting ? String(d.bikes || 0) : '' }));
+      (st.rides.scoot || []).filter(ahead).forEach(g => marks.push({ ll: g.ll, kind: 'scoot', label: '' }));
+    }
+    if (tab === 'food' && !tr && st.food) st.food.filter(p => p.group !== 'other' || !Diet.get().dairy).slice(0, 12).forEach(p => marks.push({ ll: p.ll, kind: 'food', label: '' }));
+    return { hot, marks };
+  }
+
+  /* ------------------------------------------------------------ the trip in progress */
+  const headsOn = () => store.get(K.heads, true) !== false;
+  // what is coming up along the way, for the ride screen's card
+  function rideCard(plan, tr) {
+    const st = St.get(plan);
+    const box = h('section', { class: 'card t-along-ride', id: 't-along-ride', 'aria-labelledby': 't-along-ride-h' }, h('h2', { id: 't-along-ride-h' }, 'Along the way'));
+    const list = h('ul', { class: 't-along-list' });
+    const s = tr ? tr.s : 0;
+    if (st && st.safety) {
+      const z = st.safety.stretches.find(x => x.s1 > s);
+      if (z) list.append(h('li', { class: z.level > 1 ? 'hi' : '' }, h('span', null, h('b', null, z.s0 <= s ? 'In a stretch with more reports' : 'More reports ahead'), h('span', { class: 'note' }, ` ${ALONG.kindsText(z.kinds)} in ${DAYS} days`)), h('span', { class: 'meta' }, z.s0 <= s ? `${dist(Math.max(0, z.s1 - s), 2)} left` : `in ${dist(z.s0 - s, 2)}`)));
+    }
+    if (st && st.rides) {
+      const d = (st.rides.docks || []).find(x => x.s > s - 60);
+      if (d) list.append(h('li', null, h('span', null, h('b', null, d.name), h('span', { class: 'note' }, ` ${d.live ? (d.renting ? plural(d.bikes || 0, 'bike', 'bikes') : 'not renting') : 'Pacers Bikeshare'}`)), h('span', { class: 'meta' }, d.s <= s + 25 ? 'here' : `in ${dist(d.s - s, 2)}`)));
+      const g = (st.rides.scoot || []).filter(x => Math.abs(x.s - s) < 500).reduce((a, x) => a + x.n, 0);
+      if (g) list.append(h('li', null, h('span', null, h('b', null, plural(g, 'Bird scooter', 'Bird scooters')), h('span', { class: 'note' }, ' parked near this part of the route')), h('span', { class: 'meta' }, 'nearby')));
+    }
+    if (st && st.food && destOf(plan)) {
+      const fits = st.food.filter(p => p.dDest <= 800 && (p.group === 'best' || p.group === 'fav' || (!Diet.get().dairy && p.group === 'other')));
+      if (fits.length) list.append(h('li', null, h('span', null, h('b', null, `Food near ${plan.to.name}`), h('span', { class: 'note' }, ` ${plural(fits.length, 'place', 'places')} that may suit`)), h('button', { type: 'button', class: 'linkbtn', id: 't-food-open', onclick: () => foodSheet(plan) }, 'See')));
+    }
+    if (!list.children.length) list.append(h('li', null, h('span', { class: 'note' }, st ? 'Nothing to note just now.' : 'Looking along the route…')));
+    box.append(list, h('div', { class: 'row between' }, h('span', { class: 'flabel', id: 't-heads-l' }, 'Safety heads-ups'),
+      h('div', { class: 'seg small', id: 't-heads', role: 'group', 'aria-labelledby': 't-heads-l' }, [['1', 'On'], ['0', 'Off']].map(([x, t]) => h('button', { type: 'button', 'data-v': x, 'aria-pressed': String((x === '1') === headsOn()), onclick: () => { store.set(K.heads, x === '1'); changed(); } }, t)))));
+    return box;
+  }
+  function foodSheet(plan) {
+    openSheet((p, close) => {
+      const prev = store.get(K.tab, 'rides');
+      store.set(K.tab, 'food');
+      const c = card(plan, { id: 't-food-sheet', full: true });
+      store.set(K.tab, prev);
+      c.querySelector('.seg') && c.querySelector('.seg').remove();
+      p.append(c, h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: close }, 'Close')));
+    });
+  }
+  // a fix along the trip: a calm word when a stretch with more reports begins
+  function onFix(plan, tr) {
+    const st = St.get(plan); if (!st || !st.safety || !tr || !tr.onRoute) return null;
+    const z = st.safety.stretches.find(x => tr.s >= x.s0 - 40 && tr.s < x.s1);
+    if (!z || !headsOn()) return null;
+    const key = `${tr.ver}:${z.s0}`;
+    if (st.said[key]) return null;
+    st.said[key] = Date.now();
+    const left = Math.max(60, z.s1 - Math.max(tr.s, z.s0));
+    return `Heads up: the next ${C().distApprox(left, U())} ${z.level > 1 ? 'has had many' : 'has had more'} reported incidents lately. Stay where it’s lit and busy.`;
+  }
+  const C = () => A.C;
+  let ridesAt = 0;
+  // every five minutes while the trip screen is open, the rides near it again
+  function tick(plan) { if (!plan || Date.now() - ridesAt < 300000) return; ridesAt = Date.now(); const st = St.get(plan); if (st && st.rides) loadRides(plan); }
+
+  A.Along = { start, card, rideCard, layers, onFix, tick, rerank, Diet, stateOf, setRepaint: fn => { repaint = typeof fn === 'function' ? fn : () => {}; }, SRC, K, whereOn, foodSheet, dietSheet };
 })();
 
 /* The Depot as a calm pre-departure screen (wave 4 design pass). Layout, hierarchy and one visual language only: nothing
@@ -12280,8 +12988,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    styles from exactly the hosts the app uses. Its connect-src lets any https relay through, because a custom relay can
    come from Settings or from a board link. This module narrows it as the app starts (before anything connects) to
    exactly what this page uses: the relay (ntfy.sh, or the custom one in use), the weather (Open-Meteo), the address
-   search (Nominatim), trip routes (FOSSGIS's OSRM) and the two satellite imagery services (the service worker fetches their tiles, and a page asking
-   for a tile goes through it). Both policies hold at once, so the page gets the narrower one. A page served from this
+   search (Nominatim), trip routes (FOSSGIS's OSRM and Valhalla), what a trip passes (Pacers Bikeshare's and Bird's open
+   feeds, IMPD's incident data, the Overpass API for places to eat) and the two satellite imagery services (the service
+   worker fetches their tiles, and a page asking for a tile goes through it). Both policies hold at once, so the page gets the narrower one. A page served from this
    computer (development and the tests, whose relay can change at any moment) may also reach any port on it.
    A relay that shows up later (a new one saved in Settings, or a board link on another relay) needs a fresh start, so
    the page reloads itself then, never during a walk. A blocked request is noted in Diagnostics by host only.
@@ -12293,7 +13002,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const base = document.head && document.head.querySelector('meta[http-equiv="Content-Security-Policy"]');
   if (!base || A.IN_CLAUDE) return;
   const { store } = A;
-  const FIXED = ['https://ntfy.sh', 'https://api.open-meteo.com', 'https://nominatim.openstreetmap.org', 'https://di-ingov.img.arcgis.com', 'https://basemap.nationalmap.gov', 'https://routing.openstreetmap.de', 'https://valhalla1.openstreetmap.de'];
+  const FIXED = ['https://ntfy.sh', 'https://api.open-meteo.com', 'https://nominatim.openstreetmap.org', 'https://di-ingov.img.arcgis.com', 'https://basemap.nationalmap.gov', 'https://routing.openstreetmap.de', 'https://valhalla1.openstreetmap.de', 'https://gbfs.bcycle.com', 'https://mds.bird.co', 'https://gis.indy.gov', 'https://overpass-api.de'];
   const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   // a relay's origin, as the app would accept it (normRelay in ui.js): https, or http on this computer for a page on
   // this computer, with no password, query or fragment
@@ -14654,6 +15363,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     return Object.assign(plan, { mode: d.mode, from: place(d.from), to: Object.assign(place(d.to), d.to.home ? { home: true } : {}), vias: d.vias.map(v => place(v)), choice: { can, worth: ch.worth, entry: ch.entry && ch.entry.short, exit: ch.exit && ch.exit.short, len: Math.round(ch.len || 0) }, at: Date.now() });
   }
 
+  const lc = t => `${String(t).charAt(0).toLowerCase()}${String(t).slice(1)}`;
   /* ------------------------------------------------------------ what a trip says, in the conductor's words */
   const Words = {
     far(m) { return C.distApprox(m, U()); },
@@ -14663,8 +15373,8 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
       const first = plan.maneuvers[1] && plan.maneuvers[1].s < 60 ? plan.maneuvers[1] : plan.maneuvers[0];
       return `All aboard ${train} to ${plan.to.name}. ${C.cap(C.distApprox(plan.length, U()))}${rode}, arriving about ${C.spokenClock(eta, 5)}. ${first.say}.`;
     },
-    ahead(m, d) { return `In ${this.far(d)}, ${m.say.charAt(0).toLowerCase()}${m.say.slice(1)}.`; },
-    now(m) { return `${m.say}.`; },
+    ahead(m, d, then) { return `In ${this.far(d)}, ${lc(m.say)}${then ? `, then ${lc(then.say)}` : ''}.`; },
+    now(m, then) { return `${m.say}${then ? `, then ${lc(then.say)}` : ''}.`; },
     station(st) {
       if (st.kind === 'via') return `${st.name}, one of your stops.`;
       if (st.kind === 'join') return '';
@@ -14732,6 +15442,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
         const plan = await build(d, ctl.signal);
         if (ctl !== this.ctl) return;
         this.plan = plan; this.keep();
+        afterPlan(plan);
       } catch (e) {
         if (ctl !== this.ctl) return;
         Diag.add('trip', `no route: ${e && e.message ? e.message : e}`);
@@ -14784,9 +15495,10 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
         h('h2', null, 'The route'), this.sum, this.mapHost, this.dirs, h('div', { class: 'row' }, this.saveBtn, this.revBtn),
         h('p', { class: 'note t-credit' }, 'Routes from OSRM on FOSSGIS’s servers, map data © OpenStreetMap contributors. ',
           h('a', { href: 'https://www.openstreetmap.org/fixthemap', target: '_blank', rel: 'noopener' }, 'Fix the map'), '.'));
+      this.alongHost = h('div', { id: 't-along-host' });
       this.goBtn = h('button', { type: 'button', class: 'btn primary big', id: 't-go', onclick: () => this.depart() }, 'All aboard');
       root.append(h('header', { class: 'topbar' }, h('div', null, h('div', { class: 'eyebrow' }, 'Last Train Home'), h('h1', { class: 'train', id: 't-title' }, 'Plan a trip')), back),
-        board, form, prev,
+        board, form, prev, this.alongHost,
         h('p', { class: 'note' }, 'A trip follows any route, on the Monon or not. It keeps the screen on and calls the turns. Her board doesn’t follow trips yet.'),
         h('div', { class: 'depart-bar' }, h('div', { class: 'inner' }, this.goBtn)));
       this.paint();
@@ -14841,6 +15553,16 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
         this.dirs.append(h('summary', null, `Directions, ${steps.length} steps`), h('ol', { class: 't-steps' }, steps.map((m, i) => h('li', null, h('span', null, m.text), h('span', { class: 'note' }, m.kind === 'arrive' ? '' : dist(m.d, m.d < 1600 ? 2 : 1))))));
         this.drawMap();
       } else if (this.view) { this.mapHost.hidden = true; }
+      // what lies along the route: rides, stretches to note, places to eat
+      if (this.alongHost) { if (plan && A.Along) swap(this.alongHost, A.Along.card(plan)); else this.alongHost.textContent = ''; }
+    },
+    // a place from Along the way as a stop of his own
+    addStop(it) {
+      const d = this.d; if (!d || Ride.tr) return;
+      if (d.vias.length >= MAXVIA) return toast(`Up to ${MAXVIA} stops`);
+      const v = place(it); if (!v) return;
+      d.vias.push(v); this.keep(); this.paint(); this.go();
+      toast(`Stop added: ${v.name}`);
     },
     drawMap() {
       const plan = this.plan; if (!plan) return;
@@ -14937,6 +15659,115 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     },
   };
   const shortOf = n => { const s = String(n || ''); return s.length > 22 ? s.slice(0, 21).replace(/\s+\S*$/, '') : s; };
+  const fin = v => typeof v === 'number' && Number.isFinite(v);
+
+  /* ------------------------------------------------------------ a trip kept on this phone */
+  // The trip saved on this phone, if it can still be picked up. One that already arrived, or that nobody has touched
+  // for twelve hours, is closed into the log (as End trip would have) and cleared, so it can never hold up tonight's
+  // walk with nothing on the Depot to set it aside.
+  const STALE = 12 * 3600000;
+  function stored() {
+    const act = store.get(K.active, null);
+    if (!act || Ride.tr) return act;
+    const ok = !!(act.plan && Array.isArray(act.plan.line) && Array.isArray(act.plan.maneuvers) && act.plan.to && act.tr && fin(act.tr.t0));
+    if (ok && act.tr.status !== 'arrived' && act.tr.status !== 'finished' && Date.now() - (act.at || 0) < STALE) return act;
+    if (ok) { try { settle(act); } catch (e) { Diag.add('trip', `couldn't log the old trip: ${e && e.message ? e.message : e}`); } }
+    store.del(K.active);
+    return null;
+  }
+  function settle(act) {
+    const tr = new TRIP.TripTracker(act.plan, { mode: act.mode, t0: act.tr.t0, unit: U() });
+    tr.restore(act.tr);
+    const end = tr.arrivedAt || tr.pausedAt || tr.tLast || act.at || Date.now();
+    tr.finish(end);
+    const rec = record(tr, act.plan, act.mode === 'bike' ? 'bike' : 'walk', end);
+    logRec(rec);
+    Diag.add('trip', `closed an unfinished trip from ${A.clock(tr.t0)}: ${dist(rec.dist, 1)}`);
+  }
+  function record(tr, plan, mode, now) {
+    return {
+      id: 't' + tr.t0, t0: tr.t0, tEnd: tr.tEnd || now, from: plan.from ? plan.from.name : '', to: plan.to.name, toLL: plan.to.ll, mode,
+      dist: Math.round(tr.dist), elapsed: Math.round(tr.elapsed(now)), moving: Math.round(tr.moving), arrived: !!tr.arrivedAt, length: plan.length,
+      monon: plan.monon ? { entry: plan.monon.entry.short, exit: plan.monon.exit.short, len: Math.round(plan.monon.len) } : null,
+      track: TRIP.simplify((tr.trackPts || []).map(p => [p[0], p[1]]), 6).slice(0, 800),
+    };
+  }
+  function logRec(rec) {
+    if (!(rec.dist >= 200)) return;
+    const log = store.get(K.log, []) || [];
+    if (log.some(r => r && r.id === rec.id)) return;
+    log.push(rec); store.set(K.log, log.slice(-60));
+  }
+
+  /* ------------------------------------------------------------ after a plan is made */
+  // what lies along it (Along the way), and street names for the stretches the map leaves unnamed
+  function afterPlan(plan) {
+    if (A.Along) A.Along.start(plan);
+    nameStreets(plan).then(n => {
+      if (!n) return;
+      if (Plan.plan === plan && !Ride.tr) Plan.paint();
+      if (Ride.plan === plan && Ride.tr) { Ride.paint(); Ride.save(true); }
+    }, () => {});
+  }
+  // Sidewalks drawn apart from their streets have no name on the map, so the route there can only say "turn left".
+  // Valhalla matches a few points from the middle of each such stretch to the streets for cars and says which one it
+  // runs along. Never within a quarter mile of home; at most four stretches a plan; one request a second, like every
+  // routing call.
+  const named = new WeakSet();
+  async function nameStreets(plan) {
+    if (A.IN_CLAUDE || !plan || named.has(plan) || !Array.isArray(plan.maneuvers)) return 0;
+    named.add(plan);
+    const home = P().home;
+    const spots = TRIP.nameSpots(plan, { avoid: home ? [[+home.lat, +home.lon]] : [], max: 4 });
+    const names = {};
+    for (const sp of spots) {
+      try {
+        const q = { encoded_polyline: TRIP.encode6(sp.pts), shape_match: 'map_snap', costing: 'auto', trace_options: { search_radius: 35, gps_accuracy: 12 }, filters: { attributes: ['edge.names', 'matched.type', 'matched.edge_index', 'matched.distance_from_trace_point'], action: 'include' } };
+        const nm = TRIP.matchName(await Net.get(`${VALHALLA}trace_attributes?json=${encodeURIComponent(JSON.stringify(q))}`));
+        if (nm) names[sp.i] = nm;
+      } catch (e) { Diag.add('trip', `street name: ${e && e.message ? e.message : e}`); }
+    }
+    const n = TRIP.applyNames(plan, names, plan.to && plan.to.name);
+    if (spots.length) Diag.add('trip', `street names: ${n} of ${spots.length} unnamed stretches`);
+    return n;
+  }
+  // a part of the screen drawn again, with the focus kept on the same control
+  function swap(host, node) {
+    const a = document.activeElement, inside = a && host.contains(a);
+    const sel = inside ? (a.id ? `#${a.id}` : a.dataset && a.dataset.v ? `[data-v="${a.dataset.v}"]` : '') : '';
+    const grp = inside && a.parentElement && a.parentElement.id ? `#${a.parentElement.id} ` : '';
+    host.replaceChildren(node);
+    if (sel) { const b = host.querySelector(grp + sel) || host.querySelector(sel); if (b) try { b.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  }
+
+  /* ------------------------------------------------------------ Pocket mode on a trip */
+  // As on a walk: the screen goes black but for the arrival time and the next turn, and only the held circle opens it
+  // again, so a pocket can't pause the trip, end it or turn the voice off. The walk's own pocket screen, filled for a trip.
+  const TripPocket = {
+    on: false,
+    open() {
+      if (!A.Pocket || !$('#pocket') || !Ride.tr) return;
+      this.on = true;
+      const l = $('#pocket .pk-l'); if (l) l.textContent = 'Arrive at';
+      A.Pocket.open();
+      this.paint(Date.now());
+    },
+    paint(now) {
+      const tr = Ride.tr, plan = Ride.plan; if (!tr || !plan) return;
+      const eta = tr.eta(now), nx = tr.next(), set = (id, t) => { const el = $(id); if (el && el.textContent !== t) el.textContent = t; };
+      set('#pk-eta', tr.status === 'arrived' ? 'Here' : A.clock(eta.t));
+      set('#pk-in', tr.status === 'arrived' ? '' : `in ${A.minsText(Math.max(0, eta.t - now) / 1000)}`);
+      set('#pk-next', !tr.pos ? 'Finding GPS' : !tr.onRoute ? 'Off the route' : nx && nx.kind !== 'arrive' ? `${nx.text}, in ${Words.eye(Math.max(0, nx.s - tr.s))}` : `${shortOf(plan.to.name)} ahead`);
+      set('#pk-stats', `${dist(tr.dist, 2)} so far, ${A.minsText(tr.elapsed(now))}`);
+      const total = tr.dist + eta.m, f = total > 0 ? Math.min(1, tr.dist / total) : 0, pos = $('#pk-pos');
+      if (pos) pos.style.left = `${(f * 100).toFixed(1)}%`;
+      const tb = $('#pk-turn'); if (tb) tb.hidden = true;
+      const msg = $('#pk-msg'), text = tr.status === 'paused' ? 'Paused. Hold the circle, then Resume.' : !tr.onRoute && tr.pos ? 'A new route comes if you stay off this one.' : '';
+      if (msg) { msg.hidden = !text; if (msg.textContent !== text) msg.textContent = text; }
+    },
+    closed() { this.on = false; const l = $('#pocket .pk-l'); if (l) l.textContent = 'Home at'; },
+    shut() { if (!this.on) return; const pk = $('#pocket'); if (pk) pk.hidden = true; if (A.Pocket) A.Pocket.isOpen = false; this.closed(); },
+  };
   function here() {
     return new Promise((res, rej) => {
       if (!('geolocation' in navigator)) return rej(new Error('no location'));
@@ -14960,7 +15791,9 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
       focus = [at, nx && nx.s - tr.s < 1200 ? nx.ll : ahead(tr.s + 900)];
       if (nx && nx.s - tr.s < 150) focus.push(ahead(nx.s + 300));
     } else focus = plan.line.filter((p, i, a) => i % Math.max(1, Math.floor(a.length / 40)) === 0).concat([end]);
-    return { line: plan.line, done: done && done.length > 1 ? done : null, marks, stations, focus, label: `Map of the trip to ${plan.to ? plan.to.name : 'your stop'}` };
+    const lay = A.Along ? A.Along.layers(plan, tr) : null;
+    if (lay) marks.unshift(...lay.marks); // under his own markers
+    return { line: plan.line, done: done && done.length > 1 ? done : null, marks, stations, focus, hot: lay ? lay.hot : null, label: `Map of the trip to ${plan.to ? plan.to.name : 'your stop'}` };
   }
 
   /* ------------------------------------------------------------ riding */
@@ -14975,6 +15808,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
       this.prevVoice = Sound.enabled;
       Sound.enabled = this.voice;
       this.startGPS(); this.wakeOn();
+      if (A.Along) A.Along.start(plan);
       clearInterval(this.timer); this.timer = setInterval(() => this.tick(), 1000);
       Screen.show(); // the screen draws the ride as it opens
       if (!this.el.signName || !this.el.signName.isConnected) this.render(); else this.paint();
@@ -15021,8 +15855,8 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     handle(ev, now) {
       const tr = this.tr, plan = this.plan, quiet = P().verbosity === 'quiet';
       for (const e of ev) {
-        if (e.type === 'approach') this.speak({ text: Words.ahead(e.m, e.dist), prio: 3, chime: 'station' });
-        else if (e.type === 'turnNow') this.speak({ text: Words.now(e.m), prio: 4, chime: e.m.kind === 'join' || e.m.kind === 'leave' ? 'station' : 'bell' });
+        if (e.type === 'approach') this.speak({ text: Words.ahead(e.m, e.dist, e.then), prio: 3, chime: 'station' });
+        else if (e.type === 'turnNow') this.speak({ text: Words.now(e.m, e.then), prio: 4, chime: e.m.kind === 'join' || e.m.kind === 'leave' ? 'station' : 'bell' });
         else if (e.type === 'pass') {
           if (quiet || e.st.kind === 'join' || (e.st.kind === 'minor' && P().verbosity === 'landmarks')) continue;
           const t = Words.station(e.st); if (t) this.speak({ text: t, prio: e.st.kind === 'major' || e.st.kind === 'via' ? 1 : 0, chime: 'station' });
@@ -15032,6 +15866,9 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
         else if (e.type === 'wrongWay') this.speak({ text: Words.wrong(plan.to.name), prio: 3, chime: 'bell' });
         else if (e.type === 'arrived') this.arrive(now);
       }
+      // a stretch with more reported incidents begins: one calm word (Along the way)
+      const heads = A.Along && tr && tr.status === 'walking' ? A.Along.onFix(plan, tr) : null;
+      if (heads) this.speak({ text: heads, prio: 2, chime: 'bell' });
     },
     // off the route for a while: a new one from here, once in a while at most
     async maybeReroute() {
@@ -15048,6 +15885,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
         if (this.tr !== tr) return;
         next.from = plan.from; // the trip still started where it started
         this.plan = next; tr.setPlan(next);
+        afterPlan(next);
         const eta = tr.eta(Date.now());
         this.speak({ text: Words.rerouted(eta.m, plan.to.name), prio: 3, chime: 'station' });
         Diag.add('trip', `new route from where he was: ${dist(next.length, 1)}`);
@@ -15060,6 +15898,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     },
     tick() {
       const tr = this.tr; if (!tr) return;
+      if (A.Along && A.current === 's-trip' && document.visibilityState !== 'hidden') A.Along.tick(this.plan);
       // off the route for twenty seconds: a new route from here
       if (!tr.onRoute && this.offT && tr.status === 'walking' && Date.now() - this.offT > 20000 && !this.rerouting && Date.now() - this.rerouteAt > 45000) this.maybeReroute();
       if (document.visibilityState === 'hidden' || A.current !== 's-trip') return; // nobody is looking
@@ -15068,8 +15907,8 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     pause() {
       const tr = this.tr; if (!tr) return;
       const now = Date.now();
-      if (tr.status === 'paused') { tr.resume(now); toast('Trip resumed'); }
-      else if (tr.status === 'walking') { tr.pause(now); toast('Trip paused. The clock stops until you resume.'); }
+      if (tr.status === 'paused') { tr.resume(now); toast('Trip resumed'); this.speak({ text: 'Trip resumed.', prio: 3, chime: 'station' }); }
+      else if (tr.status === 'walking') { tr.pause(now); toast('Trip paused. The clock stops until you resume.'); this.speak({ text: 'Trip paused. Tap Resume when you’re ready.', prio: 3, chime: 'bell' }); }
       this.save(true); this.paint();
     },
     end() {
@@ -15090,13 +15929,9 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
       this.stopGPS();
       clearInterval(this.timer); this.timer = null;
       if (this.wake) { try { this.wake.release(); } catch (e) { /* gone */ } this.wake = null; }
-      const rec = {
-        id: 't' + tr.t0, t0: tr.t0, tEnd: tr.tEnd || now, from: plan.from ? plan.from.name : '', to: plan.to.name, toLL: plan.to.ll, mode: this.mode,
-        dist: Math.round(tr.dist), elapsed: Math.round(tr.elapsed(now)), moving: Math.round(tr.moving), arrived: !!tr.arrivedAt, length: plan.length,
-        monon: plan.monon ? { entry: plan.monon.entry.short, exit: plan.monon.exit.short, len: Math.round(plan.monon.len) } : null,
-        track: TRIP.simplify(tr.trackPts.map(p => [p[0], p[1]]), 6).slice(0, 800),
-      };
-      if (rec.dist >= 200) { const log = store.get(K.log, []) || []; log.push(rec); store.set(K.log, log.slice(-60)); }
+      TripPocket.shut();
+      const rec = record(tr, plan, this.mode, now);
+      logRec(rec);
       store.del(K.active);
       Sound.enabled = this.prevVoice == null ? Sound.enabled : this.prevVoice;
       Diag.add('trip', `${tr.arrivedAt ? 'arrived' : 'ended'}: ${dist(rec.dist, 1)} in ${A.minsText(rec.elapsed)}`);
@@ -15140,17 +15975,23 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
       e.next = h('ol', { class: 't-steps', id: 't-next' });
       e.voice = h('div', { class: 'seg small', id: 't-voice', role: 'group', 'aria-labelledby': 't-voice-l' },
         h('button', { type: 'button', 'data-v': '1', onclick: () => this.setVoice(true) }, 'On'), h('button', { type: 'button', 'data-v': '0', onclick: () => this.setVoice(false) }, 'Off'));
-      e.pause = h('button', { type: 'button', class: 'btn', id: 't-pause', onclick: () => this.pause() }, 'Pause');
+      const ico = d => { const sv = A.svgEl('svg', { 'aria-hidden': 'true', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }); sv.append(A.svgEl('path', { d })); return sv; }; // the walk's dock icons
+      e.pause = h('button', { type: 'button', class: 'btn', id: 't-pause', onclick: () => this.pause() }, ico('M8 5v14M16 5v14'), h('span', null, 'Pause'));
+      e.alongHost = h('div', { id: 't-along-ride-host' });
       root.append(
         h('header', { class: 'topbar stack' }, e.title, h('div', { class: 'pills' }, e.state, e.gps)),
         h('section', { class: 'sign t-sign' }, e.signL, e.signName, h('div', { class: 'meta' }, e.signDist, e.signThen)),
         e.live, e.caption, e.off, gauges,
         h('section', { class: 'card', id: 't-map-card' }, e.mapHost),
         h('section', { class: 'card', id: 't-coming' }, h('h2', null, 'Coming up'), e.next),
+        e.alongHost,
         h('section', { class: 'card controls', id: 't-controls', 'aria-label': 'Trip controls' },
           h('div', { class: 'row between' }, h('span', { class: 'flabel', id: 't-voice-l' }, 'Conductor’s voice'), e.voice),
           h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn small', id: 't-share', onclick: () => this.share() }, 'Send my arrival time'), h('button', { type: 'button', class: 'btn small ghost', onclick: () => A.go('s-depot') }, 'Depot'))),
-        h('div', { class: 'depart-bar t-dock' }, h('div', { class: 'inner' }, e.pause, h('button', { type: 'button', class: 'btn primary', id: 't-end', onclick: () => this.end() }, 'End trip'))));
+        h('nav', { class: 'dock t-dock', 'aria-label': 'Trip controls' }, h('div', { class: 'inner' },
+          h('button', { type: 'button', class: 'btn', id: 't-pocket', onclick: () => TripPocket.open() }, ico('M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM10 18h4'), h('span', null, 'Pocket')),
+          e.pause,
+          h('button', { type: 'button', class: 'btn primary', id: 't-end', onclick: () => this.end() }, ico('M5 21V4h11l-1.5 4L16 12H5'), h('span', null, 'End trip')))));
       this.view = null;
       this.paint();
     },
@@ -15162,6 +16003,7 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     paint() {
       const tr = this.tr, e = this.el; if (!tr || !e.signName || !e.signName.isConnected) return;
       const now = Date.now(), plan = this.plan;
+      if (TripPocket.on) { if (A.Pocket && A.Pocket.isOpen && !$('#pocket').hidden) { TripPocket.paint(now); return; } TripPocket.closed(); }
       const nx = tr.next(), dd = nx ? Math.max(0, nx.s - tr.s) : 0;
       const waiting = !tr.pos;
       // the sign: the next thing to do, and how far
@@ -15201,8 +16043,9 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
       e.next.textContent = '';
       ups.forEach(m => e.next.append(h('li', null, h('span', null, m.text), h('span', { class: 'note' }, m.kind === 'arrive' ? A.clock(eta.t) : Words.eye(Math.max(0, m.s - tr.s))))));
       e.voice.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === (this.voice ? '1' : '0'))));
-      e.pause.textContent = tr.status === 'paused' ? 'Resume' : 'Pause';
+      e.pause.querySelector('span').textContent = tr.status === 'paused' ? 'Resume' : 'Pause';
       e.pause.disabled = tr.status === 'arrived';
+      if (e.alongHost && A.Along) { const c = A.Along.rideCard(plan, tr), sig = c.textContent + c.querySelectorAll('[aria-pressed="true"]').length; if (sig !== this.alongSig) { this.alongSig = sig; swap(e.alongHost, c); } }
       // the map
       if (!this.view || !e.mapHost.contains(this.view.canvas)) {
         if (this.dropView) this.dropView();
@@ -15249,8 +16092,8 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     let card = $('#d-trip');
     if (!card) card = h('section', { class: 'card', id: 'd-trip', 'aria-labelledby': 'd-trip-h' });
     card.textContent = '';
-    const act = store.get(K.active, null);
-    const live = !!(Ride.tr || (act && act.plan && Date.now() - (act.at || 0) < 12 * 3600000));
+    const act = stored();
+    const live = !!(Ride.tr || act);
     // a trip under way leads the Depot, under the board's own warnings; otherwise the notice sits before Dispatch
     const anchor = live ? $('#d-board') : $('#d-tonight');
     if (anchor && card.nextElementSibling !== anchor) anchor.before(card);
@@ -15274,17 +16117,19 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
   }
   function resume() {
     if (Ride.tr) return Ride.open();
-    const act = store.get(K.active, null);
-    if (!act || !act.plan || !act.tr) { store.del(K.active); return depot(); }
+    const act = stored();
+    if (!act) return depot();
     if (A.W && A.W.active) return toast('Finish your walk before resuming the trip');
     Sound.unlock();
     try { Ride.start(act.plan, act.mode, act); } catch (e) { Diag.add('trip', `resume failed: ${e && e.message}`); store.del(K.active); toast('That trip couldn’t be resumed'); depot(); }
   }
   Bus.on('depot', () => depot());
+  // Along the way draws again when its feeds answer: the planner's card and map, or the trip's card
+  if (A.Along) A.Along.setRepaint(() => { if (A.current !== 's-trip') return; if (Ride.tr) { Ride.alongSig = ''; Ride.mapAt = 0; Ride.paint(); } else if (Plan.plan) Plan.paint(); });
   // tonight's walk and a trip don't run at once
   document.addEventListener('click', e => {
     const b = e.target && e.target.closest && e.target.closest('[data-act="depart"], [data-act="demo-cab"]');
-    if (!b || !(Ride.tr || store.get(K.active, null))) return;
+    if (!b || !(Ride.tr || stored())) return;
     e.preventDefault(); e.stopImmediatePropagation();
     toast(Ride.tr ? 'A trip is under way. End it before tonight’s walk.' : 'Resume or set aside the trip first');
     if (Ride.tr) Ride.open();
