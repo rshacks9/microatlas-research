@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-zxsmZat/+kmHsQ7Mh2jz8rGTPOsESy3bWGbwszqHvWQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9p8GI6QWMAtgiplFAwTFrt7i129BQCqpeI6fSl/rPZM='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#0f1217">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1213,6 +1213,72 @@ body.stn-on { overflow: hidden; }
 .st-text .st-src { font-size: 0.8125rem; color: var(--ink-3); }
 .st-src a { color: var(--ink-2); }
 
+/* Trips (ext/trip.js): the Depot's "Somewhere else" notice, the trip planner and the trip in progress. The planner
+   reads like the Depot (the split-flap board on top, one panel for the choices, the route below, All aboard in the bar);
+   the trip in progress reads like the cab (the red enamel sign with the next turn, the gauges, the map). */
+
+/* ------------------------------------------------ the Depot: a notice, or a panel while a trip is under way */
+#s-depot > #d-trip:not(.t-live) { background: none; border: 0; border-top: 1px solid var(--rule); border-radius: 0; padding: 14px 0 0; }
+#s-depot > #d-trip .note { font-size: 0.9375rem; line-height: 1.4; color: var(--ink-2); }
+#s-depot > #d-trip.t-live { border-color: #2d5a3a; background: linear-gradient(160deg, #13261a, var(--panel) 70%); }
+
+/* ------------------------------------------------ the planner */
+#s-trip .t-form { gap: 12px; padding: 16px; }
+#s-trip .t-form h2, #s-trip .t-route h2, #s-trip #t-coming h2 { font-size: 1.25rem; line-height: 1.1; }
+#s-trip .t-qrow { gap: 8px; align-items: stretch; }
+#s-trip .t-qrow { flex-wrap: nowrap; }
+#s-trip .t-qrow .input { flex: 1 1 auto; width: auto; min-width: 0; }
+#s-trip .t-qrow .btn { flex: none; }
+#s-trip #t-q-note { margin-top: -4px; }
+#s-trip #t-q-note .linkbtn { display: inline; min-height: 0; padding: 0; font-size: inherit; color: var(--amber); }
+#s-trip .t-results { background: var(--panel-2); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+#s-trip .t-results .result { min-height: 44px; }
+#s-trip .t-results .result .note { display: block; margin-top: 2px; font-size: 0.8125rem; color: var(--ink-3); }
+#s-trip .t-to { font-size: 0.9375rem; line-height: 1.4; color: var(--ink); }
+#s-trip .t-to .flabel { margin-right: 4px; }
+#s-trip .t-to .note { display: block; font-size: 0.8125rem; color: var(--ink-3); }
+/* a part of the plan starts under a dashed rule, as on the Depot */
+#s-trip .t-part { border-top: 1px dashed var(--rule); padding-top: 12px; gap: 10px; }
+#s-trip .t-part .flabel, #s-trip .flabel { font: 600 0.8125rem/1.25 var(--f-body); color: var(--ink-2); }
+#s-trip .t-part .seg { flex: none; max-width: 62%; }
+#s-trip .t-part .seg button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+#s-trip .t-vias { display: grid; gap: 6px; }
+#s-trip .t-via { justify-content: space-between; align-items: center; gap: 8px; font-size: 0.9375rem; }
+#s-trip .t-via > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#s-trip #t-monon-note { margin-top: -4px; font-size: 0.8125rem; color: var(--ink-2); }
+#s-trip .t-saved { flex-wrap: wrap; overflow: visible; padding-bottom: 0; }
+
+/* the route */
+#s-trip .t-route { gap: 12px; }
+#s-trip .t-sum { font-size: 0.9375rem; line-height: 1.4; color: var(--ink); text-wrap: pretty; }
+#s-trip .t-sum.warn { color: var(--caution); }
+#s-trip .t-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: tstep; }
+#s-trip .t-steps li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 0.9375rem; line-height: 1.35; }
+#s-trip .t-steps li:first-child { border-top: 0; }
+#s-trip .t-steps li > :first-child { min-width: 0; text-wrap: pretty; }
+#s-trip .t-steps li .note { flex: none; font-size: 0.8125rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+#s-trip .t-credit { font-size: 0.8125rem; color: var(--ink-3); }
+#s-trip .t-credit a { color: var(--ink-2); }
+
+/* ------------------------------------------------ the trip in progress */
+#s-trip .t-sign .name { font-size: 2.125rem; line-height: 1; }
+#s-trip .t-sign .name.long { font-size: 1.625rem; line-height: 1.05; }
+#s-trip .t-sign .meta .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+#s-trip #t-off p { font-size: 0.9375rem; line-height: 1.4; }
+#s-trip #t-gauges .g .v { font-size: 2.125rem; }
+#s-trip #t-gauges .g.home .v { color: var(--amber); }
+#s-trip #t-controls .row { flex-wrap: wrap; }
+#s-trip .t-dock .inner { display: flex; gap: 10px; }
+#s-trip .t-dock .btn { flex: 1 1 0; min-height: 48px; }
+#s-trip #t-done-g .g .v { font-size: 2.125rem; }
+
+@media (max-width: 360px) {
+  #s-trip .t-sign .name { font-size: 1.625rem; }
+  #s-trip .t-sign .name.long { font-size: 1.25rem; }
+  #s-trip #t-gauges .g .v, #s-trip #t-done-g .g .v { font-size: 1.625rem; }
+  #s-trip .t-part .seg { max-width: 66%; }
+}
+
 /* ------------------------------------------------ her evening (ext/watcher.js) */
 /* his quick reply, under her split-flap board for a few minutes: a warm slip in the cheer button's colors */
 #b-reply { gap: 4px; border-color: #6b5320; background: linear-gradient(160deg, #2a2112, var(--panel) 70%); }
@@ -1386,6 +1452,9 @@ body.stn-on { overflow: hidden; }
   </div>
 </nav>
 
+<!-- ============ TRIP (any route, filled by ext/trip.js) ============ -->
+<main id="s-trip" class="wrap" hidden></main>
+
 <!-- ============ SUMMARY ============ -->
 <main id="s-summary" class="wrap" hidden>
   <header class="topbar sticky"><div><div class="eyebrow" id="u-eyebrow">End of the line</div><h1 class="train" id="u-title">Walk complete</h1></div><button class="iconbtn" data-act="summary-done" id="u-back">Done</button></header>
@@ -1504,6 +1573,7 @@ body.stn-on { overflow: hidden; }
   <section class="card plain">
     <h2>What's new</h2>
     <ul class="muted small changelog">
+      <li>Trips: plan a walk to anywhere, like a gym downtown, by search or on the map, with stops of your own. The route rides the Monon when it helps, the conductor calls the turns and the Monon’s stations, and a new route comes if you leave this one.</li>
       <li>If the phone pauses the conductor’s voice after a locked screen or a call, the app now wakes it and says the line again, so telegrams and the home-by warning still get through.</li>
       <li>Making a new board link cuts off the old one at once, even in the middle of a walk, and the old board says the link was replaced.</li>
       <li>The Depot is calmer: the Departures board and All aboard lead, and choices you set once, like the voice, fold away until you open them.</li>
@@ -1562,7 +1632,8 @@ body.stn-on { overflow: hidden; }
       <li><b>Open-Meteo</b> gets your location rounded to about a kilometer, for the weather on the Depot and during walks.</li>
       <li><b>Indiana’s imagery service</b> (on Esri’s ArcGIS cloud), with the <b>U.S. Geological Survey</b> as a backup, serves the satellite pictures and sees which part of town is on screen. Tiles inside a strip along the trail are kept on this phone, as you look at them or all at once with Save trail maps for offline, so the maps show where the signal is weak; tiles outside the strip are never kept. The strip follows the trail’s line and is the same for everyone. It reaches a few hundred meters either side in close-ups and farther in the overview maps, so if you live near the trail, some kept tiles show your street. The arrivals board keeps the tiles it shows the same way, on the watcher’s phone. Delete them in Settings, under Maps.</li>
       <li><b>CARTO</b> serves the street map pictures, only once you add a key, and sees which part of town is on screen. The arrivals board uses your key too.</li>
-      <li><b>OpenStreetMap Nominatim</b> gets the address you type, only if you search for your home.</li>
+      <li><b>OpenStreetMap Nominatim</b> gets the address or place you type, only when you search for your home or a trip. For a trip search it also gets this app’s web address, which its rules ask for.</li>
+      <li><b>FOSSGIS’s routing services</b> (OSRM at routing.openstreetmap.de, and Valhalla at valhalla1.openstreetmap.de when OSRM doesn’t answer) get where a trip starts, its stops and where it ends, only when you plan a trip or one needs a new route, along with this app’s web address, which their rules ask for.</li>
       <li><b>Google Fonts</b> serves the typefaces when they load.</li>
       <li><b>Apple Maps</b> or <b>Google Maps</b> gets your position only if the watcher taps one of the map links on the arrivals board.</li>
     </ul>
@@ -1789,6 +1860,8 @@ const SOURCES = [
   ['Satellite view outside Indiana', 'USGS The National Map: Orthoimagery (public domain)', 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer'],
   ['Street map, with your key', 'CARTO basemaps with OpenStreetMap data', 'https://carto.com/attributions'],
   ['Address search', 'OpenStreetMap Nominatim, data \u00a9 OpenStreetMap contributors', 'https://nominatim.org/'],
+  ['Trip routes', 'OSRM, run by FOSSGIS at routing.openstreetmap.de, on OpenStreetMap data \u00a9 OpenStreetMap contributors', 'https://routing.openstreetmap.de/about.html'],
+  ['Trip routes when OSRM is down', 'Valhalla, run by FOSSGIS at valhalla1.openstreetmap.de, on OpenStreetMap data', 'https://valhalla1.openstreetmap.de/'],
   ['Live board and phone alerts', 'ntfy.sh, the relay that carries the encrypted board updates and the plain-text alerts', 'https://ntfy.sh/'],
   ['Typefaces', 'Google Fonts: Big Shoulders Display, Barlow and Chivo Mono', 'https://fonts.google.com/'],
   ['Moon phase', 'Mean synodic month from the new moon of January 6, 2000 (Meeus, Astronomical Algorithms)', 'https://en.wikipedia.org/wiki/Lunar_phase'],
@@ -2573,6 +2646,560 @@ const LTH = (() => {
   };
 })();
 if (typeof module !== 'undefined') module.exports = LTH;
+
+/* Last Train Home: trips. A walk to anywhere, on the Monon or not: the plan (one line with its turns and the stations
+   it passes) and a tracker that follows a walk along it. Street routes come from OSRM (the public routing service
+   FOSSGIS runs on OpenStreetMap data); the Monon part of a trip comes from the app's own trail, so a trip that rides
+   the Monon gets its stations and their stories. No DOM access here, so it can be tested in Node. */
+const TRIP = (() => {
+  'use strict';
+  const R = 6371008.8, D2R = Math.PI / 180, MI = 1609.344;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const fin = v => typeof v === 'number' && Number.isFinite(v);
+  function hav(a, b) {
+    const dLat = (b.lat - a.lat) * D2R, dLon = (b.lon - a.lon) * D2R;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * D2R) * Math.cos(b.lat * D2R) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  const pt = p => ({ lat: p[0], lon: p[1] });
+  const norm = a => ((((a + 180) % 360) + 360) % 360) - 180; // -180 to 180
+  function bearing(a, b) { // degrees from north, from [lat, lon] a to b
+    const f1 = a[0] * D2R, f2 = b[0] * D2R, dl = (b[1] - a[1]) * D2R;
+    const y = Math.sin(dl) * Math.cos(f2), x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+    return (Math.atan2(y, x) / D2R + 360) % 360;
+  }
+  const CARD = ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'];
+  const cardinal = b => CARD[Math.round((((b % 360) + 360) % 360) / 45) % 8];
+
+  /* ------------------------------------------------------------ a line on the ground, with distances along it */
+  class Line {
+    constructor(points) {
+      const clean = [];
+      for (const p of points || []) {
+        if (!p || !fin(+p[0]) || !fin(+p[1])) continue;
+        const q = clean[clean.length - 1];
+        if (q && Math.abs(q[0] - p[0]) < 1e-7 && Math.abs(q[1] - p[1]) < 1e-7) continue;
+        clean.push([+p[0], +p[1]]);
+      }
+      if (clean.length === 1) clean.push(clean[0].slice());
+      this.raw = clean;
+      const lat0 = clean.length ? clean.reduce((a, p) => a + p[0], 0) / clean.length : 39.8;
+      this.kx = D2R * R * Math.cos(lat0 * D2R); this.ky = D2R * R;
+      this.pts = clean.map(([lat, lon]) => ({ lat, lon, x: lon * this.kx, y: lat * this.ky }));
+      this.cum = [0];
+      for (let i = 1; i < this.pts.length; i++) { const a = this.pts[i - 1], b = this.pts[i]; this.cum.push(this.cum[i - 1] + Math.hypot(b.x - a.x, b.y - a.y)); }
+      this.length = this.cum[this.cum.length - 1] || 0;
+    }
+    // The nearest point of the line, looking only at the stretch from lo to hi along it when they are given (a route
+    // can pass near itself, and the walk is somewhere near where it was a moment ago)
+    project(lat, lon, lo = -Infinity, hi = Infinity) {
+      const px = lon * this.kx, py = lat * this.ky;
+      let best = null;
+      for (let i = 1; i < this.pts.length; i++) {
+        if (this.cum[i] < lo || this.cum[i - 1] > hi) continue;
+        const a = this.pts[i - 1], b = this.pts[i], dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy;
+        const t = L2 ? clamp(((px - a.x) * dx + (py - a.y) * dy) / L2, 0, 1) : 0;
+        const d = Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
+        if (!best || d < best.d) best = { d, s: this.cum[i - 1] + t * Math.sqrt(L2) };
+      }
+      if (!best) return (lo > -Infinity || hi < Infinity) ? this.project(lat, lon) : { d: Infinity, s: 0 };
+      return best;
+    }
+    seg(s) { // index of the segment that holds s
+      s = clamp(s, 0, this.length);
+      let lo = 0, hi = this.cum.length - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (this.cum[m] <= s) lo = m; else hi = m; }
+      return hi;
+    }
+    at(s) {
+      if (this.pts.length < 2) return this.pts[0] ? { lat: this.pts[0].lat, lon: this.pts[0].lon } : { lat: 0, lon: 0 };
+      const i = this.seg(s), a = this.pts[i - 1], b = this.pts[i], len = this.cum[i] - this.cum[i - 1];
+      const t = len ? (clamp(s, 0, this.length) - this.cum[i - 1]) / len : 0;
+      return { lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t };
+    }
+    bearingAt(s) {
+      if (this.pts.length < 2) return 0;
+      let i = this.seg(s);
+      while (i < this.pts.length - 1 && this.cum[i] - this.cum[i - 1] < 1) i++; // skip a zero-length piece
+      const a = this.pts[i - 1], b = this.pts[i];
+      return bearing([a.lat, a.lon], [b.lat, b.lon]);
+    }
+    // the line from s0 to s1, in that order (s1 may be behind s0)
+    slice(s0, s1) {
+      const fwd = s1 >= s0, lo = Math.min(s0, s1), hi = Math.max(s0, s1), out = [];
+      const a = this.at(lo); out.push([a.lat, a.lon]);
+      for (let i = 0; i < this.pts.length; i++) if (this.cum[i] > lo && this.cum[i] < hi) out.push([this.pts[i].lat, this.pts[i].lon]);
+      const b = this.at(hi); out.push([b.lat, b.lon]);
+      return fwd ? out : out.reverse();
+    }
+  }
+
+  // Fewer points for the same line, within tol meters (Douglas and Peucker)
+  function simplify(points, tol = 2) {
+    if (!points || points.length < 3) return (points || []).slice();
+    const L = new Line(points), P = L.pts, keep = new Uint8Array(P.length);
+    keep[0] = keep[P.length - 1] = 1;
+    const stack = [[0, P.length - 1]];
+    while (stack.length) {
+      const [i, j] = stack.pop();
+      const a = P[i], b = P[j], dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy;
+      let far = -1, idx = -1;
+      for (let k = i + 1; k < j; k++) {
+        const p = P[k], t = L2 ? clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / L2, 0, 1) : 0;
+        const d = Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+        if (d > far) { far = d; idx = k; }
+      }
+      if (far > tol) { keep[idx] = 1; stack.push([i, idx], [idx, j]); }
+    }
+    return P.filter((p, k) => keep[k]).map(p => [+p.lat.toFixed(6), +p.lon.toFixed(6)]);
+  }
+
+  /* ------------------------------------------------------------ names, as signs show them and as a voice says them */
+  const ABBR = [[/\bStreet\b/g, 'St'], [/\bAvenue\b/g, 'Ave'], [/\bBoulevard\b/g, 'Blvd'], [/\bDrive\b/g, 'Dr'], [/\bRoad\b/g, 'Rd'],
+    [/\bParkway\b/g, 'Pkwy'], [/\bPlace\b/g, 'Pl'], [/\bCourt\b/g, 'Ct'], [/\bLane\b/g, 'Ln'], [/\bHighway\b/g, 'Hwy'], [/\bTerrace\b/g, 'Ter']];
+  const DIRS = [[/^North\s/, 'N '], [/^South\s/, 'S '], [/^East\s/, 'E '], [/^West\s/, 'W ']];
+  const isPath = n => /\b(trail|path|greenway|walkway|footway|towpath)\b/i.test(n);
+  function shortName(n) {
+    let s = String(n || '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    if (/^Indianapolis Cultural Trail\b/i.test(s)) return 'Cultural Trail';
+    if (isPath(s)) return s;
+    for (const [re, r] of DIRS) s = s.replace(re, r);
+    for (const [re, r] of ABBR) s = s.replace(re, r);
+    return s;
+  }
+  function sayName(n) {
+    let s = String(n || '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    if (/^Indianapolis Cultural Trail\b/i.test(s)) return 'the Cultural Trail';
+    if (isPath(s) && !/^the\b/i.test(s)) return 'the ' + s;
+    return s;
+  }
+  function turnOf(bb, ba) {
+    const a = norm(ba - bb), x = Math.abs(a), side = a > 0 ? 'right' : 'left';
+    if (x < 28) return 'straight';
+    if (x < 62) return 'slight ' + side;
+    if (x < 150) return side;
+    return 'sharp ' + side;
+  }
+  const verbOf = dir => (dir.startsWith('slight') ? `Bear ${dir.slice(7)}` : dir.startsWith('sharp') ? `Make a sharp ${dir.slice(6)}` : `Turn ${dir}`);
+
+  // One maneuver in words, for the sign (short street names) and for the voice (full names)
+  function phrase(m, destName) {
+    const nm = shortName(m.name), sp = sayName(m.name);
+    if (m.kind === 'depart') return { text: `Head ${m.dir}${nm ? ` on ${nm}` : ''}`, say: `Head ${m.dir}${sp ? ` on ${sp}` : ''}` };
+    if (m.kind === 'arrive') return { text: `Arrive at ${destName || 'your stop'}`, say: `Arrive at ${destName || 'your stop'}` };
+    if (m.kind === 'continue') return { text: `Continue onto ${nm}`, say: `Continue onto ${sp}` };
+    if (m.kind === 'join') {
+      const head = `${m.dir === 'straight' ? 'Join' : `${verbOf(m.dir)} onto`} the Monon at ${m.at.short}`;
+      return { text: `${head}, heading ${m.heading}`, say: `${m.dir === 'straight' ? 'Join' : `${verbOf(m.dir)} onto`} the Monon Trail at ${m.at.name.replace(/,.*$/, '')}, heading ${m.heading}` };
+    }
+    if (m.kind === 'leave') {
+      const then = m.dir === 'straight' ? (nm ? ` and continue onto ${nm}` : '') : ` and ${verbOf(m.dir).toLowerCase()}${nm ? ` onto ${nm}` : ''}`;
+      const thenSay = m.dir === 'straight' ? (sp ? ` and continue onto ${sp}` : '') : ` and ${verbOf(m.dir).toLowerCase()}${sp ? ` onto ${sp}` : ''}`;
+      return { text: `Leave the Monon at ${m.at.short}${then}`, say: `Leave the Monon at ${m.at.name.replace(/,.*$/, '')}${thenSay}` };
+    }
+    const v = verbOf(m.dir);
+    return { text: `${v}${nm ? ` onto ${nm}` : ''}`, say: `${v}${sp ? ` onto ${sp}` : ''}` };
+  }
+
+  /* ------------------------------------------------------------ OSRM routes as maneuvers */
+  const MERGE = 22; // meters: turns closer together than this read as one (crossing a street on a sidewalk is two)
+  function rawSteps(leg) {
+    return ((leg && leg.steps) || []).map(st => {
+      const m = st.maneuver || {}, loc = Array.isArray(m.location) ? [+m.location[1], +m.location[0]] : null;
+      return { ll: loc, type: m.type || 'turn', bb: +m.bearing_before || 0, ba: +m.bearing_after || 0, name: String(st.name || '').trim(), d: +st.distance || 0 };
+    }).filter(x => x.ll && fin(x.ll[0]) && fin(x.ll[1]));
+  }
+  // A leg's steps, depart to arrive, with the tiny zigzags folded together and the turns that come out straight dropped
+  function cleanLeg(steps) {
+    const out = [];
+    for (const raw of steps) {
+      const st = Object.assign({}, raw);
+      if (st.type === 'arrive') { out.push(Object.assign(st, { kind: 'arrive' })); continue; }
+      const prev = out[out.length - 1];
+      if (prev && prev.kind !== 'arrive' && prev.d < MERGE && st.type !== 'depart') {
+        // the walk turns again within a few steps: one maneuver, from the way in to the way out
+        prev.ba = st.ba; prev.d += st.d; if (st.name) prev.name = st.name;
+        continue;
+      }
+      out.push(Object.assign(st, { kind: st.type === 'depart' ? 'depart' : 'turn' }));
+    }
+    const res = [];
+    let cur = '';
+    for (const m of out) {
+      if (m.kind === 'turn') {
+        m.dir = turnOf(m.bb, m.ba);
+        const renamed = !!m.name && m.name !== cur;
+        if (m.dir === 'straight' && !renamed) { const p = res[res.length - 1]; if (p) p.d += m.d; continue; }
+        if (m.dir === 'straight') m.kind = 'continue';
+      } else if (m.kind === 'depart') m.dir = cardinal(m.ba);
+      res.push(m);
+      if (m.name) cur = m.name;
+    }
+    return res;
+  }
+
+  // An OSRM route (one call, maybe through stops of his own) as a part of a plan
+  function osrmPart(route, vias = []) {
+    const coords = route && route.geometry && Array.isArray(route.geometry.coordinates) ? route.geometry.coordinates : [];
+    const pts = coords.filter(c => Array.isArray(c) && fin(+c[0]) && fin(+c[1])).map(c => [+c[1], +c[0]]);
+    const legs = (route && route.legs) || [], man = [], stations = [];
+    legs.forEach((leg, k) => {
+      const ms = cleanLeg(rawSteps(leg));
+      if (k > 0) {
+        // the arrival at a stop of his own and the departure from it: one maneuver there, and a station for the stop
+        const arr = man.pop(), dep = ms.shift();
+        if (arr && dep) {
+          const dir = turnOf(arr.bb, dep.ba), v = vias[k - 1];
+          if (v) stations.push({ ll: arr.ll, key: `via:${k - 1}`, name: v.name, short: v.name, kind: 'via' });
+          if (dir !== 'straight' || (dep.name && dep.name !== arr.name)) man.push(Object.assign({}, dep, { kind: dir === 'straight' ? 'continue' : 'turn', dir, bb: arr.bb }));
+          else if (man.length) man[man.length - 1].d += dep.d;
+        }
+      }
+      man.push(...ms);
+    });
+    return { pts, man, stations, dur: +(route && route.duration) || 0, dist: +(route && route.distance) || 0 };
+  }
+
+  // The Monon from one station to another, as a part of a plan: the app's own line and stations, no turns inside
+  function mononPart(trail, entry, exit) {
+    const line = new Line(trail.pts.map(p => [p.lat, p.lon]));
+    const pts = line.slice(entry.s, exit.s), dir = exit.s >= entry.s ? 1 : -1;
+    const between = trail.stations.filter(st => st.kind !== 'spot' && (dir > 0 ? st.s > entry.s + 5 && st.s < exit.s - 5 : st.s < entry.s - 5 && st.s > exit.s + 5));
+    if (dir < 0) between.reverse();
+    const stations = between.map(st => ({ id: st.id, key: `monon:${st.id}`, name: st.name, short: st.short, kind: st.kind === 'major' || st.kind === 'place' || st.kind === 'water' ? 'major' : 'minor', ll: [st.lat, st.lon], off: Math.abs(st.s - entry.s) }));
+    return { pts, man: [], stations, monon: { entry: { id: entry.id, name: entry.name, short: entry.short }, exit: { id: exit.id, name: exit.name, short: exit.short }, len: Math.abs(exit.s - entry.s), dir }, dist: Math.abs(exit.s - entry.s) };
+  }
+
+  // Where a trip from one place to another would join and leave the Monon, and whether that's worth it
+  function mononChoice(trail, from, to) {
+    const pf = trail.project(from[0], from[1]), pt2 = trail.project(to[0], to[1]);
+    const real = trail.stations.filter(st => st.kind !== 'spot');
+    const near = s => real.reduce((b, st) => (!b || Math.abs(st.s - s) < Math.abs(b.s - s) ? st : b), null);
+    const entry = near(pf.s), exit = near(pt2.s);
+    if (!entry || !exit || entry === exit) return { worth: false, entry, exit, len: 0 };
+    const len = Math.abs(exit.s - entry.s), straight = hav(pt(from), pt(to));
+    // home and the far end close to the trail, and a good stretch of it in the right direction
+    const worth = pf.d < 2000 && pt2.d < 3500 && len > 1200 && len > 0.45 * straight;
+    return { worth, entry, exit, len, offFrom: pf.d, offTo: pt2.d };
+  }
+
+  // Parts into one plan: a single line, the maneuvers along it with their distances, and the stations it passes
+  function compose(parts, opts = {}) {
+    const pts = [], man = [], stations = [];
+    let monon = null, dur = 0;
+    parts.forEach((part, i) => {
+      // the joint between parts: one point, not two
+      const add = part.pts.slice(pts.length && part.pts.length && hav(pt(pts[pts.length - 1]), pt(part.pts[0])) < 1 ? 1 : 0);
+      if (part.monon) {
+        monon = part.monon;
+        const inBear = man.length ? man[man.length - 1].bb : null; // the arrival at the Monon, if a street leg led there
+        const ml = new Line(part.pts), b0 = ml.bearingAt(0);
+        const last = man[man.length - 1];
+        if (last && last.kind === 'arrive') man.pop();
+        man.push({ ll: part.pts[0], kind: 'join', dir: inBear == null ? 'straight' : turnOf(inBear, b0), at: part.monon.entry, heading: cardinal(b0), name: 'Monon Trail', bb: inBear == null ? b0 : inBear, ba: b0, d: part.dist });
+        stations.push({ ll: part.pts[0], key: `monon:${part.monon.entry.id}`, id: part.monon.entry.id, name: part.monon.entry.name, short: part.monon.entry.short, kind: 'join' });
+        part.stations.forEach(st => stations.push(Object.assign({}, st)));
+        stations.push({ ll: part.pts[part.pts.length - 1], key: `monon:${part.monon.exit.id}`, id: part.monon.exit.id, name: part.monon.exit.name, short: part.monon.exit.short, kind: 'leave' });
+        dur += part.dist / 1.39;
+        // the way off the trail is the next part's first step
+        part._exitBear = ml.bearingAt(ml.length);
+      } else {
+        const prev = parts[i - 1];
+        const ms = part.man.map(m => Object.assign({}, m));
+        if (prev && prev.monon && ms.length && ms[0].kind === 'depart') {
+          const dep = ms.shift();
+          ms.unshift(Object.assign({}, dep, { kind: 'leave', dir: turnOf(prev._exitBear, dep.ba), at: prev.monon.exit, bb: prev._exitBear }));
+        } else if (man.length && ms.length && ms[0].kind === 'depart' && man[man.length - 1].kind === 'arrive') {
+          // two street parts in a row: no arrival and new departure in the middle
+          const arr = man.pop(), dep = ms.shift();
+          ms.unshift(Object.assign({}, dep, { kind: 'turn', dir: turnOf(arr.bb, dep.ba) }));
+        }
+        man.push(...ms);
+        stations.push(...part.stations);
+        dur += part.dur;
+      }
+      pts.push(...add);
+    });
+    const line = simplify(pts, 1.5);
+    const L = new Line(line);
+    // every maneuver at its place along the line, in order (the line can pass near itself, so look forward only)
+    let s = 0;
+    const out = [];
+    for (const m of man) {
+      const pj = m.kind === 'depart' ? { s: 0 } : m.kind === 'arrive' ? { s: L.length } : L.project(m.ll[0], m.ll[1], s - 5, Infinity);
+      s = Math.max(s, pj.s);
+      const w = phrase(m, opts.destName);
+      out.push({ s: Math.round(pj.s * 10) / 10, ll: [+m.ll[0].toFixed(6), +m.ll[1].toFixed(6)], kind: m.kind, dir: m.dir || '', name: m.name || '', text: w.text, say: w.say, at: m.at ? m.at.id : undefined });
+    }
+    if (!out.length || out[0].kind !== 'depart') out.unshift({ s: 0, ll: line[0], kind: 'depart', dir: cardinal(L.bearingAt(0)), name: '', text: `Head ${cardinal(L.bearingAt(0))}`, say: `Head ${cardinal(L.bearingAt(0))}` });
+    if (out[out.length - 1].kind !== 'arrive') { const w = phrase({ kind: 'arrive' }, opts.destName); out.push({ s: L.length, ll: line[line.length - 1], kind: 'arrive', dir: '', name: '', text: w.text, say: w.say }); }
+    out.forEach((m, i) => { m.d = Math.round(((out[i + 1] ? out[i + 1].s : L.length) - m.s) * 10) / 10; });
+    let sv = 0;
+    // the stations in travel order, each found ahead of the one before
+    const sts = stations.map(st => {
+      const sAt = L.project(st.ll[0], st.ll[1], sv - 5, Infinity).s;
+      sv = Math.max(sv, sAt);
+      return { s: Math.round(sAt * 10) / 10, key: st.key, id: st.id, name: st.name, short: st.short, kind: st.kind, ll: [+st.ll[0].toFixed(6), +st.ll[1].toFixed(6)] };
+    }).sort((a, b) => a.s - b.s);
+    return { v: 1, line, length: Math.round(L.length), maneuvers: out, stations: sts, monon, dur: Math.round(dur) };
+  }
+
+  /* ------------------------------------------------------------ following a walk along the plan */
+  const MODES = { walk: { vmax: 4.2, prior: 1.45, lo: 0.6, hi: 2.8, ahead: 140, now: 22 }, bike: { vmax: 13, prior: 4.2, lo: 1.5, hi: 9, ahead: 260, now: 35 } };
+  class TripTracker {
+    constructor(plan, opts = {}) {
+      this.mode = MODES[opts.mode] ? opts.mode : 'walk';
+      this.k = MODES[this.mode];
+      this.prior = { speed: fin(opts.priorSpeed) ? clamp(opts.priorSpeed, this.k.lo, this.k.hi) : this.k.prior };
+      this.unitM = opts.unit === 'km' ? 1000 : MI;
+      this.dest = opts.dest || null; // { lat, lon }
+      this.ver = 0; this.passed = {};
+      this.setPlan(plan, true);
+      this.start(fin(opts.t0) ? opts.t0 : Date.now());
+    }
+    setPlan(plan, first) {
+      this.plan = plan;
+      this.line = new Line(plan.line);
+      if (!first) this.ver++;
+      this.mIdx = 1; this.said = {}; this.sAnchor = null; this.sMax = 0;
+      if (!first && this.pos) { const pj = this.line.project(this.pos.lat, this.pos.lon, -Infinity, 400); this.s = this.sMax = pj.s; this.onRoute = pj.d < 60; this.off = pj.d; this.outCount = 0; this.inCount = 0; this.offSince = this.onRoute ? null : this.offSince; this.wrongSaid = false; }
+      if (!this.dest || first) { const a = plan.maneuvers[plan.maneuvers.length - 1]; this.dest = this.dest || (a ? { lat: a.ll[0], lon: a.ll[1] } : null); }
+    }
+    start(t0) {
+      Object.assign(this, {
+        t0, tLast: null, status: 'walking', pos: null, anchor: null, acc: null, accEma: null, fixes: 0, rejects: 0,
+        s: 0, v: 0, onFor: 0, sMax: 0, sAnchor: null, onRoute: false, inCount: 0, outCount: 0, off: null, offSince: null, lastProj: null, wrongSaid: false,
+        dist: 0, moving: 0, stopped: false, stopSince: null, breaks: [], samples: [], trackPts: [],
+        mileNext: 1, arrivedAt: null, pausedAt: null, pausedMs: 0, tEnd: null, passes: [],
+      });
+    }
+    pause(t) {
+      if (this.status !== 'walking') return;
+      this.status = 'paused'; this.pausedAt = t;
+      const b = this.breaks[this.breaks.length - 1];
+      if (b && b.open) { b.open = false; b.dur = Math.max(0, Math.round((t - b.t0) / 1000)); }
+      this.stopped = false; this.stopSince = null;
+    }
+    resume(t) {
+      if (this.status !== 'paused') return;
+      const gap = Math.max(0, t - this.pausedAt);
+      this.status = 'walking'; this.pausedMs += gap; this.pausedAt = null;
+      for (const smp of this.samples) smp.t += gap;
+      this.stopped = false; this.stopSince = null; this.tLast = t;
+    }
+    finish(t) {
+      if (this.status === 'finished') return;
+      this.status = 'finished'; this.tEnd = this.arrivedAt || t;
+      const b = this.breaks[this.breaks.length - 1];
+      if (b && b.open) { b.open = false; b.dur = Math.max(0, Math.round((this.tEnd - b.t0) / 1000)); }
+    }
+    elapsed(now) { return Math.max(0, ((this.tEnd || now) - this.t0 - this.pausedMs - (this.pausedAt ? now - this.pausedAt : 0)) / 1000); }
+
+    feed(fix) {
+      const ev = [];
+      if (this.status !== 'walking') return ev;
+      if (!fix || !fin(fix.lat) || !fin(fix.lon) || !fin(fix.t)) return ev;
+      const acc = fin(fix.acc) ? fix.acc : 25;
+      this.acc = acc;
+      this.accEma = this.accEma == null ? acc : this.accEma + 0.15 * (acc - this.accEma);
+      if (acc > 75) return ev; // too coarse to use
+      const t = fix.t;
+      if (!this.pos) {
+        this.pos = { lat: fix.lat, lon: fix.lon }; this.anchor = Object.assign({}, this.pos); this.tLast = t; this.fixes = 1;
+        const pj = this.line.project(fix.lat, fix.lon, -Infinity, 600);
+        this.lastProj = pj; this.off = pj.d;
+        if (pj.d < Math.min(45, 25 + acc * 0.5)) { this.onRoute = true; this.s = this.sMax = pj.s; this.v = 0; this.onFor = 0; }
+        this._sample(t); this._track(fix);
+        ev.push({ type: 'firstFix', onRoute: this.onRoute, off: pj.d });
+        return ev;
+      }
+      const dt = (t - this.tLast) / 1000;
+      if (dt < 0.3) return ev;
+      const moved = hav(this.pos, fix), vImplied = Math.max(0, moved - acc * 0.5) / dt;
+      if (vImplied > this.k.vmax && dt < 25 && this.rejects < 5) { this.rejects++; return ev; }
+      // a jump believed only after five refusals (or after a long gap): he is there now, but he didn't walk it
+      const jump = vImplied > this.k.vmax;
+      this.rejects = 0;
+      if (dt > 45) ev.push({ type: 'gap', secs: Math.round(dt) });
+      this.fixes++;
+      // where on the line: near where he was a moment ago, unless he has been off it (then anywhere)
+      const win = Math.max(300, dt * this.k.vmax * 1.5);
+      let pj = this.onRoute ? this.line.project(fix.lat, fix.lon, this.s - win, this.s + win) : this.line.project(fix.lat, fix.lon, this.sMax - 400, Infinity);
+      if (!this.onRoute && pj.d > 150) { const any = this.line.project(fix.lat, fix.lon); if (any.d < pj.d - 40) pj = any; }
+      this.lastProj = pj; this.off = pj.d;
+      // a smoothed position, for the distance walked off the route (standing still on a jittery fix adds nothing)
+      const ko = dt > 20 || jump ? 1 : clamp(dt / (dt + 3), 0.15, 1);
+      this.pos = { lat: this.pos.lat + ko * (fix.lat - this.pos.lat), lon: this.pos.lon + ko * (fix.lon - this.pos.lon) };
+      if (jump) { this.anchor = Object.assign({}, this.pos); this.sAnchor = null; }
+      const sPrev = this.s, wasOn = this.onRoute;
+      this._routeState(fix, acc, pj, t, ev);
+      if (jump) { this.sAnchor = this.onRoute ? this.s : null; const at = this.onRoute ? this.line.at(this.s) : this.pos; this.anchor = { lat: at.lat, lon: at.lon }; }
+      else if (this.onRoute && wasOn) {
+        // on the route, the distance walked is the way along it, so noise across the line adds nothing
+        if (this.sAnchor == null) this.sAnchor = this.s;
+        const ds = Math.abs(this.s - this.sAnchor);
+        if (ds >= 12) { this.dist += ds; this.sAnchor = this.s; }
+        const at = this.line.at(this.s); this.anchor = { lat: at.lat, lon: at.lon };
+      } else {
+        if (this.onRoute) { this.sAnchor = this.s; } // just back on it: from here, along the line
+        else this.sAnchor = null;
+        const step = hav(this.anchor, this.pos);
+        if (step >= Math.max(10, acc * 0.5)) { this.dist += step; this.anchor = Object.assign({}, this.pos); }
+      }
+      this.tLast = t;
+      this._moving(t, dt, ev);
+      if (this.onRoute) this._progress(t, wasOn ? sPrev : this.s, ev);
+      this._miles(ev);
+      this._arrival(fix, t, ev);
+      this._sample(t); this._track(fix);
+      return ev;
+    }
+    _routeState(fix, acc, pj, t, ev) {
+      const inThr = Math.min(40, 20 + acc * 0.5), outThr = Math.max(55, acc * 1.3);
+      if (this.onRoute) {
+        this.outCount = pj.d > outThr ? this.outCount + 1 : 0;
+        if (this.outCount >= 3 || pj.d > 150) {
+          this.onRoute = false; this.inCount = 0; this.offSince = t;
+          ev.push({ type: 'offRoute', d: Math.round(pj.d), s: this.s });
+          return;
+        }
+        // along the line, a filter of position and speed (as the trail tracker does), so GPS noise along the way
+        // doesn't add distance; after a gap, the new fix is believed outright
+        const dt = (t - this.tLast) / 1000, vm = this.k.vmax;
+        if (dt > 20) { this.v = clamp((pj.s - this.s) / dt, -vm, vm); this.s = pj.s; }
+        else {
+          const sPred = this.s + this.v * dt;
+          if (acc > 50) this.s = sPred; // coast through a bad fix
+          else {
+            this.onFor = (this.onFor || 0) + dt;
+            const warm = Math.max(1, 3 - this.onFor / 12); // quicker lock-on for the first half minute
+            const a = clamp((0.08 + 1.2 / Math.max(4, acc)) * warm, 0.1, 0.6), b = clamp(((a * a) / (2 - a)) * 0.5 * warm, 0.004, 0.2);
+            const r = pj.s - sPred;
+            this.s = sPred + a * r;
+            this.v = clamp(this.v + (b / dt) * r, -vm, vm);
+          }
+        }
+        this.s = clamp(this.s, 0, this.line.length);
+      } else {
+        this.inCount = pj.d < inThr ? this.inCount + 1 : 0;
+        if (this.inCount >= 2 || (pj.d < 12 && acc < 15)) {
+          this.onRoute = true; this.outCount = 0;
+          const back = this.offSince ? Math.round((t - this.offSince) / 1000) : 0;
+          this.s = pj.s; this.v = 0; this.onFor = 0; this.offSince = null;
+          ev.push({ type: 'onRoute', after: back });
+        }
+      }
+    }
+    _progress(t, sPrev, ev) {
+      const s = this.s, M = this.plan.maneuvers;
+      if (s > this.sMax) this.sMax = s;
+      // the maneuvers he has passed drop off; the next one is called ahead and then at its corner
+      while (this.mIdx < M.length - 1 && M[this.mIdx].s < s - 15) this.mIdx++;
+      const m = M[this.mIdx];
+      if (m && m.kind !== 'arrive') {
+        const dd = m.s - s, key = `${this.ver}:${this.mIdx}`;
+        if (dd <= this.k.ahead && dd > this.k.now + 15 && !this.said[key + 'a'] && !this.said[key + 'n']) { this.said[key + 'a'] = 1; ev.push({ type: 'approach', m, i: this.mIdx, dist: dd }); }
+        if (dd <= this.k.now && dd > -15 && !this.said[key + 'n']) { this.said[key + 'n'] = 1; ev.push({ type: 'turnNow', m, i: this.mIdx }); }
+      }
+      // stations he passes: the Monon's stops, his own stops along the way
+      for (const st of this.plan.stations) {
+        if (this.passed[st.key] || st.kind === 'leave') continue;
+        if (st.s > Math.min(sPrev, s) - 1 && st.s <= s && s - st.s < 400) {
+          this.passed[st.key] = t;
+          this.passes.push({ key: st.key, id: st.id, t, el: Math.round(this.elapsed(t)) });
+          ev.push({ type: 'pass', st });
+        }
+      }
+      // heading back along the line a good way: say so once, until he turns forward again
+      if (s < this.sMax - 90 && !this.wrongSaid) { this.wrongSaid = true; ev.push({ type: 'wrongWay', back: Math.round(this.sMax - s) }); }
+      else if (this.wrongSaid && s >= this.sMax - 20) this.wrongSaid = false;
+    }
+    _moving(t, dt, ev) {
+      if (dt > 45) return;
+      const old = this._sampleAt(t - 75000), recent = old ? this.dist - old.dist : Infinity, span = old ? (t - old.t) / 1000 : 0;
+      if (!this.stopped && old && span >= 60 && recent < 18) {
+        this.stopped = true; this.stopSince = old.t;
+        this.breaks.push({ t0: old.t, dur: 0, open: true });
+        ev.push({ type: 'stopped' });
+      } else if (this.stopped) {
+        const o2 = this._sampleAt(t - 25000);
+        if (o2 && this.dist - o2.dist > 22) {
+          this.stopped = false;
+          const secs = Math.round((t - this.stopSince) / 1000), b = this.breaks[this.breaks.length - 1];
+          if (b && b.open) { b.open = false; b.dur = secs; }
+          ev.push({ type: 'resumed', secs }); this.stopSince = null;
+        }
+      }
+      if (!this.stopped) this.moving += Math.min(dt, 30);
+    }
+    _miles(ev) { while (this.dist >= this.mileNext * (this.unitM || MI)) { ev.push({ type: 'mile', n: this.mileNext }); this.mileNext++; } }
+    _arrival(fix, t, ev) {
+      if (this.arrivedAt || !this.dest) return;
+      const dDest = hav(fix, this.dest);
+      if ((dDest < 35 && this.dist > 60) || (this.onRoute && this.s >= this.line.length - 18 && dDest < 70)) {
+        this.arrivedAt = t; this.status = 'arrived'; this.s = this.line.length;
+        ev.push({ type: 'arrived' });
+      }
+    }
+    _sample(t) { this.samples.push({ t, dist: this.dist }); while (this.samples.length > 2 && this.samples[0].t < t - 20 * 60000) this.samples.shift(); }
+    _sampleAt(t) { let best = null; for (const smp of this.samples) { if (smp.t <= t) best = smp; else break; } return best; }
+    _track(fix) {
+      const last = this.trackPts[this.trackPts.length - 1];
+      if (!last || fix.t - last[2] >= 10000 || hav({ lat: last[0], lon: last[1] }, fix) >= 25) this.trackPts.push([+fix.lat.toFixed(6), +fix.lon.toFixed(6), fix.t]);
+      if (this.trackPts.length > 3000) this.trackPts.splice(1, 1); // a very long trip keeps its start and its recent path
+    }
+
+    /* how far, how fast, when */
+    remaining() {
+      if (this.arrivedAt) return 0;
+      const L = this.line.length;
+      if (!this.onRoute && this.lastProj && this.pos) return Math.max(0, L - this.lastProj.s) + this.lastProj.d * 1.2;
+      return Math.max(0, L - this.s);
+    }
+    paceSpeed(now) {
+      if (this.stopped) return 0;
+      const old = this._sampleAt(now - 150000);
+      if (!old) { const e = this.elapsed(now); return e > 20 ? this.dist / e : 0; }
+      const span = (now - old.t) / 1000;
+      return span > 10 ? (this.dist - old.dist) / span : 0;
+    }
+    etaSpeed(now) {
+      const ref = this.pausedAt || now, el = this.elapsed(now);
+      const all = el > 90 ? this.dist / el : null;
+      const old = this._sampleAt(ref - 600000);
+      const recent = old && ref - old.t > 240000 ? (this.dist - old.dist) / ((ref - old.t) / 1000) : null;
+      const wPrior = clamp(1 - el / 1500, 0, 1);
+      let w = 0, sum = 0;
+      if (recent != null) { sum += recent * 0.55; w += 0.55; }
+      if (all != null) { sum += all * 0.45; w += 0.45; }
+      let v = w ? sum / w : this.prior.speed;
+      v = v * (1 - wPrior) + this.prior.speed * wPrior;
+      return clamp(v, this.k.lo, this.k.hi);
+    }
+    eta(now) {
+      const v = this.etaSpeed(now), m = this.remaining(), secs = m / v, t = now + secs * 1000;
+      const spread = Math.max(60, secs * 0.08);
+      return { t, lo: t - spread * 700, hi: t + spread * 1000, m, v };
+    }
+    next() { const M = this.plan.maneuvers; return M[Math.min(this.mIdx, M.length - 1)] || null; }
+    snapshot() {
+      const o = {};
+      for (const k of Object.keys(this)) if (k !== 'line' && k !== 'plan' && k !== 'k') o[k] = this[k];
+      return JSON.parse(JSON.stringify(o));
+    }
+    restore(o) { const keep = { line: this.line, plan: this.plan, k: this.k }; Object.assign(this, o, keep); }
+  }
+
+  // A plan's own summary in plain numbers (for the board and the log)
+  function summary(plan) {
+    return { length: plan.length, turns: plan.maneuvers.filter(m => m.kind !== 'depart' && m.kind !== 'arrive').length, monon: plan.monon ? { entry: plan.monon.entry.short, exit: plan.monon.exit.short, len: Math.round(plan.monon.len) } : null };
+  }
+
+  return { Line, simplify, hav, bearing, cardinal, turnOf, shortName, sayName, phrase, rawSteps, cleanLeg, osrmPart, mononPart, mononChoice, compose, TripTracker, summary, MODES };
+})();
+if (typeof module !== 'undefined') module.exports = TRIP;
 
 /* Body metrics: step counting from the motion sensor, calories from the 2024 Adult Compendium, effort. */
 const Metrics = (() => {
@@ -6752,7 +7379,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function segGet(sel, attr) { const b = $(`${sel} button[aria-pressed="true"]`); return b ? b.dataset[attr] : null; }
   // Backups: everything worth keeping in one JSON file, and a merge on the way back in
   // feature data that travels with a backup: only these keys, and each module checks what it reads
-  const EXT_BACKUP = /^ext\.(story\.(on|pos|heard|said)|ghost\.(pick|races)|recap\.cards)$/;
+  const EXT_BACKUP = /^ext\.(story\.(on|pos|heard|said)|ghost\.(pick|races)|recap\.cards|trip\.(saved|log))$/;
   const extData = () => { const o = {}; try { Object.keys(localStorage).forEach(k => { if (k.startsWith('lth.') && EXT_BACKUP.test(k.slice(4))) { const v = store.get(k.slice(4), undefined); if (v !== undefined) o[k.slice(4)] = v; } }); } catch (e) { /* storage unavailable */ } return o; };
   const Backup = {
     save() {
@@ -7712,7 +8339,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   };
 
   /* ------------------------------------------------------------ navigation */
-  const MAINS = ['s-preview', 's-welcome', 's-depot', 's-cab', 's-summary', 's-history', 's-settings', 's-about', 's-board'];
+  const MAINS = ['s-preview', 's-welcome', 's-depot', 's-cab', 's-summary', 's-history', 's-settings', 's-about', 's-board', 's-trip'];
   let current = null, previous = null;
   // The preview screen (Claude's viewer before setup) builds its sample board and voices the first time it shows,
   // so a set-up phone doesn't animate split-flaps nobody can see at every start
@@ -8416,20 +9043,23 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   /* ------------------------------------------------------------ pick home on the map */
   const Pick = {
     cur: null,
-    open() {
-      const P = A.P, start = P.home ? [+P.home.lat, +P.home.lon] : null, mid = trail.at(trail.length / 2);
+    // opts (trips use the same picker): { title, button, label, kind, start: [lat, lon], onSet(ll) }; none picks home
+    open(opts = {}) {
+      const P = A.P, home = typeof opts.onSet !== 'function', mid = trail.at(trail.length / 2);
+      const start = opts.start ? opts.start.slice() : home && P.home ? [+P.home.lat, +P.home.lon] : null;
       // a home already set opens close up and marked; otherwise the whole trail, to tap toward
       const st = this.cur = { c: start || [mid.lat, mid.lon], z: start ? 16 : ZMIN, pick: start, view: null };
       A.openSheet((p, close) => {
-        const host = h('div', { class: 'fr-map', tabindex: '0', role: 'group', 'aria-label': 'Map. Arrow keys move it, plus and minus zoom, Enter zooms in and then puts home in the middle.', 'aria-describedby': 'fr-pick-say' });
+        const host = h('div', { class: 'fr-map', tabindex: '0', role: 'group', 'aria-label': home ? 'Map. Arrow keys move it, plus and minus zoom, Enter zooms in and then puts home in the middle.' : 'Map. Arrow keys move it, plus and minus zoom, Enter zooms in and then picks the middle.', 'aria-describedby': 'fr-pick-say' });
         const say = h('p', { class: 'note', id: 'fr-pick-say', 'aria-live': 'polite' });
-        const hint = () => { if (!st.pick) say.textContent = st.z < ZPICK ? 'Tap near your home to zoom in. Drag to move the map.' : 'Now tap your home. Close up like this, walks end at your door.'; };
+        const hint = () => { if (!st.pick) say.textContent = st.z < ZPICK ? `Tap near ${home ? 'your home' : 'the spot'} to zoom in. Drag to move the map.` : home ? 'Now tap your home. Close up like this, walks end at your door.' : 'Now tap the spot.'; };
         // zooming in keeps a placed home in the middle
         const zoom = d => () => { const z = Math.max(ZMIN, Math.min(ZMAX, st.z + d)); if (z === st.z) return; if (d > 0 && st.pick) st.c = st.pick.slice(); st.z = z; draw(); hint(); };
         const zin = h('button', { type: 'button', class: 'fr-zoom', 'aria-label': 'Zoom in', 'data-mm-avoid': '', onclick: zoom(1) }, '+');
         const zout = h('button', { type: 'button', class: 'fr-zoom', 'aria-label': 'Zoom out', 'data-mm-avoid': '', onclick: zoom(-1) }, '−');
         const set = h('button', { type: 'button', class: 'btn primary', style: 'flex:1', disabled: !st.pick, onclick: () => {
           if (!st.pick) return;
+          if (!home) { const ll = [+st.pick[0].toFixed(6), +st.pick[1].toFixed(6)]; close(); opts.onSet(ll); return; }
           P.home = { lat: +st.pick[0].toFixed(6), lon: +st.pick[1].toFixed(6), label: PICKED };
           A.saveP();
           if (A.Setup && A.Setup.homeStatus) A.Setup.homeStatus();
@@ -8437,15 +9067,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           else { const box = $('#w-addr-results'); if (box) box.hidden = true; }
           A.toast('Home station set');
           close();
-        } }, 'Set home here');
-        p.append(h('h2', { class: 'sh' }, 'Pick your home on the map'), say,
+        } }, home ? 'Set home here' : (opts.button || 'Use this spot'));
+        p.append(h('h2', { class: 'sh' }, home ? 'Pick your home on the map' : (opts.title || 'Pick a spot on the map')), say,
           h('div', { class: 'fr-mapwrap' }, host, h('div', { class: 'fr-zooms' }, zin, zout)),
           h('div', { class: 'row' }, set, h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: close }, 'Cancel')));
         // the map draws once the sheet is on screen and has a width
         requestAnimationFrame(() => {
           if (!host.isConnected) return;
           const ht = Math.max(220, Math.min(340, window.innerHeight - 330));
-          st.view = new MM.View(host, { tiles: !A.IN_CLAUDE, height: ht, label: 'Map for picking your home', lineNote: A.IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : '' });
+          st.view = new MM.View(host, { tiles: !A.IN_CLAUDE, height: ht, label: home ? 'Map for picking your home' : 'Map for picking a spot', lineNote: A.IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : '' });
           const drop = MM.addView(st.view); // the map leaves the shared list when the sheet goes
           const mo = new MutationObserver(() => { if (!host.isConnected) { drop(); mo.disconnect(); if (Pick.cur === st) Pick.cur = null; } });
           mo.observe($('#sheet-panel'), { childList: true });
@@ -8455,6 +9085,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         });
         const place = ll => {
           st.pick = ll; set.disabled = false;
+          if (!home) { say.textContent = 'Picked. Tap again to move it.'; draw(); return; }
           const pj = trail.project(ll[0], ll[1]), near = trail.nearest(pj.s, 1500);
           say.textContent = pj.d > FAR ? `Home here is ${far(pj.d, A.P.unit)} from the Monon Trail, far for walks on it. Set it anyway, or tap again.`
             : `Home here: ${far(pj.d, A.P.unit)} from the trail${near ? `, near ${near.short}` : ''}. Tap again to move it.`;
@@ -8476,7 +9107,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           const bw = 0.375 * Math.max(40, w - 68), bh = 0.375 * Math.max(40, ht - 68);
           view.view = null;
           view.draw({ line: A.ROUTE.line, stations: A.mapStations(), focus: [unworld(cx - bw, cy - bh, st.z), unworld(cx + bw, cy + bh, st.z)],
-            marks: st.pick ? [{ ll: st.pick, kind: 'home', label: 'Home' }] : [], label: st.pick ? 'Map for picking your home, with home marked' : 'Map for picking your home' });
+            marks: st.pick ? [{ ll: st.pick, kind: home ? 'home' : (opts.kind || 'goal'), label: home ? 'Home' : (opts.label || '') }] : [], label: home ? (st.pick ? 'Map for picking your home, with home marked' : 'Map for picking your home') : (st.pick ? 'Map for picking a spot, with the spot marked' : 'Map for picking a spot') });
           zin.disabled = st.z >= ZMAX; zout.disabled = st.z <= ZMIN;
         }
       });
@@ -8562,7 +9193,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   document.addEventListener('click', e => { if (e.target instanceof Element && e.target.closest('#w-units button')) requestAnimationFrame(homeFit); });
 
   // for tests: open the picker, the picker on screen (its view and choice), and the wording helpers
-  A.FirstRun = { pick: () => Pick.open(), get picking() { return Pick.cur; }, fitText, unworld };
+  A.FirstRun = { pick: opts => Pick.open(opts), get picking() { return Pick.cur; }, fitText, unworld };
 })();
 
 /* Tonight's window: what tonight's walk will run into, from the Open-Meteo forecast the app already asks for.
@@ -11649,7 +12280,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    styles from exactly the hosts the app uses. Its connect-src lets any https relay through, because a custom relay can
    come from Settings or from a board link. This module narrows it as the app starts (before anything connects) to
    exactly what this page uses: the relay (ntfy.sh, or the custom one in use), the weather (Open-Meteo), the address
-   search (Nominatim) and the two satellite imagery services (the service worker fetches their tiles, and a page asking
+   search (Nominatim), trip routes (FOSSGIS's OSRM) and the two satellite imagery services (the service worker fetches their tiles, and a page asking
    for a tile goes through it). Both policies hold at once, so the page gets the narrower one. A page served from this
    computer (development and the tests, whose relay can change at any moment) may also reach any port on it.
    A relay that shows up later (a new one saved in Settings, or a board link on another relay) needs a fresh start, so
@@ -11662,7 +12293,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const base = document.head && document.head.querySelector('meta[http-equiv="Content-Security-Policy"]');
   if (!base || A.IN_CLAUDE) return;
   const { store } = A;
-  const FIXED = ['https://ntfy.sh', 'https://api.open-meteo.com', 'https://nominatim.openstreetmap.org', 'https://di-ingov.img.arcgis.com', 'https://basemap.nationalmap.gov'];
+  const FIXED = ['https://ntfy.sh', 'https://api.open-meteo.com', 'https://nominatim.openstreetmap.org', 'https://di-ingov.img.arcgis.com', 'https://basemap.nationalmap.gov', 'https://routing.openstreetmap.de', 'https://valhalla1.openstreetmap.de'];
   const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   // a relay's origin, as the app would accept it (normRelay in ui.js): https, or http on this computer for a page on
   // this computer, with no password, query or fragment
@@ -13900,6 +14531,777 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     sheet, playChapter, stopReplay,
     state: () => ({ walk: wk && { id: wk.id, demo: wk.demo, pos: wk.pos, played: wk.played, newCh: wk.newCh, queue: wk.queue.map(q => q.key), why: wk.why || '' }, inflight: inflight && { kind: inflight.kind, pos: inflight.pos, text: inflight.text }, exact: exact() }),
   };
+})();
+
+/* Trips: a walk to anywhere, on the Monon or not. The Depot offers a trip next to tonight's walk; the trip screen plans
+   one (a destination by search or on the map, stops of his own along the way, the Monon when it helps, walking or a
+   bike), then follows it: the next turn on the red sign, the conductor calling turns and the Monon's stations, the
+   time of arrival, a new route when he leaves this one, and the trip saved when he gets there.
+   Routes come from OSRM, the public routing service FOSSGIS runs on OpenStreetMap data; places from Nominatim. Both are
+   asked at most once a second, as their rules ask, and only when he plans or a walk leaves its route. Trips live on
+   this phone (store keys ext.trip.*); the board link isn't used for them yet. `LTApp.Trip` */
+(() => {
+  'use strict';
+  const A = window.LTApp;
+  if (!A || typeof TRIP === 'undefined') return;
+  const { h, $, store, toast, openSheet, confirmSheet, Sound, Diag, L, C, trail, MiniMap: MM, Bus } = A;
+  const ROUTER = 'https://routing.openstreetmap.de/', VALHALLA = 'https://valhalla1.openstreetmap.de/', SEARCH = 'https://nominatim.openstreetmap.org/search';
+  const K = { saved: 'ext.trip.saved', active: 'ext.trip.active', log: 'ext.trip.log', draft: 'ext.trip.draft' };
+  const MAXVIA = 3;
+  const P = () => A.P, U = () => A.U(), dist = (m, dp) => `${L.fmtDist(m, U(), dp)} ${A.uLabel()}`;
+  const hav = (a, b) => TRIP.hav({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] });
+  const say = (text, loud) => { if (A.announce) A.announce(text, loud ? { assertive: true } : undefined); };
+  const clean = (s, n = 60) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+  const okLL = ll => Array.isArray(ll) && Number.isFinite(+ll[0]) && Number.isFinite(+ll[1]) && Math.abs(+ll[0]) <= 90 && Math.abs(+ll[1]) <= 180;
+  const place = (x, n = 60) => (x && okLL(x.ll) ? { name: clean(x.name, n) || 'the spot you picked', ll: [+(+x.ll[0]).toFixed(6), +(+x.ll[1]).toFixed(6)] } : null);
+  const speedOf = mode => {
+    if (mode === 'bike') return 4.2;
+    // his own walking speed from his walks on the Monon, moving time only, else a brisk walk
+    const ws = A.walks.filter(w => !w.demo && w.dist > 1500 && w.moving > 600).slice(-12);
+    const v = ws.length ? ws.reduce((a, w) => a + w.dist, 0) / ws.reduce((a, w) => a + w.moving, 0) : 1.45;
+    return Math.max(1.1, Math.min(2.2, v || 1.45));
+  };
+
+  /* ------------------------------------------------------------ the two services, one request a second at most */
+  const Net = {
+    next: 0,
+    async get(url, signal) {
+      const wait = this.next - Date.now();
+      this.next = Math.max(Date.now(), this.next) + 1100;
+      if (wait > 0) await new Promise(r => setTimeout(r, wait));
+      if (signal && signal.aborted) throw new Error('canceled');
+      // both services ask callers to say who they are: the app's own address goes along (only its origin, never a path)
+      const r = await fetch(url, { signal, credentials: 'omit', referrerPolicy: 'strict-origin' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    },
+  };
+  // A route from OSRM; if that service doesn't answer, from FOSSGIS's other router (Valhalla), read into the same shape
+  async function route(mode, pts, signal) {
+    try { return await routeOsrm(mode, pts, signal); } catch (e) {
+      if ((signal && signal.aborted) || /NoRoute|NoSegment/.test(String(e && e.message))) throw e;
+      Diag.add('trip', `OSRM: ${e && e.message ? e.message : e}; asking Valhalla`);
+      return routeValhalla(mode, pts, signal);
+    }
+  }
+  async function routeOsrm(mode, pts, signal) {
+    const prof = mode === 'bike' ? 'bike' : 'foot';
+    const coords = pts.map(([la, lo]) => `${(+lo).toFixed(6)},${(+la).toFixed(6)}`).join(';');
+    const j = await Net.get(`${ROUTER}routed-${prof}/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true&alternatives=false`, signal);
+    if (!j || j.code !== 'Ok' || !Array.isArray(j.routes) || !j.routes[0]) throw new Error((j && j.code) || 'no route');
+    return j.routes[0];
+  }
+  // Valhalla's encoded line: six decimal places, the Google polyline scheme
+  function decode6(str) {
+    const out = []; let i = 0, lat = 0, lon = 0;
+    const next = () => { let r = 0, sh = 0, b; do { b = str.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while (b >= 32 && i < str.length); return r & 1 ? ~(r >> 1) : r >> 1; };
+    while (i < String(str || '').length) { lat += next(); lon += next(); out.push([lat / 1e6, lon / 1e6]); }
+    return out;
+  }
+  async function routeValhalla(mode, pts, signal) {
+    const body = { locations: pts.map(([la, lo]) => ({ lat: +la, lon: +lo })), costing: mode === 'bike' ? 'bicycle' : 'pedestrian', directions_options: { units: 'kilometers' } };
+    const j = await Net.get(`${VALHALLA}route?json=${encodeURIComponent(JSON.stringify(body))}`, signal);
+    if (!j || !j.trip || !Array.isArray(j.trip.legs) || !j.trip.legs.length) throw new Error('no route');
+    const coords = [], legs = [];
+    j.trip.legs.forEach(leg => {
+      const shape = decode6(leg.shape);
+      // a heading needs points a few meters apart: the shape can put two almost on top of each other
+      const far = (i, dir) => { let k = i; while (k + dir >= 0 && k + dir < shape.length && hav(shape[k], shape[i]) < 8) k += dir; return shape[k]; };
+      const steps = (leg.maneuvers || []).map(m => {
+        const i = Math.max(0, Math.min(shape.length - 1, m.begin_shape_index | 0)), p = shape[i];
+        const type = [1, 2, 3].includes(m.type) ? 'depart' : [4, 5, 6].includes(m.type) ? 'arrive' : 'turn';
+        const a = far(i, -1), b = far(i, 1);
+        return { distance: (+m.length || 0) * 1000, duration: +m.time || 0, name: (Array.isArray(m.street_names) && m.street_names[0]) || '',
+          maneuver: { type, location: [p[1], p[0]], bearing_before: a !== p ? TRIP.bearing(a, p) : 0, bearing_after: b !== p ? TRIP.bearing(p, b) : 0 } };
+      });
+      legs.push({ steps });
+      shape.forEach((p, k) => { if (!coords.length || k) coords.push([p[1], p[0]]); });
+    });
+    const sm = j.trip.summary || {};
+    return { distance: (+sm.length || 0) * 1000, duration: +sm.time || 0, geometry: { coordinates: coords }, legs };
+  }
+  async function search(q, signal) {
+    // Indianapolis first, anywhere if that's where the place is
+    const u = `${SEARCH}?format=jsonv2&limit=6&countrycodes=us&viewbox=-86.45,40.12,-85.85,39.58&bounded=0&q=${encodeURIComponent(q)}`;
+    const list = await Net.get(u, signal);
+    return (Array.isArray(list) ? list : []).map(it => {
+      const parts = String(it.display_name || '').split(',').map(x => x.trim()).filter(Boolean);
+      // a place by its name; an address by its number and street ("435 Virginia Avenue"), not the number alone
+      const name = clean(it.name || (/^\d+[a-z]?$/i.test(parts[0] || '') && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0]) || q, 48);
+      const used = name === parts[0] ? 1 : parts[1] && name === `${parts[0]} ${parts[1]}` ? 2 : 0;
+      const where = parts.slice(used).filter(p => p !== name).slice(0, 3).join(', ').replace(/^(\d+[a-z]?), /i, '$1 '); // "435 Virginia Avenue, Fletcher Place"
+      return { name, where: clean(where, 80), ll: [+(+it.lat).toFixed(6), +(+it.lon).toFixed(6)] };
+    }).filter(x => okLL(x.ll));
+  }
+
+  /* ------------------------------------------------------------ a plan from a draft */
+  // draft: { from: { kind: 'home'|'here'|'place', name, ll }, to: { name, ll }, vias: [{ name, ll }], monon: 'auto'|'on'|'off', mode }
+  async function build(d, signal) {
+    const from = d.from.ll, to = d.to.ll, ch = TRIP.mononChoice(trail, from, to);
+    const can = !!(ch.entry && ch.exit && ch.entry !== ch.exit);
+    const use = can && (d.monon === 'on' || (d.monon !== 'off' && ch.worth));
+    let parts;
+    if (use) {
+      // his stops before the place he joins the trail go in the first street leg, the rest after he leaves it
+      const dir = Math.sign(ch.exit.s - ch.entry.s) || 1, before = [], after = [];
+      for (const v of d.vias) { const pj = trail.project(v.ll[0], v.ll[1]); (dir * (pj.s - ch.entry.s) < -50 ? before : after).push(v); }
+      const eLL = [ch.entry.lat, ch.entry.lon], xLL = [ch.exit.lat, ch.exit.lon];
+      const legA = hav(from, eLL) > 30 || before.length ? await route(d.mode, [from, ...before.map(v => v.ll), eLL], signal) : null;
+      const legB = hav(xLL, to) > 30 || after.length ? await route(d.mode, [xLL, ...after.map(v => v.ll), to], signal) : null;
+      parts = [legA && TRIP.osrmPart(legA, before), TRIP.mononPart(trail, ch.entry, ch.exit), legB && TRIP.osrmPart(legB, after)].filter(Boolean);
+    } else parts = [TRIP.osrmPart(await route(d.mode, [from, ...d.vias.map(v => v.ll), to], signal), d.vias)];
+    const plan = TRIP.compose(parts, { destName: d.to.name });
+    return Object.assign(plan, { mode: d.mode, from: place(d.from), to: Object.assign(place(d.to), d.to.home ? { home: true } : {}), vias: d.vias.map(v => place(v)), choice: { can, worth: ch.worth, entry: ch.entry && ch.entry.short, exit: ch.exit && ch.exit.short, len: Math.round(ch.len || 0) }, at: Date.now() });
+  }
+
+  /* ------------------------------------------------------------ what a trip says, in the conductor's words */
+  const Words = {
+    far(m) { return C.distApprox(m, U()); },
+    eye(m) { return C.shown(C.both.distApprox(m, U())); },
+    start(plan, eta) {
+      const train = P().train || 'the Night Local', rode = plan.monon ? `, ${C.distApprox(plan.monon.len, U())} of it on the Monon` : '';
+      const first = plan.maneuvers[1] && plan.maneuvers[1].s < 60 ? plan.maneuvers[1] : plan.maneuvers[0];
+      return `All aboard ${train} to ${plan.to.name}. ${C.cap(C.distApprox(plan.length, U()))}${rode}, arriving about ${C.spokenClock(eta, 5)}. ${first.say}.`;
+    },
+    ahead(m, d) { return `In ${this.far(d)}, ${m.say.charAt(0).toLowerCase()}${m.say.slice(1)}.`; },
+    now(m) { return `${m.say}.`; },
+    station(st) {
+      if (st.kind === 'via') return `${st.name}, one of your stops.`;
+      if (st.kind === 'join') return '';
+      const facts = (typeof FACTS !== 'undefined' && st.id && FACTS[st.id]) || [];
+      const name = C.cap(String(st.name || st.short || '').replace(/,.*$/, '')); // "The 38th Street bridge." 
+      if (st.kind === 'major' && facts.length) { const n = (store.get('ext.trip.fact', 0) || 0) + 1; store.set('ext.trip.fact', n); return `${name}. ${facts[n % facts.length]}`; }
+      return `${name}.`;
+    },
+    mile(n, left, eta) { return `${U() === 'km' ? 'Kilometer' : 'Mile'} ${n}. ${C.cap(C.distApprox(left, U()))} to go, arriving about ${C.spokenClock(eta, 5)}.`; },
+    off() { return 'You’ve left the route.'; },
+    rerouted(left, to) { return `New route. ${C.cap(C.distApprox(left, U()))} to ${to}.`; },
+    noRoute(m, toward, to) { return `No new route yet. ${to} is ${C.distApprox(m, U())} to the ${toward}.`; },
+    wrong(to) { return `That’s away from ${to}. Turn around when you can.`; },
+    arrived(plan, tr, now) { return `${plan.to.name}. You’ve arrived: ${C.distApprox(tr.dist, U())} in ${C.spokenDur(tr.elapsed(now))}.`; },
+  };
+
+  /* ------------------------------------------------------------ the screen */
+  const Screen = {
+    root: null,
+    ensure() {
+      const root = $('#s-trip'); if (!root) return null;
+      this.root = root;
+      return root;
+    },
+    show() { if (!this.ensure()) return; A.go('s-trip'); },
+  };
+
+  /* ------------------------------------------------------------ planning */
+  const Plan = {
+    d: null, plan: null, busy: false, err: '', ctl: null, view: null, dropView: null, searchFor: 'to',
+    draft() {
+      if (this.d) return this.d;
+      const saved = store.get(K.draft, null), home = P().home;
+      this.d = {
+        from: home ? { kind: 'home', name: 'Home', ll: [+home.lat, +home.lon] } : { kind: 'here', name: 'Here', ll: null },
+        to: saved && saved.to ? place(saved.to) : null,
+        vias: saved && Array.isArray(saved.vias) ? saved.vias.map(v => place(v)).filter(Boolean).slice(0, MAXVIA) : [],
+        monon: saved && ['auto', 'on', 'off'].includes(saved.monon) ? saved.monon : 'auto',
+        mode: saved && saved.mode === 'bike' ? 'bike' : 'walk',
+      };
+      return this.d;
+    },
+    keep() { const d = this.d; if (d) store.set(K.draft, { to: d.to, vias: d.vias, monon: d.monon, mode: d.mode }); },
+    open(opts = {}) {
+      if (Ride.tr) return Ride.open();
+      const d = this.draft(), home = P().home;
+      if (!opts.reverse && d.from.kind === 'place') d.from = home ? { kind: 'home', name: 'Home', ll: [+home.lat, +home.lon] } : { kind: 'here', name: 'Here', ll: null };
+      if (opts.trip) Object.assign(d, { to: place(opts.trip.to), vias: (opts.trip.vias || []).map(v => place(v)).filter(Boolean), monon: opts.trip.monon || 'auto', mode: opts.trip.mode === 'bike' ? 'bike' : 'walk' });
+      if (opts.reverse) { const back = opts.reverse; Object.assign(d, { from: { kind: 'place', name: back.to.name, ll: back.to.ll.slice() }, to: home ? { name: 'Home', ll: [+home.lat, +home.lon], home: true } : null, vias: (back.vias || []).slice().reverse() }); }
+      if (d.from.kind === 'home' && P().home) d.from.ll = [+P().home.lat, +P().home.lon];
+      this.plan = null; this.err = '';
+      Screen.show(); // the screen draws the planner as it opens
+      if (!$('#t-form')) this.render(); else this.paint();
+      if (d.to) this.go();
+    },
+    // the route for the draft as it stands; a newer change cancels the older request
+    async go() {
+      const d = this.d; if (!d || !d.to) return;
+      if (A.IN_CLAUDE) { this.err = 'Trips need the app at its own web address: Claude’s preview can’t reach the routing service.'; this.paint(); return; }
+      if (d.from.kind === 'here' && !d.from.ll) { this.err = 'Finding you first'; this.paint(); try { d.from.ll = await here(); } catch (e) { this.err = 'Location is off, so the trip can’t start from here. Pick Home instead, or allow location.'; this.paint(); return; } }
+      if (this.ctl) this.ctl.abort();
+      const ctl = this.ctl = new AbortController();
+      this.busy = true; this.err = ''; this.plan = null; this.paint();
+      try {
+        const plan = await build(d, ctl.signal);
+        if (ctl !== this.ctl) return;
+        this.plan = plan; this.keep();
+      } catch (e) {
+        if (ctl !== this.ctl) return;
+        Diag.add('trip', `no route: ${e && e.message ? e.message : e}`);
+        this.err = /Failed to fetch|NetworkError|HTTP 5|HTTP 429/i.test(String(e && e.message)) ? 'The routing service didn’t answer. Check the signal and try again.' : 'No walking route found between these places. Try a nearby street or another stop.';
+      } finally { if (ctl === this.ctl) { this.busy = false; this.ctl = null; this.paint(); } }
+    },
+    render() {
+      const root = Screen.root; if (!root) return;
+      root.textContent = '';
+      root.classList.remove('t-riding');
+      const d = this.d;
+      const back = h('button', { type: 'button', class: 'iconbtn', onclick: () => A.go('s-depot') }, 'Depot');
+      this.f = { to: h('div', { class: 'flaprow', id: 't-f-to' }), dist: h('div', { class: 'flaprow', id: 't-f-dist' }), eta: h('div', { class: 'flaprow', id: 't-f-eta' }) };
+      this.clock = h('span', { class: 'clock', id: 't-clock' });
+      const board = h('section', { class: 'flapboard', id: 't-board', 'aria-label': 'Trip departures' },
+        h('div', { class: 'row between board-head' }, h('span', { class: 'eyebrow' }, 'Departures'), this.clock),
+        h('div', { class: 'flapgrid' },
+          h('div', { class: 'flapfield wide' }, h('span', { class: 'eyebrow' }, 'Bound for'), this.f.to),
+          h('div', { class: 'flapfield' }, h('span', { class: 'eyebrow' }, 'Trip'), this.f.dist),
+          h('div', { class: 'flapfield' }, h('span', { class: 'eyebrow' }, 'Arrive at'), this.f.eta)));
+      // where to
+      this.q = h('input', { class: 'input', id: 't-q', type: 'search', autocomplete: 'off', enterkeyhint: 'search', placeholder: 'A place or an address', 'aria-describedby': 't-q-note' });
+      this.q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); this.find(); } });
+      this.results = h('div', { class: 't-results', id: 't-results', role: 'list', 'aria-label': 'Places found', hidden: true });
+      this.toLine = h('p', { class: 't-to', id: 't-to' });
+      this.fromSeg = h('div', { class: 'seg small', id: 't-from', role: 'group', 'aria-labelledby': 't-from-l' });
+      this.viaBox = h('div', { class: 't-vias', id: 't-vias' });
+      this.mononSeg = h('div', { class: 'seg small', id: 't-monon', role: 'group', 'aria-labelledby': 't-monon-l' },
+        h('button', { type: 'button', 'data-v': 'on', onclick: () => this.set({ monon: 'on' }) }, 'Yes'), h('button', { type: 'button', 'data-v': 'off', onclick: () => this.set({ monon: 'off' }) }, 'No'));
+      this.mononNote = h('p', { class: 'note', id: 't-monon-note' });
+      this.modeSeg = h('div', { class: 'seg small', id: 't-mode', role: 'group', 'aria-labelledby': 't-mode-l' },
+        h('button', { type: 'button', 'data-v': 'walk', onclick: () => this.set({ mode: 'walk' }) }, 'Walking'), h('button', { type: 'button', 'data-v': 'bike', onclick: () => this.set({ mode: 'bike' }) }, 'Bike'));
+      this.savedBox = h('div', { class: 'chips t-saved', id: 't-saved', role: 'group', 'aria-label': 'Saved trips' });
+      const form = h('section', { class: 'card t-form', id: 't-form' },
+        h('h2', null, 'Where to?'),
+        h('div', { class: 'row t-qrow' }, h('label', { class: 'sr', for: 't-q' }, 'Search for a place'), this.q, h('button', { type: 'button', class: 'btn', id: 't-find', onclick: () => this.find() }, 'Search')),
+        h('p', { class: 'note', id: 't-q-note' }, 'A business, a landmark or an address. Or ', h('button', { type: 'button', class: 'linkbtn', id: 't-pick', onclick: () => this.pick('to') }, 'pick it on the map'), '.'),
+        this.results, this.toLine, this.savedBox,
+        h('div', { class: 'row between t-part' }, h('span', { class: 'flabel', id: 't-from-l' }, 'Starting from'), this.fromSeg),
+        h('div', { class: 't-part' }, h('div', { class: 'row between' }, h('span', { class: 'flabel' }, 'Stops along the way'), h('button', { type: 'button', class: 'btn small', id: 't-addvia', onclick: () => this.pick('via') }, 'Add a stop')), this.viaBox),
+        h('div', { class: 'row between t-part' }, h('span', { class: 'flabel', id: 't-monon-l' }, 'Ride the Monon'), this.mononSeg), this.mononNote,
+        h('div', { class: 'row between t-part' }, h('span', { class: 'flabel', id: 't-mode-l' }, 'Going by'), this.modeSeg));
+      // the route
+      this.sum = h('p', { class: 't-sum', id: 't-sum', 'aria-live': 'polite' });
+      this.mapHost = h('div', { id: 't-map' });
+      this.dirs = h('details', { class: 'more t-dirs', id: 't-dirs' });
+      this.saveBtn = h('button', { type: 'button', class: 'btn small', id: 't-save', onclick: () => this.save() }, 'Save trip');
+      this.revBtn = h('button', { type: 'button', class: 'btn small ghost', id: 't-reverse', onclick: () => this.reverse() }, 'Plan the way back');
+      const prev = h('section', { class: 'card t-route', id: 't-route' },
+        h('h2', null, 'The route'), this.sum, this.mapHost, this.dirs, h('div', { class: 'row' }, this.saveBtn, this.revBtn),
+        h('p', { class: 'note t-credit' }, 'Routes from OSRM on FOSSGIS’s servers, map data © OpenStreetMap contributors. ',
+          h('a', { href: 'https://www.openstreetmap.org/fixthemap', target: '_blank', rel: 'noopener' }, 'Fix the map'), '.'));
+      this.goBtn = h('button', { type: 'button', class: 'btn primary big', id: 't-go', onclick: () => this.depart() }, 'All aboard');
+      root.append(h('header', { class: 'topbar' }, h('div', null, h('div', { class: 'eyebrow' }, 'Last Train Home'), h('h1', { class: 'train', id: 't-title' }, 'Plan a trip')), back),
+        board, form, prev,
+        h('p', { class: 'note' }, 'A trip follows any route, on the Monon or not. It keeps the screen on and calls the turns. Her board doesn’t follow trips yet.'),
+        h('div', { class: 'depart-bar' }, h('div', { class: 'inner' }, this.goBtn)));
+      this.paint();
+      if (!d.to) requestAnimationFrame(() => { try { this.q.focus({ preventScroll: true }); } catch (e) { /* gone */ } });
+    },
+    paint() {
+      const d = this.d, plan = this.plan; if (!d || !this.f || !this.f.to.isConnected) return;
+      const now = Date.now(), v = speedOf(d.mode);
+      A.flap(this.f.to, d.to ? d.to.name : 'ANYWHERE', 17);
+      A.flap(this.f.dist, plan ? dist(plan.length, 1) : this.busy ? 'ROUTING' : '--', 8);
+      A.flap(this.f.eta, plan ? A.clock(now + (plan.length / v) * 1000).replace(' ', '') : '--:--', 8);
+      this.clock.textContent = A.clock(now);
+      // where to
+      this.toLine.hidden = !d.to;
+      this.toLine.textContent = '';
+      if (d.to) this.toLine.append(h('span', { class: 'flabel' }, 'Destination '), h('b', null, d.to.name), d.to.where ? h('span', { class: 'note' }, ` ${d.to.where}`) : null);
+      // saved trips, one tap each
+      const saved = store.get(K.saved, []) || [];
+      this.savedBox.textContent = '';
+      this.savedBox.hidden = !saved.length;
+      saved.slice(0, 6).forEach(t => this.savedBox.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!!(d.to && t.to && d.to.name === t.to.name && hav(d.to.ll, t.to.ll) < 30)), onclick: () => { Object.assign(d, { to: place(t.to), vias: (t.vias || []).map(x => place(x)).filter(Boolean), monon: t.monon || 'auto', mode: t.mode === 'bike' ? 'bike' : 'walk' }); this.go(); this.paint(); } }, t.name)));
+      // from
+      const home = P().home;
+      this.fromSeg.textContent = '';
+      if (d.from.kind === 'place') this.fromSeg.append(h('button', { type: 'button', 'aria-pressed': 'true', 'data-v': 'place' }, d.from.name));
+      if (home) this.fromSeg.append(h('button', { type: 'button', 'data-v': 'home', 'aria-pressed': String(d.from.kind === 'home'), onclick: () => this.set({ from: { kind: 'home', name: 'Home', ll: [+home.lat, +home.lon] } }) }, 'Home'));
+      this.fromSeg.append(h('button', { type: 'button', 'data-v': 'here', 'aria-pressed': String(d.from.kind === 'here'), onclick: () => this.set({ from: { kind: 'here', name: 'Here', ll: null } }) }, 'Where I am'));
+      // stops
+      this.viaBox.textContent = '';
+      d.vias.forEach((v, i) => this.viaBox.append(h('div', { class: 'row t-via' }, h('span', null, v.name), h('button', { type: 'button', class: 'btn small ghost', 'aria-label': `Remove ${v.name}`, onclick: () => { d.vias.splice(i, 1); this.go(); this.paint(); } }, 'Remove'))));
+      $('#t-addvia') && ($('#t-addvia').disabled = d.vias.length >= MAXVIA || !d.to);
+      // the Monon
+      const ch = plan && plan.choice;
+      const on = plan ? !!plan.monon : d.monon === 'on';
+      this.mononSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === (on ? 'on' : 'off'))));
+      this.mononSeg.querySelector('[data-v="on"]').disabled = !!(ch && !ch.can);
+      this.mononNote.textContent = !plan ? '' : plan.monon ? `On the Monon from ${plan.monon.entry.short} to ${plan.monon.exit.short}: ${dist(plan.monon.len, 1)} of the trip.`
+        : ch && ch.can && !ch.worth ? `The Monon would mean a detour on this trip (from ${ch.entry} to ${ch.exit}).` : 'The Monon isn’t on the way for this trip.';
+      this.modeSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === d.mode)));
+      // the route
+      const box = $('#t-route');
+      box.hidden = !(plan || this.busy || this.err);
+      this.sum.classList.toggle('warn', !!this.err);
+      this.sum.textContent = this.err || (this.busy ? 'Finding the way…' : plan ? `${dist(plan.length, 1)}, about ${A.minsText(plan.length / v)} at your pace. Leave now and you’re there around ${A.clock(now + (plan.length / v) * 1000)}.` : '');
+      this.saveBtn.hidden = this.revBtn.hidden = !plan;
+      this.dirs.hidden = !plan;
+      this.goBtn.disabled = !plan || this.busy;
+      this.goBtn.textContent = plan ? `All aboard for ${shortOf(plan.to.name)}` : 'All aboard';
+      if (plan) {
+        this.dirs.textContent = '';
+        const steps = plan.maneuvers.filter(m => m.kind !== 'depart' || m.s < 1);
+        this.dirs.append(h('summary', null, `Directions, ${steps.length} steps`), h('ol', { class: 't-steps' }, steps.map((m, i) => h('li', null, h('span', null, m.text), h('span', { class: 'note' }, m.kind === 'arrive' ? '' : dist(m.d, m.d < 1600 ? 2 : 1))))));
+        this.drawMap();
+      } else if (this.view) { this.mapHost.hidden = true; }
+    },
+    drawMap() {
+      const plan = this.plan; if (!plan) return;
+      this.mapHost.hidden = false;
+      if (!this.view || !this.mapHost.isConnected || !this.mapHost.contains(this.view.canvas)) {
+        if (this.dropView) this.dropView();
+        this.mapHost.textContent = '';
+        this.view = new MM.View(this.mapHost, { tiles: !A.IN_CLAUDE, height: 240, label: 'Map of the trip', streetKey: () => P().mapKey, lineNote: A.IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : '' });
+        this.dropView = MM.addView(this.view);
+      }
+      this.view.view = null;
+      this.view.draw(mapOpts(plan, null, null));
+    },
+    set(patch) { Object.assign(this.d, patch); this.keep(); this.paint(); this.go(); },
+    async find(forWhat = 'to') {
+      const q = clean(this.q.value, 120); if (!q) { this.q.focus(); return; }
+      if (A.IN_CLAUDE) { this.showResults([], 'Search is blocked in Claude’s preview.'); return; }
+      this.showResults(null, 'Searching…');
+      try { const list = await search(q); this.showResults(list, list.length ? '' : 'Nothing found. Try the name and the street, like F45 Virginia Ave.'); }
+      catch (e) { this.showResults([], 'Search failed. Check the signal and try again.'); }
+    },
+    showResults(list, msg) {
+      const box = this.results; box.hidden = false; box.textContent = '';
+      if (msg) box.append(h('div', { class: 'result msg', role: 'listitem' }, msg));
+      (list || []).forEach(it => box.append(h('button', { type: 'button', class: 'result', role: 'listitem', onclick: () => { box.hidden = true; this.choose(it); } }, h('b', null, it.name), it.where ? h('span', { class: 'note' }, ` ${it.where}`) : null)));
+      if (list) say(list.length ? `${list.length} places found` : msg);
+    },
+    choose(it) {
+      const d = this.d;
+      if (this.searchFor === 'via') { if (d.vias.length < MAXVIA) d.vias.push(place(it)); this.searchFor = 'to'; }
+      else d.to = Object.assign(place(it), { where: it.where || '' });
+      this.q.value = '';
+      this.keep(); this.paint(); this.go();
+    },
+    // a place on the map, through the first-run picker; or a stop, found by name
+    pick(what) {
+      if (what === 'via') {
+        openSheet((p, close) => {
+          const q = h('input', { class: 'input', type: 'search', autocomplete: 'off', placeholder: 'A street, a place or an address', 'aria-label': 'Search for a stop' });
+          const res = h('div', { class: 't-results', role: 'list', 'aria-label': 'Places found' });
+          const find = async () => {
+            const v = clean(q.value, 120); if (!v) return;
+            res.textContent = ''; res.append(h('div', { class: 'result msg' }, 'Searching…'));
+            try {
+              const list = await search(v); res.textContent = '';
+              if (!list.length) res.append(h('div', { class: 'result msg' }, 'Nothing found.'));
+              list.forEach(it => res.append(h('button', { type: 'button', class: 'result', role: 'listitem', onclick: () => { close(); if (this.d.vias.length < MAXVIA) this.d.vias.push(place(it)); this.keep(); this.paint(); this.go(); } }, h('b', null, it.name), it.where ? h('span', { class: 'note' }, ` ${it.where}`) : null)));
+            } catch (e) { res.textContent = ''; res.append(h('div', { class: 'result msg' }, 'Search failed. Check the signal.')); }
+          };
+          q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); find(); } });
+          p.append(h('h2', { class: 'sh' }, 'Add a stop'), h('p', { class: 'muted' }, 'The route passes through it, like a street you want to walk on or a place to stop.'),
+            h('div', { class: 'row' }, q, h('button', { type: 'button', class: 'btn', onclick: find }, 'Search')), res,
+            h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: () => { close(); this.mapPick('via'); } }, 'Pick it on the map'), h('button', { type: 'button', class: 'btn ghost', style: 'flex:1', onclick: close }, 'Cancel')));
+          requestAnimationFrame(() => { try { q.focus(); } catch (e) { /* gone */ } });
+        });
+        return;
+      }
+      this.mapPick(what);
+    },
+    mapPick(what) {
+      if (!A.FirstRun || !A.FirstRun.pick) return toast('The map picker isn’t available here');
+      const d = this.d, start = what === 'to' && d.to ? d.to.ll : null;
+      A.FirstRun.pick({
+        title: what === 'via' ? 'Pick a stop on the map' : 'Pick where you’re going', button: what === 'via' ? 'Add this stop' : 'Go here', label: what === 'via' ? 'Stop' : 'Destination', kind: 'goal', start,
+        onSet: ll => {
+          const it = { name: what === 'via' ? `Stop ${d.vias.length + 1}` : 'The spot you picked', ll };
+          if (what === 'via') { if (d.vias.length < MAXVIA) d.vias.push(place(it)); } else d.to = place(it);
+          this.keep(); this.paint(); this.go();
+        },
+      });
+    },
+    save() {
+      const plan = this.plan, d = this.d; if (!plan) return;
+      openSheet((p, close) => {
+        const nm = h('input', { class: 'input', type: 'text', maxlength: 32, value: shortOf(d.to.name), 'aria-label': 'Name for this trip' });
+        const ok = () => {
+          const name = clean(nm.value, 32) || shortOf(d.to.name);
+          const list = (store.get(K.saved, []) || []).filter(t => t.name !== name);
+          list.unshift({ name, to: place(d.to), vias: d.vias.map(v => place(v)), monon: d.monon, mode: d.mode, at: Date.now() });
+          store.set(K.saved, list.slice(0, 8));
+          close(); toast(`Saved: ${name}`); this.paint();
+        };
+        nm.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
+        p.append(h('h2', { class: 'sh' }, 'Save this trip'), h('p', { class: 'muted' }, 'It shows on the Depot, one tap to plan it again. It stays on this phone.'), nm,
+          h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary', style: 'flex:1', onclick: ok }, 'Save'), h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: close }, 'Cancel')));
+      });
+    },
+    reverse() { const plan = this.plan; if (!plan) return; this.open({ reverse: plan }); },
+    async depart() {
+      const plan = this.plan; if (!plan || this.busy) return;
+      if (A.W && A.W.active) return toast('Finish your walk before starting a trip');
+      Sound.unlock(); // the tap that starts the trip lets this phone speak
+      Ride.start(plan, this.d.mode);
+    },
+  };
+  const shortOf = n => { const s = String(n || ''); return s.length > 22 ? s.slice(0, 21).replace(/\s+\S*$/, '') : s; };
+  function here() {
+    return new Promise((res, rej) => {
+      if (!('geolocation' in navigator)) return rej(new Error('no location'));
+      navigator.geolocation.getCurrentPosition(p => res([+p.coords.latitude.toFixed(6), +p.coords.longitude.toFixed(6)]), rej, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+    });
+  }
+  // The map's picture of a plan: the route, the part walked, the stops, where he is
+  function mapOpts(plan, tr, done) {
+    const end = plan.line[plan.line.length - 1];
+    const marks = [];
+    if (plan.from && plan.from.ll && !tr) marks.push({ ll: plan.from.ll, kind: plan.from.name === 'Home' ? 'home' : 'goal', label: plan.from.name === 'Home' ? 'Home' : '' });
+    (plan.vias || []).forEach(v => v && marks.push({ ll: v.ll, kind: 'goal', label: '' }));
+    marks.push({ ll: end, kind: plan.to && plan.to.home ? 'home' : 'goal', label: shortOf(plan.to ? plan.to.name : '') });
+    if (tr && tr.pos) marks.push({ ll: [tr.pos.lat, tr.pos.lon], kind: 'you' });
+    const stations = plan.stations.filter(s => s.kind === 'major' || s.kind === 'join').map((s, i) => ({ ll: s.ll, name: s.short || s.name, rank: s.kind === 'join' ? 0 : 1 + (i % 3) }));
+    let focus;
+    if (tr && tr.pos) {
+      // close around where he is and the next turn, or the next stretch of the way when the turn is a long way off
+      const nx = tr.next(), at = [tr.pos.lat, tr.pos.lon], L2 = tr.line;
+      const ahead = s2 => { const a = L2.at(Math.min(L2.length, s2)); return [a.lat, a.lon]; };
+      focus = [at, nx && nx.s - tr.s < 1200 ? nx.ll : ahead(tr.s + 900)];
+      if (nx && nx.s - tr.s < 150) focus.push(ahead(nx.s + 300));
+    } else focus = plan.line.filter((p, i, a) => i % Math.max(1, Math.floor(a.length / 40)) === 0).concat([end]);
+    return { line: plan.line, done: done && done.length > 1 ? done : null, marks, stations, focus, label: `Map of the trip to ${plan.to ? plan.to.name : 'your stop'}` };
+  }
+
+  /* ------------------------------------------------------------ riding */
+  const Ride = {
+    tr: null, plan: null, mode: 'walk', watchId: null, wake: null, timer: null, voice: true, lastSave: 0, rerouting: false, rerouteAt: 0, offT: null, el: {}, view: null, dropView: null, prevVoice: null,
+    start(plan, mode, resume) {
+      this.plan = plan; this.mode = mode === 'bike' ? 'bike' : 'walk';
+      const now = Date.now();
+      this.tr = new TRIP.TripTracker(plan, { mode: this.mode, t0: resume ? resume.tr.t0 : now, priorSpeed: speedOf(this.mode), unit: U() });
+      if (resume) { this.tr.restore(resume.tr); this.voice = resume.voice !== false; }
+      else this.voice = true;
+      this.prevVoice = Sound.enabled;
+      Sound.enabled = this.voice;
+      this.startGPS(); this.wakeOn();
+      clearInterval(this.timer); this.timer = setInterval(() => this.tick(), 1000);
+      Screen.show(); // the screen draws the ride as it opens
+      if (!this.el.signName || !this.el.signName.isConnected) this.render(); else this.paint();
+      if (!resume) {
+        this.speak({ text: Words.start(plan, now + (plan.length / speedOf(this.mode)) * 1000), prio: 3, chime: 'whistle' });
+        Diag.add('trip', `departed: ${dist(plan.length, 1)}${plan.monon ? `, Monon ${plan.monon.entry.short} to ${plan.monon.exit.short}` : ''}, ${plan.maneuvers.length} steps`);
+      } else Diag.add('trip', 'resumed after a reload');
+      this.save(true);
+      Bus.emit('trip:start', plan);
+    },
+    speak(line) {
+      if (!line || !line.text) return;
+      if (this.el.caption) this.el.caption.textContent = '';
+      if (this.el.caption) this.el.caption.append(h('b', null, 'Conductor: '), C.shown ? C.shown(line.text) : line.text);
+      if (this.voice) Sound.say(Object.assign({ kind: 'trip', maxAge: 60000 }, line));
+    },
+    startGPS() {
+      if (this.watchId != null || !('geolocation' in navigator)) return;
+      try {
+        this.watchId = navigator.geolocation.watchPosition(
+          p => this.onFix({ t: Math.min(p.timestamp || Date.now(), Date.now()), lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }),
+          err => { Diag.add('trip', `GPS error ${err.code}`); this.gpsErr = err.code === 1 ? 'blocked' : 'searching'; this.paint(); },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+      } catch (e) { this.gpsErr = 'blocked'; }
+    },
+    stopGPS() { if (this.watchId != null) { try { navigator.geolocation.clearWatch(this.watchId); } catch (e) { /* gone */ } this.watchId = null; } },
+    async wakeOn() {
+      try {
+        if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || (this.wake && !this.wake.released)) return;
+        const lock = await navigator.wakeLock.request('screen');
+        if (!this.tr || (this.wake && !this.wake.released)) { lock.release().catch(() => {}); return; }
+        this.wake = lock;
+        lock.addEventListener('release', () => { if (this.wake === lock) this.wake = null; });
+      } catch (e) { this.wake = null; }
+    },
+    onFix(fix) {
+      if (!this.tr) return;
+      this.gpsErr = null; this.lastFix = fix.t;
+      const ev = this.tr.feed(fix);
+      this.handle(ev, fix.t);
+      this.paint();
+      if (Date.now() - this.lastSave > 15000) this.save();
+    },
+    handle(ev, now) {
+      const tr = this.tr, plan = this.plan, quiet = P().verbosity === 'quiet';
+      for (const e of ev) {
+        if (e.type === 'approach') this.speak({ text: Words.ahead(e.m, e.dist), prio: 3, chime: 'station' });
+        else if (e.type === 'turnNow') this.speak({ text: Words.now(e.m), prio: 4, chime: e.m.kind === 'join' || e.m.kind === 'leave' ? 'station' : 'bell' });
+        else if (e.type === 'pass') {
+          if (quiet || e.st.kind === 'join' || (e.st.kind === 'minor' && P().verbosity === 'landmarks')) continue;
+          const t = Words.station(e.st); if (t) this.speak({ text: t, prio: e.st.kind === 'major' || e.st.kind === 'via' ? 1 : 0, chime: 'station' });
+        } else if (e.type === 'mile' && !quiet) { const eta = tr.eta(now); this.speak({ text: Words.mile(e.n, eta.m, eta.t), prio: 1 }); }
+        else if (e.type === 'offRoute') { this.offT = Date.now(); if (Date.now() - (this.offSaid || 0) > 120000) { this.offSaid = Date.now(); this.speak({ text: Words.off(), prio: 3, chime: 'bell' }); } this.paint(); } // the clock asks for a new route if he stays off
+        else if (e.type === 'onRoute') { this.offT = null; this.paint(); }
+        else if (e.type === 'wrongWay') this.speak({ text: Words.wrong(plan.to.name), prio: 3, chime: 'bell' });
+        else if (e.type === 'arrived') this.arrive(now);
+      }
+    },
+    // off the route for a while: a new one from here, once in a while at most
+    async maybeReroute() {
+      const tr = this.tr; if (!tr || tr.onRoute || this.rerouting || tr.status !== 'walking' || !tr.pos) return;
+      if (Date.now() - this.rerouteAt < 45000) return;
+      this.rerouting = true; this.rerouteAt = Date.now();
+      this.paint();
+      const plan = this.plan, at = [+tr.pos.lat.toFixed(6), +tr.pos.lon.toFixed(6)];
+      // his stops he hasn't reached yet; the Monon again only while it is still ahead
+      const left = (plan.vias || []).filter((v, i) => !tr.passed[`via:${i}`]);
+      const mononAhead = plan.monon && !tr.passed[`monon:${plan.monon.exit.id}`] && tr.sMax < (plan.stations.find(s => s.kind === 'leave') || { s: 0 }).s;
+      try {
+        const next = await build({ from: { kind: 'place', name: 'Here', ll: at }, to: plan.to, vias: left, monon: mononAhead ? 'auto' : 'off', mode: this.mode });
+        if (this.tr !== tr) return;
+        next.from = plan.from; // the trip still started where it started
+        this.plan = next; tr.setPlan(next);
+        const eta = tr.eta(Date.now());
+        this.speak({ text: Words.rerouted(eta.m, plan.to.name), prio: 3, chime: 'station' });
+        Diag.add('trip', `new route from where he was: ${dist(next.length, 1)}`);
+        this.save(true);
+      } catch (e) {
+        const d = hav(at, plan.to.ll), b = TRIP.cardinal(TRIP.bearing(at, plan.to.ll));
+        this.speak({ text: Words.noRoute(d, b, plan.to.name), prio: 2 });
+        Diag.add('trip', `no new route: ${e && e.message ? e.message : e}`);
+      } finally { this.rerouting = false; this.paint(); }
+    },
+    tick() {
+      const tr = this.tr; if (!tr) return;
+      // off the route for twenty seconds: a new route from here
+      if (!tr.onRoute && this.offT && tr.status === 'walking' && Date.now() - this.offT > 20000 && !this.rerouting && Date.now() - this.rerouteAt > 45000) this.maybeReroute();
+      if (document.visibilityState === 'hidden' || A.current !== 's-trip') return; // nobody is looking
+      this.paint();
+    },
+    pause() {
+      const tr = this.tr; if (!tr) return;
+      const now = Date.now();
+      if (tr.status === 'paused') { tr.resume(now); toast('Trip resumed'); }
+      else if (tr.status === 'walking') { tr.pause(now); toast('Trip paused. The clock stops until you resume.'); }
+      this.save(true); this.paint();
+    },
+    end() {
+      const tr = this.tr; if (!tr) return;
+      if (tr.status === 'arrived') return this.finish();
+      confirmSheet({ title: 'End this trip?', body: tr.dist >= 200 ? 'It is saved with the distance so far.' : 'It is under 200 m, so it won’t be saved.', ok: 'End trip', onOk: () => this.finish() });
+    },
+    arrive(now) {
+      const tr = this.tr;
+      this.speak({ text: Words.arrived(this.plan, tr, now), prio: 3, chime: 'whistle' });
+      say(`Arrived at ${this.plan.to.name}`, true);
+      setTimeout(() => { if (this.tr === tr) this.finish(); }, 6000);
+    },
+    finish() {
+      const tr = this.tr, plan = this.plan; if (!tr) return;
+      const now = Date.now();
+      tr.finish(now);
+      this.stopGPS();
+      clearInterval(this.timer); this.timer = null;
+      if (this.wake) { try { this.wake.release(); } catch (e) { /* gone */ } this.wake = null; }
+      const rec = {
+        id: 't' + tr.t0, t0: tr.t0, tEnd: tr.tEnd || now, from: plan.from ? plan.from.name : '', to: plan.to.name, toLL: plan.to.ll, mode: this.mode,
+        dist: Math.round(tr.dist), elapsed: Math.round(tr.elapsed(now)), moving: Math.round(tr.moving), arrived: !!tr.arrivedAt, length: plan.length,
+        monon: plan.monon ? { entry: plan.monon.entry.short, exit: plan.monon.exit.short, len: Math.round(plan.monon.len) } : null,
+        track: TRIP.simplify(tr.trackPts.map(p => [p[0], p[1]]), 6).slice(0, 800),
+      };
+      if (rec.dist >= 200) { const log = store.get(K.log, []) || []; log.push(rec); store.set(K.log, log.slice(-60)); }
+      store.del(K.active);
+      Sound.enabled = this.prevVoice == null ? Sound.enabled : this.prevVoice;
+      Diag.add('trip', `${tr.arrivedAt ? 'arrived' : 'ended'}: ${dist(rec.dist, 1)} in ${A.minsText(rec.elapsed)}`);
+      this.tr = null; this.done = { rec, plan };
+      Bus.emit('trip:end', rec);
+      this.renderDone();
+    },
+    save(force) {
+      const tr = this.tr; if (!tr) return;
+      if (!force && Date.now() - this.lastSave < 10000) return;
+      this.lastSave = Date.now();
+      store.set(K.active, { v: 1, plan: this.plan, mode: this.mode, voice: this.voice, tr: tr.snapshot(), at: Date.now() });
+    },
+    open() { Screen.show(); if (this.tr) this.render(); else if (this.done) this.renderDone(); },
+    share() {
+      const tr = this.tr; if (!tr) return;
+      const eta = tr.eta(Date.now());
+      const text = `On my way to ${this.plan.to.name}, ${dist(eta.m, 1)} to go. I should be there around ${A.clock(eta.t)}.`;
+      if (navigator.share) navigator.share({ text }).catch(() => {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('Copied. Paste it in a message.'), () => toast(text));
+      else toast(text);
+    },
+    render() {
+      const root = Screen.root; if (!root || !this.tr) return;
+      root.textContent = '';
+      root.classList.add('t-riding');
+      const e = this.el = {};
+      e.title = h('div', { class: 'train', id: 't-ride-title' }, `Bound for ${shortOf(this.plan.to.name)}`);
+      e.gps = h('span', { class: 'pill', id: 't-gps' }, h('i'), h('b', null, 'GPS'));
+      e.state = h('span', { class: 'pill', id: 't-state' }, h('i'), h('b', null, 'Starting'));
+      e.signL = h('span', { class: 'eyebrow', id: 't-sign-l' }, 'Next');
+      e.signName = h('h1', { class: 'name', id: 't-sign-name' }, 'Finding GPS');
+      e.signDist = h('span', { class: 'num', id: 't-sign-dist' });
+      e.signThen = h('span', { id: 't-sign-then' });
+      e.live = h('p', { class: 'sr', id: 't-live', 'aria-live': 'polite' });
+      e.caption = h('p', { class: 'caption', id: 't-caption' });
+      e.off = h('section', { class: 'card alert', id: 't-off', hidden: true });
+      const g = (id, label) => { const v = h('span', { class: 'v', id: `t-${id}` }, '--'), s = h('span', { class: 's', id: `t-${id}-s` }, '\u00a0'); e[id] = v; e[id + 'S'] = s; return h('div', { class: 'g' + (id === 'eta' ? ' home' : '') }, h('span', { class: 'eyebrow' }, label), v, s); };
+      const gauges = h('section', { class: 'gauges', id: 't-gauges' }, g('left', 'To go'), g('eta', 'Arrive at'), g('time', 'Time'), g('pace', 'Pace'));
+      e.mapHost = h('div', { id: 't-ride-map' });
+      e.next = h('ol', { class: 't-steps', id: 't-next' });
+      e.voice = h('div', { class: 'seg small', id: 't-voice', role: 'group', 'aria-labelledby': 't-voice-l' },
+        h('button', { type: 'button', 'data-v': '1', onclick: () => this.setVoice(true) }, 'On'), h('button', { type: 'button', 'data-v': '0', onclick: () => this.setVoice(false) }, 'Off'));
+      e.pause = h('button', { type: 'button', class: 'btn', id: 't-pause', onclick: () => this.pause() }, 'Pause');
+      root.append(
+        h('header', { class: 'topbar stack' }, e.title, h('div', { class: 'pills' }, e.state, e.gps)),
+        h('section', { class: 'sign t-sign' }, e.signL, e.signName, h('div', { class: 'meta' }, e.signDist, e.signThen)),
+        e.live, e.caption, e.off, gauges,
+        h('section', { class: 'card', id: 't-map-card' }, e.mapHost),
+        h('section', { class: 'card', id: 't-coming' }, h('h2', null, 'Coming up'), e.next),
+        h('section', { class: 'card controls', id: 't-controls', 'aria-label': 'Trip controls' },
+          h('div', { class: 'row between' }, h('span', { class: 'flabel', id: 't-voice-l' }, 'Conductor’s voice'), e.voice),
+          h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn small', id: 't-share', onclick: () => this.share() }, 'Send my arrival time'), h('button', { type: 'button', class: 'btn small ghost', onclick: () => A.go('s-depot') }, 'Depot'))),
+        h('div', { class: 'depart-bar t-dock' }, h('div', { class: 'inner' }, e.pause, h('button', { type: 'button', class: 'btn primary', id: 't-end', onclick: () => this.end() }, 'End trip'))));
+      this.view = null;
+      this.paint();
+    },
+    setVoice(on) {
+      this.voice = !!on; Sound.enabled = this.voice;
+      if (on) { Sound.unlock(); this.speak({ text: 'Voice on. I’ll call the turns from here.', prio: 3, chime: 'station' }); }
+      this.save(true); this.paint();
+    },
+    paint() {
+      const tr = this.tr, e = this.el; if (!tr || !e.signName || !e.signName.isConnected) return;
+      const now = Date.now(), plan = this.plan;
+      const nx = tr.next(), dd = nx ? Math.max(0, nx.s - tr.s) : 0;
+      const waiting = !tr.pos;
+      // the sign: the next thing to do, and how far
+      const name = waiting ? (this.gpsErr === 'blocked' ? 'Location is off' : 'Finding GPS') : tr.status === 'arrived' ? `Arrived at ${shortOf(plan.to.name)}` : !tr.onRoute ? (this.rerouting ? 'Finding a new way' : 'Off the route') : nx ? nx.text : 'Keep going';
+      if (e.signName.textContent !== name) { e.signName.textContent = name; e.live.textContent = name; e.signName.classList.toggle('long', name.length > 30); }
+      e.signL.textContent = tr.status === 'paused' ? 'Paused' : waiting ? 'Starting' : tr.onRoute ? 'Next' : 'Heads up';
+      e.signDist.textContent = waiting || !tr.onRoute || !nx || tr.status === 'arrived' ? '' : dd < 25 ? 'Now' : `in ${Words.eye(dd)}`;
+      const after = nx && plan.maneuvers[plan.maneuvers.indexOf(nx) + 1];
+      e.signThen.textContent = after && after.kind !== 'arrive' && after.s - nx.s < 250 && tr.onRoute ? `then ${after.text.charAt(0).toLowerCase()}${after.text.slice(1)}` : '';
+      // pills
+      const st = tr.status === 'paused' ? ['caution', 'Paused'] : tr.status === 'arrived' ? ['go', 'Arrived'] : waiting ? ['', 'Starting'] : tr.onRoute ? ['go', 'On the route'] : ['caution', this.rerouting ? 'Rerouting' : 'Off the route'];
+      e.state.className = 'pill ' + st[0]; e.state.querySelector('b').textContent = st[1];
+      const fixAge = this.lastFix ? (now - this.lastFix) / 1000 : Infinity;
+      e.gps.className = 'pill ' + (this.gpsErr === 'blocked' ? 'stop' : fixAge < 20 && (tr.accEma || 99) < 35 ? 'go' : 'caution');
+      e.gps.querySelector('b').textContent = this.gpsErr === 'blocked' ? 'GPS off' : fixAge < 20 ? `GPS ${Math.round(tr.acc || 0)} m` : 'GPS';
+      // off the route
+      if (!tr.onRoute && tr.pos && tr.status === 'walking') {
+        const d = tr.off != null ? tr.off : 0;
+        e.off.hidden = false;
+        e.off.textContent = '';
+        e.off.append(h('p', null, this.rerouting ? 'Finding a new way from here…' : `You’re ${Words.eye(d)} off the route. A new one comes if you stay off it, or tap below.`),
+          h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn small', disabled: this.rerouting, onclick: () => { this.rerouteAt = 0; this.maybeReroute(); } }, 'New route from here')));
+      } else e.off.hidden = true;
+      // gauges
+      const eta = tr.eta(now);
+      e.left.textContent = ''; e.left.append(L.fmtDist(tr.status === 'arrived' ? 0 : eta.m, U(), eta.m < 16000 ? 2 : 1), h('small', null, A.uLabel()));
+      e.leftS.textContent = `${dist(tr.dist, 2)} walked`;
+      e.eta.textContent = tr.status === 'arrived' ? A.clock(tr.arrivedAt) : waiting ? '--' : A.clock(eta.t);
+      e.etaS.textContent = tr.status === 'arrived' ? 'arrived' : waiting ? '' : `${A.clock(eta.lo)} to ${A.clock(eta.hi)}`;
+      const el = tr.elapsed(now), hh = Math.floor(el / 3600), mm = Math.floor((el % 3600) / 60), ss = Math.floor(el % 60);
+      e.time.textContent = hh ? `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`;
+      e.timeS.textContent = tr.stopped ? 'stopped' : '\u00a0';
+      const sp = tr.paceSpeed(now);
+      e.pace.textContent = ''; e.pace.append(sp > 0.3 ? L.fmtPace(sp, U()) : '--', h('small', null, `/${A.uLabel()}`));
+      // what comes after the next turn
+      const ups = plan.maneuvers.filter(m => m.s > tr.s + 5).slice(0, 4);
+      e.next.textContent = '';
+      ups.forEach(m => e.next.append(h('li', null, h('span', null, m.text), h('span', { class: 'note' }, m.kind === 'arrive' ? A.clock(eta.t) : Words.eye(Math.max(0, m.s - tr.s))))));
+      e.voice.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === (this.voice ? '1' : '0'))));
+      e.pause.textContent = tr.status === 'paused' ? 'Resume' : 'Pause';
+      e.pause.disabled = tr.status === 'arrived';
+      // the map
+      if (!this.view || !e.mapHost.contains(this.view.canvas)) {
+        if (this.dropView) this.dropView();
+        this.view = new MM.View(e.mapHost, { tiles: !A.IN_CLAUDE, height: 230, label: 'Map of the trip', streetKey: () => P().mapKey, lineNote: A.IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : '' });
+        this.dropView = MM.addView(this.view);
+      }
+      if (!this.mapAt || now - this.mapAt > 2500) { this.mapAt = now; this.view.draw(mapOpts(plan, tr, tr.trackPts.map(p => [p[0], p[1]]))); }
+    },
+    renderDone() {
+      const root = Screen.root, done = this.done; if (!root || !done) return;
+      const { rec, plan } = done;
+      root.textContent = '';
+      root.classList.remove('t-riding');
+      const mapHost = h('div', { id: 't-done-map' });
+      const pace = rec.moving > 60 ? L.fmtPace(rec.dist / rec.moving, U()) : '--';
+      root.append(
+        h('header', { class: 'topbar' }, h('div', null, h('div', { class: 'eyebrow' }, 'Last Train Home'), h('h1', { class: 'train', id: 't-done-title', tabindex: '-1' }, rec.arrived ? `Arrived at ${shortOf(rec.to)}` : 'Trip ended')), h('button', { type: 'button', class: 'iconbtn', onclick: () => { this.done = null; A.go('s-depot'); } }, 'Depot')),
+        h('section', { class: 'gauges', id: 't-done-g' },
+          h('div', { class: 'g' }, h('span', { class: 'eyebrow' }, 'Distance'), h('span', { class: 'v' }, L.fmtDist(rec.dist, U(), 2), h('small', null, A.uLabel())), h('span', { class: 's' }, rec.monon ? `${dist(rec.monon.len, 1)} on the Monon` : '\u00a0')),
+          h('div', { class: 'g' }, h('span', { class: 'eyebrow' }, 'Time'), h('span', { class: 'v' }, A.minsText(rec.elapsed)), h('span', { class: 's' }, `${A.clock(rec.t0)} to ${A.clock(rec.tEnd)}`)),
+          h('div', { class: 'g' }, h('span', { class: 'eyebrow' }, 'Pace'), h('span', { class: 'v' }, pace, h('small', null, `/${A.uLabel()}`)), h('span', { class: 's' }, 'moving time')),
+          h('div', { class: 'g' }, h('span', { class: 'eyebrow' }, 'Route'), h('span', { class: 'v' }, L.fmtDist(rec.length, U(), 1), h('small', null, A.uLabel())), h('span', { class: 's' }, rec.mode === 'bike' ? 'by bike' : 'planned'))),
+        h('section', { class: 'card' }, mapHost),
+        h('div', { class: 'row' },
+          h('button', { type: 'button', class: 'btn primary', style: 'flex:1', id: 't-way-back', onclick: () => { const p2 = plan; this.done = null; Plan.open({ reverse: p2 }); } }, 'Plan the way back'),
+          h('button', { type: 'button', class: 'btn', style: 'flex:1', onclick: () => { this.done = null; A.go('s-depot'); } }, 'Done')),
+        h('p', { class: 'note' }, rec.dist >= 200 ? 'Saved on this phone with your trips.' : 'Too short to save.'));
+      requestAnimationFrame(() => {
+        if (!mapHost.isConnected) return;
+        if (this.dropView) this.dropView();
+        this.view = new MM.View(mapHost, { tiles: !A.IN_CLAUDE, height: 230, label: 'Map of the trip you walked', streetKey: () => P().mapKey, lineNote: A.IN_CLAUDE ? 'Satellite view works in the app at its own web address.' : '' });
+        this.dropView = MM.addView(this.view);
+        const o = mapOpts(plan, null, rec.track); o.focus = (rec.track.length > 1 ? rec.track : plan.line).filter((p, i, a) => i % Math.max(1, Math.floor(a.length / 40)) === 0);
+        if (!o.focus.length) o.focus = plan.line;
+        this.view.draw(o);
+        try { $('#t-done-title').focus({ preventScroll: true }); } catch (e) { /* gone */ }
+      });
+    },
+  };
+
+  /* ------------------------------------------------------------ the Depot */
+  function depot() {
+    const root = $('#s-depot'); if (!root) return;
+    let card = $('#d-trip');
+    if (!card) card = h('section', { class: 'card', id: 'd-trip', 'aria-labelledby': 'd-trip-h' });
+    card.textContent = '';
+    const act = store.get(K.active, null);
+    const live = !!(Ride.tr || (act && act.plan && Date.now() - (act.at || 0) < 12 * 3600000));
+    // a trip under way leads the Depot, under the board's own warnings; otherwise the notice sits before Dispatch
+    const anchor = live ? $('#d-board') : $('#d-tonight');
+    if (anchor && card.nextElementSibling !== anchor) anchor.before(card);
+    if (live) {
+      const to = Ride.tr ? Ride.plan.to.name : act.plan.to && act.plan.to.name;
+      card.classList.add('t-live');
+      card.append(h('div', { class: 'row between' }, h('h2', { id: 'd-trip-h' }, 'Trip under way'), h('span', { class: 'pill go' }, h('i'), h('b', null, 'Live'))),
+        h('p', { class: 'note' }, `Bound for ${to}.`),
+        h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary', style: 'flex:1', id: 'd-trip-resume', onclick: () => resume() }, Ride.tr ? 'Back to the trip' : 'Resume the trip'),
+          Ride.tr ? null : h('button', { type: 'button', class: 'btn ghost', style: 'flex:1', onclick: () => { store.del(K.active); depot(); toast('Trip set aside'); } }, 'Set it aside')));
+      return;
+    }
+    card.classList.remove('t-live');
+    const saved = store.get(K.saved, []) || [];
+    const log = store.get(K.log, []) || [];
+    card.append(h('div', { class: 'row between' }, h('h2', { id: 'd-trip-h' }, 'Somewhere else'), h('button', { type: 'button', class: 'btn small', id: 'd-trip-plan', onclick: () => Plan.open() }, 'Plan a trip')),
+      h('p', { class: 'note' }, saved.length ? 'Your trips, one tap to plan:' : 'A walk to anywhere, on the Monon or not, with the turns called out.'));
+    if (saved.length) card.append(h('div', { class: 'chips', role: 'group', 'aria-label': 'Saved trips' }, saved.slice(0, 6).map(t => h('button', { type: 'button', class: 'chip', onclick: () => Plan.open({ trip: t }) }, t.name))));
+    const last = log[log.length - 1];
+    if (last) card.append(h('p', { class: 'note' }, `Last trip: ${last.to}, ${dist(last.dist, 1)} in ${A.minsText(last.elapsed)}, ${new Date(last.t0).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}.`));
+  }
+  function resume() {
+    if (Ride.tr) return Ride.open();
+    const act = store.get(K.active, null);
+    if (!act || !act.plan || !act.tr) { store.del(K.active); return depot(); }
+    if (A.W && A.W.active) return toast('Finish your walk before resuming the trip');
+    Sound.unlock();
+    try { Ride.start(act.plan, act.mode, act); } catch (e) { Diag.add('trip', `resume failed: ${e && e.message}`); store.del(K.active); toast('That trip couldn’t be resumed'); depot(); }
+  }
+  Bus.on('depot', () => depot());
+  // tonight's walk and a trip don't run at once
+  document.addEventListener('click', e => {
+    const b = e.target && e.target.closest && e.target.closest('[data-act="depart"], [data-act="demo-cab"]');
+    if (!b || !(Ride.tr || store.get(K.active, null))) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    toast(Ride.tr ? 'A trip is under way. End it before tonight’s walk.' : 'Resume or set aside the trip first');
+    if (Ride.tr) Ride.open();
+  }, true);
+  Bus.on('screen', id => {
+    if (id !== 's-trip') return;
+    Screen.ensure();
+    if (Ride.tr) { if (!Screen.root.classList.contains('t-riding')) Ride.render(); }
+    else if (Ride.done) { if (!$('#t-done-title')) Ride.renderDone(); }
+    else if (!$('#t-form')) { Plan.draft(); Plan.render(); }
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Ride.tr) { Ride.wakeOn(); Ride.paint(); } else if (Ride.tr) Ride.save(true); });
+  window.addEventListener('pagehide', () => { if (Ride.tr) Ride.save(true); });
+  // a backup restored over this phone: the trips in it come along (the allowlist in ui.js carries the keys)
+  Bus.on('restore', () => { Plan.d = null; });
+
+  A.Trip = { Plan, Ride, build, route, search, Net, Words, depot, resume, mapOpts, K };
 })();
 
 /* Her evening, calmer: his quick replies stay in view for a few minutes (a banner under her split-flap board, and the
