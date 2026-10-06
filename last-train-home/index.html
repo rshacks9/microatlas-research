@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rBjCRUcxvTne99YIc+pJ/pV+d2fGY8+MtuwMUTMOWvw='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#0f1217">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fnTHCJ68jZSS7UwAzz/0iryCAtUcszg1+qt/1ZBFFQE='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://di-ingov.img.arcgis.com https://basemap.nationalmap.gov https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; media-src data:; connect-src https: http://localhost:* http://127.0.0.1:*; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#f1f3f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b131e" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,9 +19,7 @@
 <title>Last Train Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap">
 <style>
 /* Layout: a night-run signal cab. Split-flap board up top, instruments in the middle,
    the Monon's red rail as the line map, controls docked at the bottom like a throttle stand.
@@ -51,7 +50,7 @@
   --f-flap: 'Chivo Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --r: 16px; /* panels; controls use 12 and 10, plates 10 */
   /* Type scale: 12 13 15 17 20 26 34 44 64, with body copy at 16 */
-  color-scheme: dark;
+  color-scheme: dark; /* theme.css, last, makes it light dark */
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -1334,6 +1333,353 @@ body.stn-on { overflow: hidden; }
   .stn-open-row.offer .stn-open { animation: none !important; }
 }
 
+/* ============================================================ the clean transit theme (Oct 2026)
+   Flat screens and one bold color: the Monon's red marks the line, the next stop and the main action, and little else.
+   Figures are big and tabular, set in Overpass (the open cut of Highway Gothic, the lettering of American road signs)
+   like everything else, in sentence case. The route is drawn as a transit line: a thick red rail with station dots.
+   Light by day and dark at night, as the phone is set. This sheet loads after head.html and every module's sheet: it
+   sets the tokens both looks share, then restyles what was first built as a railway object (the split-flap board,
+   the enamel sign, the ticket stubs). The kitchen's station display and Pocket mode keep their own dark worlds. */
+:root {
+  color-scheme: light dark;
+  --ground: #f1f3f6;
+  --panel: #ffffff;
+  --panel-2: #eaedf1;
+  --rule: #d6dbe2;
+  --ink: #0e1621;
+  --ink-2: #384454;
+  --ink-3: #5a6677;
+  --line: #cf2238;        /* the Monon's red, as a fill (white type on it) */
+  --line-hi: #b91c31;
+  --line-text: #bf1d33;   /* the red as type or a stroke on the page */
+  --line-ink: #ffffff;
+  --line-wash: #fbe9ec;
+  --sel: #0e1621;         /* a chosen option is ink, not color */
+  --sel-ink: #ffffff;
+  --focus: #0e1621;
+  --go: #0e7a45;
+  --caution: #985f00;
+  --stop: #c42a39;
+  --walked: #0e1621;
+  --status-bg: var(--line);
+  --bar-bg: rgba(255, 255, 255, 0.94);
+  --map-bg: #e9edf2;
+  --map-grid: #dde2e8;
+  --map-case: #ffffff;
+  --map-stn: #ffffff;
+  --map-stn-edge: #0e1621;
+  --map-label: #0e1621;
+  --map-halo: #ffffff;
+  --dim: rgba(14, 22, 33, 0.4);
+  --shadow: 0 10px 30px rgba(14, 22, 33, 0.16);
+  /* the old names, pointed at the new look, so every module follows */
+  --amber: var(--line-text);
+  --monon: var(--line);
+  --monon-hi: var(--line-hi);
+  --monon-ink: var(--line-ink);
+  --cream: #ffffff;
+  --enamel: var(--line);
+  --flap: var(--panel);
+  --f-display: 'Overpass', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-body: 'Overpass', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-flap: 'Overpass', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0b131e; --panel: #121c2a; --panel-2: #1a2738; --rule: #26364a;
+    --ink: #eef2f6; --ink-2: #b4bfcc; --ink-3: #8996a7;
+    --line: #d42940; --line-hi: #e2384f; --line-text: #ff6a7a; --line-wash: #2a1521;
+    --sel: #eef2f6; --sel-ink: #0b131e; --focus: #eef2f6;
+    --go: #3dce87; --caution: #f1c04d; --stop: #ff6b77; --walked: #ffffff;
+    --status-bg: var(--ground); --bar-bg: rgba(11, 19, 30, 0.94);
+    --map-bg: #0d1622; --map-grid: #162131; --map-case: #0b131e; --map-stn: #eef2f6; --map-stn-edge: #0b131e; --map-label: #eef2f6; --map-halo: #0b131e;
+    --dim: rgba(0, 0, 0, 0.6); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0b131e; --panel: #121c2a; --panel-2: #1a2738; --rule: #26364a;
+  --ink: #eef2f6; --ink-2: #b4bfcc; --ink-3: #8996a7;
+  --line: #d42940; --line-hi: #e2384f; --line-text: #ff6a7a; --line-wash: #2a1521;
+  --sel: #eef2f6; --sel-ink: #0b131e; --focus: #eef2f6;
+  --go: #3dce87; --caution: #f1c04d; --stop: #ff6b77; --walked: #ffffff;
+  --status-bg: var(--ground); --bar-bg: rgba(11, 19, 30, 0.94);
+  --map-bg: #0d1622; --map-grid: #162131; --map-case: #0b131e; --map-stn: #eef2f6; --map-stn-edge: #0b131e; --map-label: #eef2f6; --map-halo: #0b131e;
+  --dim: rgba(0, 0, 0, 0.6); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------ type, the page, the band behind the phone's status bar */
+body { background: var(--ground); color: var(--ink); font-family: var(--f-body); }
+:focus-visible { outline-color: var(--focus); }
+a { color: var(--line-text); }
+h1, h2, h3, .sh, .card h2, .month h2 { letter-spacing: -0.012em; }
+.eyebrow { font: 600 0.8125rem/1.25 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.muted { color: var(--ink-2); }
+.note, .faint { color: var(--ink-3); }
+/* an installed app draws under the status bar, whose type is white: it sits on the line's red by day, the night at night */
+body::before { content: ''; position: fixed; z-index: 35; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--status-bg); pointer-events: none; }
+.topbar.sticky { background: var(--ground); }
+
+/* ------------------------------------------------ the top bar, pills, the wordmark */
+.wordmark { font: 900 2.5rem/0.95 var(--f-display); letter-spacing: -0.025em; text-transform: none; }
+.wordmark .rail { position: relative; height: 6px; border-radius: 3px; background: var(--line); }
+/* a terminus at either end: the line from the trail to home */
+.wordmark .rail::before, .wordmark .rail::after { content: ''; position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--panel); border: 4px solid var(--line); box-sizing: border-box; }
+.wordmark .rail::before { left: 0; }
+.wordmark .rail::after { right: 0; }
+.topbar .train { font: 800 1.625rem/1.1 var(--f-display); letter-spacing: -0.02em; }
+.pill { background: var(--panel); border-color: var(--rule); color: var(--ink-2); }
+.pill.go i { box-shadow: none; }
+.iconbtn { background: var(--panel); border-color: var(--rule); color: var(--ink); font-weight: 600; }
+
+/* ------------------------------------------------ departures: plain figures on a flat panel, no flaps */
+.flapboard { background: var(--panel); border: 1px solid var(--rule); box-shadow: none; border-radius: var(--r); padding: 14px 16px 16px; }
+.flapboard .eyebrow, .flapboard .board-head .eyebrow { color: var(--ink-3); font-size: 0.8125rem; letter-spacing: 0; text-transform: none; }
+.flapboard .clock, .arrivals-head .clock { font: 700 0.9375rem/1 var(--f-body); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.flapgrid { gap: 14px 16px; font-size: 1rem; }
+/* sized to sit on one line at 320 px; larger text wraps instead of being cut off */
+.flaprow.flat { display: block; font: 800 clamp(1.375rem, 6.5vw, 1.75rem)/1.12 var(--f-display); color: var(--ink); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-height: 1.12em; }
+.flapfield.wide .flaprow.flat { font-size: clamp(1.75rem, 8vw, 2.25rem); line-height: 1.08; } /* one line at any width, as on a board */
+
+/* ------------------------------------------------ the next stop: a flat block of the line's red */
+.sign { background: var(--line); color: var(--line-ink); outline: 0; box-shadow: none; border-radius: 12px; padding: 16px 18px 18px; gap: 4px; }
+.sign::before, .sign::after { display: none; }
+.sign .eyebrow { color: var(--line-ink); } /* full white: 5:1 on the red at night, where a softer white fell under 4.5 */
+.sign .name { font: 800 2.5rem/1.02 var(--f-display); text-transform: none; letter-spacing: -0.025em; }
+.sign .meta { color: var(--line-ink); font-weight: 600; }
+.sign .name.flip { animation: lth-fade 260ms ease-out; transform: none; }
+.caption { color: var(--ink-2); }
+.caption b { color: var(--ink); font-weight: 700; }
+
+/* ------------------------------------------------ gauges */
+.gauges { background: var(--rule); border-color: var(--rule); border-radius: var(--r); }
+.g { background: var(--panel); }
+.g .v { font: 800 2.5rem/1 var(--f-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.g .v small { font: 600 0.9375rem/1 var(--f-body); color: var(--ink-3); letter-spacing: 0; }
+.g .s { color: var(--ink-3); white-space: normal; overflow: visible; text-overflow: clip; } /* the wider face wraps a long line instead of cutting it */
+.g.home { background: var(--panel); }
+.g.home .v { color: var(--line-text); }
+.g[data-effort="easy"] { box-shadow: inset 0 -3px 0 var(--ink-3); }
+
+/* ------------------------------------------------ the line strip: a transit line, drawn by ui.js in fixed colors */
+.strip { background: var(--panel); border-color: var(--rule); }
+.strip .lbl { font: 600 12px var(--f-body); fill: var(--ink-2); }
+.strip .lbl.dim { fill: var(--ink-3); }
+.strip .lbl.goal { fill: var(--line-text); font-weight: 700; }
+#c-strip line[stroke="#232830"] { stroke: var(--rule); }
+#c-strip line[stroke="#3a2226"] { stroke: color-mix(in srgb, var(--line) 28%, var(--panel)); }
+#c-strip line[stroke="#c8283a"], #c-strip rect[fill="#c8283a"] { stroke: var(--line); fill: var(--line); }
+#c-strip circle[fill="#0f1217"] { fill: var(--panel); }
+#c-strip circle[stroke="#efe9dd"] { stroke: var(--ink); }
+#c-strip circle[stroke="#6d6961"], #c-strip line[stroke="#6d6961"] { stroke: var(--ink-3); }
+#c-strip line[stroke="#3f3c38"] { stroke: var(--rule); }
+#c-strip path[stroke="#ffb547"] { stroke: var(--line-text); }
+#c-strip path[fill="#ffb547"] { fill: var(--line-text); }
+#c-strip rect[stroke="#efe9dd"] { stroke: var(--ink-2); }
+#c-strip rect[fill="#ffb547"] { fill: var(--sel); }
+#c-strip circle[fill="rgba(255,181,71,0.18)"] { fill: color-mix(in srgb, var(--sel) 14%, transparent); }
+#c-strip path[stroke="#1a1206"] { stroke: var(--sel-ink); }
+
+/* ------------------------------------------------ stops */
+.stops { background: var(--panel); border-color: var(--rule); }
+.stop .n { font: 700 1.125rem/1.2 var(--f-display); text-transform: none; letter-spacing: -0.01em; }
+.stop.goal .n, .stop .tag { color: var(--line-text); }
+
+/* ------------------------------------------------ cards and notices */
+.card { background: var(--panel); border-color: var(--rule); }
+.card h2, .sh { font: 800 1.375rem/1.15 var(--f-display); letter-spacing: -0.015em; }
+.sh.caps { font-size: 1.75rem; line-height: 1.05; text-transform: none; letter-spacing: -0.02em; }
+.card.alert { border-color: color-mix(in srgb, var(--caution) 40%, var(--rule)); background: var(--panel); box-shadow: inset 4px 0 0 var(--caution); }
+.card.danger { border-color: color-mix(in srgb, var(--stop) 40%, var(--rule)); background: var(--panel); box-shadow: inset 4px 0 0 var(--stop); }
+.card.ok { border-color: color-mix(in srgb, var(--go) 40%, var(--rule)); background: var(--panel); box-shadow: inset 4px 0 0 var(--go); }
+.card.plain { background: none; border: 0; border-top: 1px solid var(--rule); border-radius: 0; box-shadow: none; }
+.banner { background: color-mix(in srgb, var(--caution) 12%, var(--panel)); border-color: color-mix(in srgb, var(--caution) 45%, var(--rule)); color: var(--ink); }
+.kv .v, .voice b, .month h2, #s-settings .ofl-size { font-family: var(--f-display); letter-spacing: -0.02em; }
+/* Overpass is wider than the condensed face these figures were sized for: three across still fit on a 320 px phone */
+.kv .v { font-size: clamp(1.0625rem, 5.4vw, 1.625rem); }
+.kvbtn { min-height: 44px; } /* a record is a button: a full-size target */
+
+/* ------------------------------------------------ controls */
+.btn { background: var(--panel-2); border-color: transparent; color: var(--ink); font-weight: 700; }
+.btn.primary { background: var(--line); border-color: var(--line); color: var(--line-ink); }
+.btn.primary:hover { background: var(--line-hi); border-color: var(--line-hi); }
+.btn.big { font: 800 1.5rem/1 var(--f-display); letter-spacing: -0.015em; border-radius: 14px; }
+.btn.ghost { background: transparent; border-color: var(--rule); }
+.btn.cheer { background: var(--line-wash); border-color: transparent; color: var(--line-text); }
+.btn.primary:focus-visible { outline-color: var(--focus); outline-offset: 3px; }
+.chip { background: var(--panel); border-color: var(--rule); color: var(--ink-2); }
+.chip[aria-pressed="true"] { background: var(--sel); border-color: var(--sel); color: var(--sel-ink); }
+.seg { border-color: var(--rule); background: var(--panel-2); }
+.seg button { background: transparent; color: var(--ink-2); font-weight: 600; }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--sel); color: var(--sel-ink); font-weight: 700; }
+/* a chosen option is filled with ink, so its focus ring is drawn inside it in the page's own color (access.css keeps it inside) */
+.seg button[aria-pressed="true"]:focus-visible, .seg button[aria-selected="true"]:focus-visible, .chip[aria-pressed="true"]:focus-visible { outline-color: var(--sel-ink); }
+#s-depot :is(#d-ghost, .voice-grid) .chip:focus-visible, #s-depot :is(#d-ghost, .voice-grid) .chip[aria-pressed="true"]:focus-visible { outline-color: var(--focus); outline-offset: 2px; }
+.input { background: var(--panel); border-color: var(--rule); color: var(--ink); }
+.input:focus { border-color: var(--sel); }
+.linkbtn { color: var(--ink-2); }
+.voice { background: var(--panel); border-color: var(--rule); color: var(--ink-2); }
+/* two voices across while their names fit; one across with large text */
+.voices { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
+.voice b { overflow-wrap: anywhere; }
+.voice[aria-pressed="true"] { background: var(--panel); border-color: var(--sel); box-shadow: inset 0 0 0 1px var(--sel); }
+.voice[aria-pressed="true"] b { color: var(--ink); }
+#s-depot #d-ghost .chip[aria-pressed="true"], .chips.voice-grid .chip[aria-pressed="true"] { background: var(--panel); border-color: var(--sel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--sel); }
+.check { background: var(--panel); border-color: var(--rule); }
+.check .box { color: var(--sel-ink); }
+.result { color: var(--ink); border-color: var(--rule); }
+.meter { background: var(--panel-2); border-color: var(--rule); }
+.meter i { background: var(--line); }
+.meter b { background: var(--panel); }
+.codebox { background: var(--panel-2); border-color: var(--rule); font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+.stamp { border-color: var(--rule); color: var(--ink-3); }
+.stamp.got { border-color: var(--sel); color: var(--ink); }
+.mbadge { border-color: var(--rule); }
+.mbadge.got { border: 1px solid var(--sel); background: var(--panel); }
+.mbadge.got .medal { border-color: var(--line); background: var(--line); }
+.mbadge.got b { color: var(--ink); }
+.cheer-line, .tl-k, .tg.reply b { color: var(--line-text); }
+input[type="range"] { accent-color: var(--line); }
+
+/* ------------------------------------------------ bars fixed at the bottom, sheets, toasts */
+.dock, .depart-bar { background: var(--bar-bg); border-top-color: var(--rule); }
+.dock .btn { background: var(--panel-2); }
+.dock .btn.primary { background: var(--line); color: var(--line-ink); }
+.sheet { background: var(--dim); }
+.sheet .panel { background: var(--panel); border-top-color: var(--rule); box-shadow: var(--shadow); }
+.toast { background: var(--sel); color: var(--sel-ink); box-shadow: var(--shadow); }
+.notif { background: var(--panel); border-color: var(--rule); color: var(--ink); box-shadow: var(--shadow); }
+.notif span { color: var(--ink-2); }
+.tip { background: var(--panel); border-color: var(--rule); box-shadow: var(--shadow); }
+
+/* ------------------------------------------------ her board: the line as a metro diagram */
+.linemap .rail { width: 6px; left: 14px; background: var(--line); border-radius: 3px; }
+.linemap .spur { width: 6px; left: 14px; background: repeating-linear-gradient(var(--line) 0 6px, transparent 6px 11px); }
+.linemap .lm-row .dot { width: 14px; height: 14px; background: var(--panel); border: 3px solid var(--line); }
+.linemap .lm-row.minor .dot { width: 10px; height: 10px; border-width: 2.5px; }
+.linemap .lm-row.home .dot { width: 18px; height: 18px; background: var(--line); border: 3px solid var(--panel); box-shadow: 0 0 0 2px var(--line); }
+.linemap .lm-row .nm { font: 700 1.0625rem/1.15 var(--f-display); text-transform: none; letter-spacing: -0.01em; }
+.linemap .lm-row.minor .nm { font: 500 0.9375rem/1.15 var(--f-body); }
+.linemap .lm-row.goal .nm::after { color: var(--line-text); }
+.linemap .train { background: var(--sel); box-shadow: 0 0 0 3px var(--panel); }
+.linemap .train::after { background: var(--sel-ink); }
+.eta-big .v { font: 900 3.75rem/0.92 var(--f-display); letter-spacing: -0.035em; }
+.eta-big .v small { font: 700 1.5rem/1 var(--f-display); color: var(--ink-3); letter-spacing: -0.01em; }
+.fresh.live i { box-shadow: none; }
+#b-reply { border-color: var(--rule); background: var(--panel); box-shadow: inset 4px 0 0 var(--line); }
+.stn-open { border-color: var(--rule); background: var(--panel-2); color: var(--ink); }
+.stn-open:hover { background: var(--panel-2); border-color: var(--sel); }
+.stn-open-row.offer .stn-open { background: var(--line); border-color: var(--line); color: var(--line-ink); }
+
+/* ------------------------------------------------ tickets: a flat card topped with the line's red */
+.ticket { background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r); -webkit-mask: none; mask: none; padding: 16px 16px 14px; box-shadow: inset 0 5px 0 var(--line); }
+.ticket .top { color: var(--line-text); font: 700 0.8125rem/1 var(--f-body); letter-spacing: 0; text-transform: none; }
+.ticket .route { font: 800 1.5rem/1.08 var(--f-display); text-transform: none; letter-spacing: -0.02em; color: var(--ink); }
+.ticket .facts { color: var(--ink); }
+.ticket .when { color: var(--ink-3); }
+.ticket .punch span { border: 1px solid var(--rule); color: var(--ink-2); font: 600 0.75rem/1 var(--f-body); letter-spacing: 0; text-transform: none; }
+.ticket .stamps span { background: var(--panel-2); color: var(--ink); font: 700 0.75rem/1 var(--f-body); letter-spacing: 0; text-transform: none; transform: none; }
+.ticket .stamps span.badge { background: color-mix(in srgb, var(--go) 18%, var(--panel)); }
+.ticket .stamps span.gray { background: var(--panel-2); color: var(--ink-3); }
+.ticket.new { border-color: var(--line); }
+.ticket.tap:focus-visible { outline: 3px solid var(--focus); outline-offset: -8px; }
+.ticket .gh-line { color: var(--ink-2); }
+.ticket .gh-line.won { color: var(--go); }
+.rc-stub { color: var(--ink); }
+.rc-stub-a, .rc-stub-b { background: var(--panel); -webkit-mask: none !important; mask: none !important; border: 1px solid var(--rule); }
+.rc-stub-a { border-radius: var(--r) var(--r) 0 0; box-shadow: inset 0 5px 0 var(--line); }
+.rc-stub-b { border-top: 0; border-radius: 0 0 var(--r) var(--r); }
+#s-depot #rc-card .rc-stub-a { border-radius: var(--r); }
+.rc-stub-b::before { border-top-color: var(--rule); }
+.rc-top { color: var(--line-text); letter-spacing: 0; }
+.rc-fig > span, .rc-nights, .rc-prow span, .rc-bar-l { color: var(--ink-3); }
+.rc-punch .on { fill: var(--ink); }
+.rc-punch .off { stroke: var(--ink-3); }
+.rc-bar { fill: var(--ink-2); }
+.rc-bar.best { fill: var(--line); }
+.rc-bar-l .best { color: var(--line-text); }
+
+/* ------------------------------------------------ maps: a light line map by day, the dark one at night */
+.minimap { background: var(--map-bg); border-color: var(--rule); }
+.minimap::before { background-image: linear-gradient(var(--map-grid) 1px, transparent 1px), linear-gradient(90deg, var(--map-grid) 1px, transparent 1px); }
+.mm-line-case { stroke: var(--map-case); opacity: 0.9; }
+.mm-line { stroke: var(--line); opacity: 1; stroke-width: 4; }
+.mm-done { stroke: var(--walked); }
+.mm-done-case { stroke: var(--map-case); opacity: 0.85; }
+.mm-you .mm-halo { fill: color-mix(in srgb, var(--sel) 18%, transparent); }
+.mm-you .mm-dot { fill: var(--sel); stroke: var(--map-case); stroke-width: 2.5; }
+.mm-est .mm-halo { fill: color-mix(in srgb, var(--sel) 10%, transparent); }
+.mm-est .mm-dot { fill: var(--map-case); stroke: var(--sel); }
+.mm-goal .mm-dot, .mm-entry .mm-dot { fill: var(--map-case); }
+.mm-goal .mm-dot { stroke: var(--line-text); }
+.mm-turn .mm-dot { fill: var(--line); stroke: var(--map-case); }
+.mm-stn { fill: var(--map-stn); stroke: var(--map-stn-edge); }
+.mm-label { fill: var(--map-label); stroke: var(--map-halo); }
+.mm-stn-label { fill: var(--map-label); stroke: var(--map-halo); }
+.mm-pill { background: var(--bar-bg); border-color: var(--rule); color: var(--ink); }
+.mm-mode[aria-pressed="true"] .mm-pill { background: var(--sel); color: var(--sel-ink); border-color: transparent; }
+/* satellite pictures are dark at any hour: the map under them is dark while they load, and what's drawn on them stays
+   light on dark */
+.minimap.sat { background: #141b25; }
+.minimap.sat::before { background-image: linear-gradient(#1c2532 1px, transparent 1px), linear-gradient(90deg, #1c2532 1px, transparent 1px); }
+.minimap.sat .mm-line-case, .minimap.sat .mm-done-case { stroke: #07080b; }
+.minimap.sat .mm-done { stroke: #ffffff; }
+.minimap.sat .mm-stn { fill: #f2f4f7; stroke: #07080b; }
+.minimap.sat .mm-label, .minimap.sat .mm-stn-label { fill: #f2f4f7; stroke: #07080b; }
+.minimap.sat .mm-you .mm-dot { fill: #ffffff; stroke: #07080b; }
+.minimap.sat .mm-you .mm-halo { fill: rgba(255, 255, 255, 0.22); }
+.mvx, .mvx-stage { background-color: var(--map-bg); }
+.mvx-stage { background-image: linear-gradient(var(--map-grid) 1px, transparent 1px), linear-gradient(90deg, var(--map-grid) 1px, transparent 1px); }
+.mvx-center.paused { background: var(--sel); color: var(--sel-ink); }
+.fr-map .mm-home .mm-dot, .mvx .mm-home .mm-dot { fill: var(--map-case); stroke: var(--sel); }
+
+/* ------------------------------------------------ the full-screen map: its bars and buttons from the look's surfaces; over
+   satellite pictures, which are dark at any hour, the night surfaces */
+.mvx { background: var(--map-bg); }
+.mvx-top { background: linear-gradient(color-mix(in srgb, var(--ground) 94%, transparent) 62%, transparent); }
+.mvx-bottom { background: linear-gradient(transparent, color-mix(in srgb, var(--ground) 90%, transparent) 42%); }
+.mvx-btn, .mvx-legend { border-color: var(--rule); background: var(--bar-bg); color: var(--ink); }
+.mvx-btn:focus-visible, .mvx-open:focus-visible .mvx-pill { outline-color: var(--focus); }
+.mvx-stage:focus-visible::after { box-shadow: inset 0 0 0 3px var(--focus); }
+.mvx-attr { color: var(--ink-3); }
+.mvx-attr a { color: var(--ink-2); }
+.mvx-chev path { stroke: var(--map-case); }
+.mvx-hot { fill: color-mix(in srgb, var(--line) 25%, transparent); stroke: var(--line-text); }
+.mvx.sat { --ink: #eef2f6; --ink-2: #b4bfcc; --ink-3: #8996a7; --ground: #0b131e; --rule: rgba(255, 255, 255, 0.2); --bar-bg: rgba(11, 19, 30, 0.86); --focus: #eef2f6; --map-case: #07080b; }
+.minimap > .mvx-open { color: var(--ink); }
+.mvx-pill { border-color: var(--rule); background: var(--bar-bg); }
+
+/* ------------------------------------------------ charts */
+.pf-area { fill: color-mix(in srgb, var(--line) 12%, transparent); }
+.pf-line, .pf-proj { stroke: var(--line-text); }
+.pf-now, .pf-hot, .pc-dot { fill: var(--line); stroke: var(--panel); }
+.wk-bar { fill: color-mix(in srgb, var(--line) 35%, var(--panel)); }
+.wk-bar.cur { fill: var(--line); }
+.ins-train-dot { fill: var(--sel-ink); }
+
+/* ------------------------------------------------ module pieces with their own warm tints */
+.st-ch.now { border-color: var(--sel); background: var(--panel); }
+.st-ch.heard .st-num { background: var(--line); border-color: var(--line); color: var(--line-ink); }
+#s-depot > #d-trip.t-live { border-color: color-mix(in srgb, var(--go) 40%, var(--rule)); background: var(--panel); box-shadow: inset 4px 0 0 var(--go); }
+.rd-row[data-state="warn"], .rd-strip { border-color: color-mix(in srgb, var(--caution) 45%, var(--rule)); }
+.rd-row[data-state="stop"], .rd-strip.stop { border-color: color-mix(in srgb, var(--stop) 45%, var(--rule)); }
+#d-wx { border-top-color: var(--rule); }
+.mm-attr { background: var(--bar-bg); color: var(--ink-3); }
+.mm-attr a { color: var(--ink-2); }
+.minimap.sat .mm-attr { background: rgba(0, 0, 0, 0.72); color: #c8c8c8; }
+.minimap.sat .mm-attr a { color: #e2e2e2; }
+
+/* ------------------------------------------------ the kitchen's station display: still its own dark sign, the modules flat */
+.stn .cell { background: var(--stn-top) !important; }
+.stn .cell::after { display: none; }
+
+@media (max-width: 359px) {
+  #h-totals .v { font-size: 1.125rem; } /* the Ticket book's three totals on one line each in the wider face */
+}
+@media (min-width: 720px) {
+  .sign .name { font-size: 3.5rem; }
+}
+
 </style>
 </head>
 <body>
@@ -1607,6 +1953,7 @@ body.stn-on { overflow: hidden; }
   <section class="card plain">
     <h2>What's new</h2>
     <ul class="muted small changelog">
+      <li>A new look: flat and clean, light by day and dark at night as your phone is set. The Monon’s red marks the line, the next stop and All aboard, and the big numbers are set in Overpass, an open cut of the lettering on American road signs.</li>
       <li>Trips: plan a walk to anywhere, like a gym downtown, by search or on the map, with stops of your own. The route rides the Monon when it helps, the conductor calls the turns and the Monon’s stations, and a new route comes if you leave this one. Along the way it shows Pacers Bikeshare docks and Bird scooters, stretches with more reported incidents from IMPD, and places to eat ranked for a dining need, each a tap from Yelp, and Pocket mode works on a trip too.</li>
       <li>If the phone pauses the conductor’s voice after a locked screen or a call, the app now wakes it and says the line again, so telegrams and the home-by warning still get through.</li>
       <li>Making a new board link cuts off the old one at once, even in the middle of a walk, and the old board says the link was replaced.</li>
@@ -4737,6 +5084,10 @@ const MiniMap = (() => {
   const NO_PICS = 'Satellite pictures didn\u2019t load. Check the signal, or tap Satellite for the line map.';
   let mode = 'sat'; // shared by every map on this phone
   const views = new Set();
+  // the street map's light or dark style follows the page's look: the phone's setting, unless the page names one
+  const darkQ = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
+  function dark() { const t = typeof document !== 'undefined' && document.documentElement.dataset.theme; return t ? t === 'dark' : !!(darkQ && darkQ.matches); }
+  if (darkQ && darkQ.addEventListener) darkQ.addEventListener('change', () => views.forEach(v => v.refresh()));
 
   function world(lat, lon, z) {
     const n = TILE * Math.pow(2, z);
@@ -4783,7 +5134,7 @@ const MiniMap = (() => {
   const url = {
     indiana: (z, x, y) => `${IN_TILES}${z}/${y}/${wrap(x, Math.pow(2, z))}`,
     usgs: (z, x, y) => `${US_TILES}${z}/${y}/${wrap(x, Math.pow(2, z))}`,
-    street: (z, x, y, key) => `https://${SUBS[wrap(x + y, 4)]}.basemaps.cartocdn.com/dark_all/${z}/${wrap(x, Math.pow(2, z))}/${y}@2x.png?key=${encodeURIComponent(key)}`,
+    street: (z, x, y, key) => `https://${SUBS[wrap(x + y, 4)]}.basemaps.cartocdn.com/${dark() ? 'dark_all' : 'light_all'}/${z}/${wrap(x, Math.pow(2, z))}/${y}@2x.png?key=${encodeURIComponent(key)}`,
   };
   // The USGS tile behind an imagery tile: the same tile down to level 16, else the level 16 tile that holds it.
   // up is how many levels it climbed, so the tile shows 2^up times larger.
@@ -5463,8 +5814,22 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   /* ------------------------------------------------------------ split flap */
   function flap(el, text, max) {
-    text = String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9:.\- ]/g, ' '); // José flips as JOSE, not JOS
+    const raw = String(text || '');
+    text = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9:.\- ]/g, ' '); // José flips as JOSE, not JOS
     if (max) text = text.slice(0, max);
+    // the clean transit look shows a departures field as plain text in sentence case (a constant written in capitals,
+    // like NO TRAIN, reads "No train"; 5:14PM reads "5:14 PM"); only the kitchen's station display (.stn) still flips
+    if (!(el.closest && el.closest('.stn'))) {
+      // a train field spaced for the flaps ("Tom  Night Local") reads as whose train it is: "Tom’s Night Local"
+      const said = /^\S.*?\S {2}\S/.test(raw) ? raw.replace(/^(.+?) {2}(.+)$/, (m, who, train) => `${who}’s ${train}`) : raw;
+      let shown = (/[a-z]/.test(said) ? said : said.toLowerCase().replace(/^\s*[a-z]/, c => c.toUpperCase())).replace(/(\d)\s*([ap])\.?m\.?$/i, (m, d, ap) => `${d} ${ap.toUpperCase()}M`).replace(/\s+/g, ' ').trim();
+      if (el._text === text && el._shown === shown) return;
+      el._text = text; el._shown = shown;
+      el.setAttribute('role', 'img'); el.setAttribute('aria-label', text.trim().toLowerCase() || 'blank');
+      el.classList.add('flat');
+      el.textContent = shown || '\u00a0';
+      return;
+    }
     if (el._text === text) return;
     const prev = el._text || '';
     el._text = text;
@@ -8125,7 +8490,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const fresh = $('#b-fresh');
       if (!p) {
         const cantReach = this.connState === 'retry' && !this.openAt && Date.now() - this.connAt > 20000, bad = this.broken || this.connState === 'badkey';
-        flap($('#b-f-train'), (this.watch && this.watch.name) ? (this.watch.pn ? trainFlap(this.watch.name, this.watch.tn) : this.watch.name) : 'NIGHT LOCAL', 17);
+        flap($('#b-f-train'), (this.watch && this.watch.name) ? (this.watch.pn ? trainFlap(this.watch.name, this.watch.tn) : this.watch.name) : 'Night Local', 17);
         flap($('#b-f-status'), bad ? 'BAD LINK' : 'NO TRAIN', 8); flap($('#b-f-home'), '--:--', 8); flap($('#b-f-at'), bad ? 'CHECK THE LINK' : 'WAITING', 17);
         $('#b-f-at-l').textContent = 'Now at';
         $('#b-eta-l').textContent = 'Home in'; $('#b-eta').textContent = '--'; $('#b-eta-s').textContent = '';
@@ -8279,7 +8644,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const p = this.p, who = (p && p.n) || this.goneName || 'The walker';
       const when = nightOf(this.gone) === nightOf(now) ? `at ${clock(this.gone)}` : `on ${new Date(this.gone).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`;
       const w = this.who();
-      flap($('#b-f-train'), p ? (p.pn ? trainFlap(p.n, p.tn) : `${p.n}  ${p.tn.replace(/^the /i, '')}`) : this.goneName || 'NIGHT LOCAL', 17);
+      flap($('#b-f-train'), p ? (p.pn ? trainFlap(p.n, p.tn) : `${p.n}  ${p.tn.replace(/^the /i, '')}`) : this.goneName || 'Night Local', 17);
       flap($('#b-f-status'), 'NO TRAIN', 9); flap($('#b-f-home'), '--:--', 8);
       $('#b-f-at-l').textContent = 'This link'; flap($('#b-f-at'), 'REPLACED', 17);
       const st = $('#b-status'), text = `${who} made a new board link ${when}, so this one no longer follows ${w.his} walks and its phone alerts have stopped. Ask ${w.him} to send you the new link.`;
@@ -14583,7 +14948,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     // during a pickup, leaving the sign lands on the pickup card and its directions
     const pk = B.p && B.p.pk ? $('#b-pickup') : null;
     if (!opt.quiet && pk && !pk.hidden) {
-      try { pk.scrollIntoView({ block: 'start' }); const a = pk.querySelector('a[href], button'); if (a) a.focus({ preventScroll: true }); } catch (e) { /* gone */ }
+      const land = () => { try { pk.scrollIntoView({ block: 'start' }); const a = pk.querySelector('a[href], button'); if (a) a.focus({ preventScroll: true }); } catch (e) { /* gone */ } };
+      land(); setTimeout(land, 350); // again once the browser's own scroll restoration for history.back() has run
       return;
     }
     if (!opt.quiet && S.back && S.back.isConnected) try { S.back.focus({ preventScroll: true }); } catch (e) { /* gone */ }
@@ -15507,8 +15873,8 @@ if (typeof module !== 'undefined') module.exports = MONON_STORY;
     paint() {
       const d = this.d, plan = this.plan; if (!d || !this.f || !this.f.to.isConnected) return;
       const now = Date.now(), v = speedOf(d.mode);
-      A.flap(this.f.to, d.to ? d.to.name : 'ANYWHERE', 17);
-      A.flap(this.f.dist, plan ? dist(plan.length, 1) : this.busy ? 'ROUTING' : '--', 8);
+      A.flap(this.f.to, d.to ? d.to.name : 'Anywhere', 17);
+      A.flap(this.f.dist, plan ? dist(plan.length, 1) : this.busy ? 'Routing' : '--', 8);
       A.flap(this.f.eta, plan ? A.clock(now + (plan.length / v) * 1000).replace(' ', '') : '--:--', 8);
       this.clock.textContent = A.clock(now);
       // where to
