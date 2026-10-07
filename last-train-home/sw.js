@@ -1,7 +1,8 @@
 /* Last Train Home: keeps the app opening with no signal, and the trail's maps showing where the signal is weak.
    The page comes from the network whenever it can, so updates land right away, and from this cache when it can't
    or when the signal is too weak to bring it in 3 seconds.
-   Typefaces and the app's own icons are cached on first use.
+   Typefaces are cached on first use. The app's own icons and manifest are kept too, and each use refreshes them in
+   the background, so a new icon or manifest arrives with the next visit.
    Satellite map tiles from the two imagery services the maps use (Indiana's statewide orthophotos and the USGS
    backup) are kept on this phone too, but only tiles along the Monon Trail: a strip either side of the trail's line,
    wider at the zoom levels that show more ground. The strip comes from the trail's line alone, the same for everyone,
@@ -12,7 +13,7 @@
    Nothing personal is ever cached: the relay, the weather, address search and CARTO's street maps (whose key is
    personal, and whose terms differ) always go straight to the network.
    Tests can register sw.js?budget=<bytes>&fresh=<ms> for a smaller budget and a shorter refresh age; neither can grow. */
-const CACHE = 'lth-shell-v1';
+const CACHE = 'lth-shell-v2'; // v2 (Oct 2026): the clean transit icon and manifest replace v1's, which stayed cached
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 const TILES = 'lth-tiles-v1';
 
@@ -65,9 +66,14 @@ self.addEventListener('fetch', e => {
     e.respondWith(Tiles.serve(e, tile));
     return;
   }
-  // the app's own icons and manifest: cache first
+  // the app's own icons and manifest: the kept copy at once, refreshed in the background for next time
   if (own && /\.(png|webmanifest)$/.test(url.pathname)) {
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => (res.ok ? keep(req, res) : res))));
+    e.respondWith(caches.match(req).then(hit => {
+      const net = fetch(req).then(res => (res.ok ? keep(req, res) : res));
+      if (!hit) return net;
+      e.waitUntil(net.catch(() => {}));
+      return hit;
+    }));
   }
   // everything else (the relay, weather, other map tiles, address search) goes to the network untouched
 });
